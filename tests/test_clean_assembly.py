@@ -44,6 +44,32 @@ class CleanTreeTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 bind_signed_tool_manifest(root, {"architecture": "arm64", "files": rows + [rows[0]]})
 
+    def test_native_manifest_does_not_keep_arm_archive_or_old_python_on_intel(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config = root / "runtime/config"
+            config.mkdir(parents=True)
+            (root / "tools").mkdir()
+            (config / "tool-manifest.json").write_text(json.dumps({"tools": {
+                "deno": {"artifact": "arm.zip", "verification": {"apple_team_identifier": "historical"}},
+                "yt-dlp": {"verification": {"gpg_signature_verified": True}},
+                "python": {"architecture": "arm64", "version": "old"}}}))
+            (root / "runtime/runtime-provenance.json").write_text(json.dumps({"python_version": "3.12.15", "python_source_sha256": "1" * 64}))
+            rows = []
+            for name in ("deno", "yt-dlp"):
+                (root / "tools" / name).write_bytes(name.encode())
+                rows.append({"identifier": name, "role": "tool", "path": "tools/" + name})
+            source_inputs = {"deno-x86_64": {"url": "https://example.com/intel.zip", "sha256": "2" * 64, "version": "2.9.6"},
+                "yt-dlp-macos": {"version": "2026.08.19", "sha256": "3" * 64}}
+            bind_signed_tool_manifest(root, {"architecture": "x86_64", "files": rows}, source_inputs=source_inputs)
+            result = json.loads((config / "tool-manifest.json").read_text())["tools"]
+            self.assertEqual(result["deno"]["artifact"], "intel.zip")
+            self.assertEqual(result["deno"]["archive_sha256"], "2" * 64)
+            self.assertEqual(result["python"]["architecture"], "x86_64")
+            self.assertEqual(result["python"]["version"], "3.12.15")
+            self.assertNotIn("gpg_signature_verified", result["yt-dlp"]["verification"])
+            self.assertNotIn("apple_team_identifier", result["deno"]["verification"])
+
     def test_internal_link_is_independent_regular_file(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

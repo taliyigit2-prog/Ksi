@@ -1,6 +1,45 @@
 {
   "schema_version": 1,
   "inputs": {
+    "ollama-macos": {
+      "version": "0.24.0",
+      "revision": "v0.24.0",
+      "url": "https://github.com/ollama/ollama/releases/download/v0.24.0/ollama-darwin.tgz",
+      "size": 133395504,
+      "sha256": "e6d5e8b4bc0cb2a35ff7901c58d81ca2170403a819c4726f58798155fa682e38",
+      "license": "MIT",
+      "digest_source": "GitHub release asset digest",
+      "architecture": "universal2; verify every staged native member"
+    },
+    "deno-arm64": {
+      "architecture": "arm64",
+      "version": "2.9.6",
+      "revision": "v2.9.6",
+      "url": "https://github.com/denoland/deno/releases/download/v2.9.6/deno-aarch64-apple-darwin.zip",
+      "size": 38446106,
+      "sha256": "213a2f304f04d3c9cb5220669afad138f60a5aab1fe80962abdeb8f35807a472",
+      "license": "MIT",
+      "digest_source": "GitHub release asset digest"
+    },
+    "deno-x86_64": {
+      "architecture": "x86_64",
+      "version": "2.9.6",
+      "revision": "v2.9.6",
+      "url": "https://github.com/denoland/deno/releases/download/v2.9.6/deno-x86_64-apple-darwin.zip",
+      "size": 42264433,
+      "sha256": "7d4524b82bcc557fe020a1a5b56956ed42b992ae5b28026e8ad5d17329533f5f",
+      "license": "MIT",
+      "digest_source": "GitHub release asset digest"
+    },
+    "yt-dlp-macos": {
+      "version": "2026.08.19",
+      "revision": "2026.08.19",
+      "url": "https://github.com/yt-dlp/yt-dlp/releases/download/2026.08.19/yt-dlp_macos",
+      "size": 37146048,
+      "sha256": "0f192b7ec147ab6288885d6351d9ab67367640029b4377576ef46dd79cf7b202",
+      "license": "Unlicense; bundled executable dependencies require their own notices",
+      "digest_source": "GitHub release asset digest"
+    },
     "chatterbox-source": {
       "type": "git",
       "version": "0.1.7",

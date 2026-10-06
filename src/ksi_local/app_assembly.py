@@ -55,7 +55,7 @@ def copy_clean_tree(source: Path, destination: Path) -> None:
     visit(root, destination, frozenset())
 
 
-def bind_signed_tool_manifest(resources: Path, specification: dict) -> None:
+def bind_signed_tool_manifest(resources: Path, specification: dict, *, source_inputs: dict | None = None) -> None:
     """Bind pinned tool versions to actual post-signing files, never cache hashes."""
     target = resources / "runtime/config/tool-manifest.json"
     manifest = json.loads(target.read_text(encoding="utf-8"))
@@ -65,6 +65,26 @@ def bind_signed_tool_manifest(resources: Path, specification: dict) -> None:
         if len(matches) != 1 or not isinstance(records.get(name), dict):
             raise ValueError("Signed download tool has no unique pinned manifest record.")
         records[name][digest_key] = digest_file(safe_member(resources, matches[0]["path"]))
+    if source_inputs is not None:
+        architecture = specification["architecture"]
+        deno_input = source_inputs["deno-" + architecture]
+        records["deno"].update(architecture=architecture, artifact=Path(deno_input["url"]).name,
+            archive_sha256=deno_input["sha256"], version=deno_input["version"])
+        records["deno"].pop("verification", None)
+        records["deno"]["verification"] = {"source_release_digest_pinned": True,
+            "signed_binary_bound_to_payload": True, "acceptance_tested": False}
+        records["yt-dlp"].update(version=source_inputs["yt-dlp-macos"]["version"],
+            upstream_artifact_sha256=source_inputs["yt-dlp-macos"]["sha256"])
+        records["yt-dlp"].pop("verification", None)
+        records["yt-dlp"]["verification"] = {"source_release_digest_pinned": True,
+            "signed_binary_bound_to_payload": True, "acceptance_tested": False}
+        runtime = json.loads((resources / "runtime/runtime-provenance.json").read_text())
+        records["python"] = {"architecture": architecture, "version": runtime["python_version"],
+            "source_sha256": runtime["python_source_sha256"]}
+        supplied = {row["identifier"] for row in specification["files"] if row["role"] == "tool"}
+        for name, record in records.items():
+            if isinstance(record, dict):
+                record["bundled"] = name in supplied or name == "python"
     manifest["platform"] = "macos-" + specification["architecture"]
     atomic_write_json(target, manifest, mode=0o644)
 
@@ -172,7 +192,8 @@ def assemble_app(repository: Path, runtime: Path, components: Path, specificatio
             magic = stream.read(4)
         if magic in {b"\xcf\xfa\xed\xfe", b"\xfe\xed\xfa\xcf", b"\xce\xfa\xed\xfe", b"\xfe\xed\xfa\xce", b"\xca\xfe\xba\xbe", b"\xbe\xba\xfe\xca", b"\xca\xfe\xba\xbf", b"\xbf\xba\xfe\xca"}:
             subprocess.run(["/usr/bin/codesign", "--force", "--sign", "-", "--timestamp=none", str(path)], check=True, capture_output=True, timeout=120)
-    bind_signed_tool_manifest(resources, spec)
+    native_inputs = json.loads((repository / "config/native-sources.json").read_text())["inputs"]
+    bind_signed_tool_manifest(resources, spec, source_inputs=native_inputs)
     represented = {row["path"] for row in spec["files"]}
     for row in spec["files"]:
         path = safe_member(resources, row["path"])

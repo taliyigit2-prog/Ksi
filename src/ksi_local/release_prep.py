@@ -76,6 +76,9 @@ PUBLIC_SCRIPTS = (
     "scripts/review_model_input.py",
     "scripts/select_wheelhouse.py",
     "scripts/stage_chatterbox_source_runtime.py",
+    "scripts/stage_argos_model.py",
+    "scripts/stage_deno_input.py",
+    "scripts/stage_ollama_input.py",
     "scripts/stage_native_engines.py",
     "scripts/stage_portable_font.py",
 )

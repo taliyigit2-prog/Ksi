@@ -206,3 +206,18 @@ override plus a regenerated wheel RECORD. It does not borrow a patched personal
 environment. That commit uses `grapheme_mtl_merged_expanded_v1.json`; the other
 upstream `mtl_tokenizer.json` is not interchangeable. Both model API and actual
 speech output require final acceptance on the source-bound prefix.
+
+Argos staging keeps the five direct inference files and upstream README citations;
+unused Stanza tokenizer weights are excluded. Archive paths, links, duplicates,
+encryption, expansion limits and language direction are checked before extraction.
+The download/runtime tools are separately pinned to official release digests.
+The final signed tool manifest binds the actual architecture's Deno archive and
+Python version and drops historical certificate/GPG claims that have not been
+reestablished for that package. Native OCR targets macOS 14 or newer explicitly.
+
+The pinned Deno release archives match their official hashes, but upstream macOS
+signature verification failed on both extracted binaries in this build. Original
+archives remain intact; an explicit `--adhoc-sign` build step creates a separate
+strictly verified ad-hoc copy and records the failed upstream signature status.
+This is not an Apple notarization or valid-upstream-certificate claim. Functional
+download-tool acceptance and final package audits are still required.

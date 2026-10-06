@@ -1,0 +1,35 @@
+name: Native offline OCR build input
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: arm64
+            runner: macos-14
+          - architecture: x86_64
+            runner: macos-15-intel
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Compile native helper for macOS 14 or later
+        run: |
+          test "$(uname -m)" = "${{ matrix.architecture }}"
+          /bin/zsh scripts/build_ocr_helper.sh
+          test "$(lipo -archs build/KSIOCR)" = "${{ matrix.architecture }}"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: native-ocr-${{ matrix.architecture }}
+          path: build/KSIOCR
+          if-no-files-found: error
+          retention-days: 7
