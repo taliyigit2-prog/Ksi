@@ -39,6 +39,12 @@ inventories: missing license-expression fields still require actual upstream
 license texts, and the final binary SPDX inventory must include their complete
 contents. The primary GUI uses PySide6-Essentials plus Shiboken rather than the
 unused PySide6-Addons distribution.
+
+Matching Qt/PySide 6.11.2 sources have a separate official-checksum inventory in
+`config/qt-corresponding-sources.json`. The selected wheel also contains QML,
+SVG, tool, image-format and timeline runtime modules even though KSI's own GUI
+uses Widgets; their source and license obligations are not ignored. Source
+collection does not certify license completeness or final binary compliance.
 # Desktop engine additions (implementation candidates)
 
 The following adapters do not copy complete third-party applications. Exact

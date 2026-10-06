@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "version": "6.11.2",
+  "redistribution_review_complete": false,
+  "digest_source": "Official Qt archive .sha256 files; actual wheel modules and license texts must still be inventoried",
+  "sources": {
+    "qtbase": "5b2e00eccaf5a4d8c14134ffa0ea8dfd0a35ae1ffc7f8d87fa4305a1ed23cf22",
+    "qtdeclarative": "215b7b70517e380123eabc6b92243f3c47b6f016a91d126057dbe53551c6b430",
+    "qtsvg": "d594337feca84c26fb67fe87b85e6a5c12fda404b611d905f9d138210c311876",
+    "qttools": "9ea75af35c512f7e09e61c8c3af3997f13b4d43bb099cf43fcec470126b4041e",
+    "qtshadertools": "805046b8b7757665586890b375940047e874ae3ab00adb6d3f2b38fc6b200b1c",
+    "qttranslations": "021684c1a7937a9fabc3b056a6698ad5978794caf9ac190fd6cc11399e67c014",
+    "qtquicktimeline": "250af10500a0c4045dde74e107448a69a44d58af8b7e9a91704a808d5f881d17",
+    "qtimageformats": "cecd8900f34b6550076309bc94f62f828008b633a4239e0a08c86788f41001f8",
+    "qtlanguageserver": "38bc4272ecf4ca0eb1927227053e52be6b2e05733f46d03422306aace511fc5e",
+    "pyside-setup": "cba47efbaad1bedd529725cbc14e21f156c7a19366f07b3edfbb076ffd7afdf8"
+  },
+  "qt_base_url": "https://download.qt.io/archive/qt/6.11/6.11.2/submodules/",
+  "pyside_base_url": "https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.11.2-src/"
+}

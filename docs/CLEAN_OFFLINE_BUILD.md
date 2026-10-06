@@ -164,8 +164,10 @@ checks use the current processor, retaining the old ARM/manual gate separately.
 Model HTTP requests explicitly bypass inherited proxies and refuse redirects;
 responses are bounded. Turkish Chatterbox workers enforce the local-only socket
 policy and skip only the unused upstream Chinese-converter initialization.
-Turkish tokenization/weights are unchanged. Demo/training/other-language extras
-are outside the selected isolated inference scope. Public weights come from
+Turkish tokenization/weights are unchanged. Gradio and optional other-language
+extras are not requested. The exact lock retains upstream inference packages'
+declared transitive dependencies, including any unused build helpers; these
+helpers are not KSI features and are never invoked at runtime. Public weights come from
 the actual ResembleAI/chatterbox repository, not the logical family label.
 No user reference voice, old environment or personal cache is bundled.
 
@@ -228,3 +230,9 @@ no arbitrary path or network page is opened. Empty licenses are rejected, and
 Gemma families require the original terms layer, current official terms snapshot,
 prohibited-use snapshot, required Notice and KSI model-specific terms. These are
 not personal acceptance records or a legal-review certification.
+
+Matching Qt/PySide 6.11.2 sources are pinned by Qt's published `.sha256` files.
+The separate source collector keeps archives intact and bounded, including
+modules physically present in Essentials beyond KSI's direct Widgets imports.
+Final license attribution must use actual wheel contents and preserve the full
+applicable source/build notices, not just a generic PySide license label.

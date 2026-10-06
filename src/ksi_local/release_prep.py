@@ -80,6 +80,7 @@ PUBLIC_SCRIPTS = (
     "scripts/stage_deno_input.py",
     "scripts/stage_ollama_input.py",
     "scripts/snapshot_model_terms.py",
+    "scripts/fetch_qt_sources.py",
     "scripts/stage_native_engines.py",
     "scripts/stage_portable_font.py",
 )
@@ -221,6 +222,9 @@ def _iter_public_inputs(source: Path) -> Iterable[tuple[Path, Path]]:
         path = source / relative
         if path.is_file():
             yield path, Path(relative)
+    qt_sources = source / "config/qt-corresponding-sources.json"
+    if qt_sources.is_file():
+        yield qt_sources, Path("config/qt-corresponding-sources.json")
 
 
 def _sanitized_configuration(source: Path, destination: Path) -> None:
