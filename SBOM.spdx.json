@@ -1,0 +1,143 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "annotations": [
+    {
+      "annotationDate": "2026-10-01T00:00:00Z",
+      "annotationType": "OTHER",
+      "annotator": "Tool: ksi-release-prep-1",
+      "comment": "Source-tree SBOM; 172 hashed files. Binary release SBOM must be regenerated from the final package."
+    }
+  ],
+  "creationInfo": {
+    "created": "2026-10-01T00:00:00Z",
+    "creators": [
+      "Tool: ksi-release-prep-1"
+    ]
+  },
+  "dataLicense": "CC0-1.0",
+  "documentDescribes": [
+    "SPDXRef-Package-KSI"
+  ],
+  "documentNamespace": "https://ksi.local/spdx/d16cbd9d4cf1844ae22daf7fe6ae05985e71d0499453e28e1b39884ef579a11a",
+  "name": "KSI Local Studio source release",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-Package-KSI",
+      "copyrightText": "Copyright 2026 KSI Local Studio contributors",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": true,
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "name": "ksi-local-studio",
+      "versionInfo": "2.0.0.dev0"
+    },
+    {
+      "SPDXID": "SPDXRef-Dependency-1",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "name": "lingua-language-detector",
+      "versionInfo": "2"
+    },
+    {
+      "SPDXID": "SPDXRef-Dependency-2",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-3-Clause",
+      "name": "pypdf",
+      "versionInfo": "6"
+    },
+    {
+      "SPDXID": "SPDXRef-Dependency-3",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "name": "python-docx",
+      "versionInfo": "1.2"
+    },
+    {
+      "SPDXID": "SPDXRef-Dependency-4",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "HPND",
+      "name": "Pillow",
+      "versionInfo": "12"
+    },
+    {
+      "SPDXID": "SPDXRef-Dependency-5",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-3-Clause",
+      "name": "numpy",
+      "versionInfo": "2"
+    },
+    {
+      "SPDXID": "SPDXRef-Dependency-6",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "LGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Commercial",
+      "name": "PySide6",
+      "versionInfo": "6.8"
+    },
+    {
+      "SPDXID": "SPDXRef-Dependency-7",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "name": "mlx-whisper",
+      "versionInfo": "0.4"
+    }
+  ],
+  "relationships": [
+    {
+      "relatedSpdxElement": "SPDXRef-Dependency-1",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-KSI"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Dependency-2",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-KSI"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Dependency-3",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-KSI"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Dependency-4",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-KSI"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Dependency-5",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-KSI"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Dependency-6",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-KSI"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Dependency-7",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-KSI"
+    }
+  ],
+  "spdxVersion": "SPDX-2.3"
+}

@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "target_language": "tr",
+  "preserve": [
+    "OpenAI",
+    "ChatGPT",
+    "GPT",
+    "YouTube",
+    "Python",
+    "Ollama"
+  ],
+  "terms": {
+    "en": {
+      "artificial intelligence": "yapay zekâ",
+      "machine learning": "makine öğrenmesi",
+      "source code": "kaynak kod"
+    },
+    "ru": {
+      "искусственный интеллект": "yapay zekâ",
+      "машинное обучение": "makine öğrenmesi",
+      "исходный код": "kaynak kod"
+    },
+    "es": {
+      "inteligencia artificial": "yapay zekâ",
+      "aprendizaje automático": "makine öğrenmesi",
+      "código fuente": "kaynak kod"
+    },
+    "de": {
+      "künstliche intelligenz": "yapay zekâ",
+      "maschinelles lernen": "makine öğrenmesi",
+      "quellcode": "kaynak kod"
+    },
+    "zh": {
+      "人工智能": "yapay zekâ",
+      "机器学习": "makine öğrenmesi",
+      "源代码": "kaynak kod"
+    },
+    "fr": {
+      "intelligence artificielle": "yapay zekâ",
+      "apprentissage automatique": "makine öğrenmesi",
+      "code source": "kaynak kod"
+    },
+    "it": {
+      "intelligenza artificiale": "yapay zekâ",
+      "apprendimento automatico": "makine öğrenmesi",
+      "codice sorgente": "kaynak kod"
+    }
+  }
+}

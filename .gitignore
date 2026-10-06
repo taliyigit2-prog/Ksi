@@ -1,0 +1,70 @@
+.DS_Store
+.AppleDouble
+.LSOverride
+.venv/
+.venv-*/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+tmp/
+backups/
+deployment/
+packaging/deployment/
+public-release/
+
+# Local application state and user output
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db
+*.log
+jobs/
+outputs/
+cache/
+models/
+runtime/
+*.partial
+*.part
+*.ytdl
+
+# Local settings and machine identity
+.env
+.env.*
+!.env.example
+workspace-id.json
+*.local.json
+*.local.toml
+
+# Local Phase 1 artifacts
+.phase1/
+phase1-results/
+
+# Never commit authentication material
+cookies.txt
+*.cookies
+*.token
+*.secret
+*.pem
+*.key
+*.p12
+*.mobileprovision
+
+# Generated application and installer artifacts
+*.app/
+*.dmg
+*.pkg
+*.exe
+*.msi
+
+# Private acceptance evidence; public fixtures live under tests/fixtures.
+docs/*-acceptance.json
+docs/phase*-run.json
+docs/phase*-language-pilots.json
+docs/phase*-ui-*.png

@@ -1,0 +1,168 @@
+"""Client-neutral service boundary shared by GUI, CLI and MCP."""
+
+from __future__ import annotations
+
+import uuid
+from dataclasses import asdict
+from pathlib import Path
+from typing import Any
+
+from ksi_local.exporter import (
+    ALLOWED_ARTIFACT_SUFFIXES,
+    export_artifacts,
+    select_job_artifacts,
+)
+from ksi_local.job_queue import JobQueue
+from ksi_local.job_store import JobRecord, JobStatus, JobStore
+from ksi_local.preflight import inspect_source
+from ksi_local.privacy import redact_sensitive_text
+from ksi_local.settings import WorkspacePaths
+
+
+def _record(job: JobRecord) -> dict[str, Any]:
+    payload = asdict(job)
+    payload["job_kind"] = job.job_kind.value
+    payload["status"] = job.status.value
+    payload["last_error"] = redact_sensitive_text(job.last_error) if job.last_error else None
+    return payload
+
+
+class CoreService:
+    def __init__(
+        self,
+        *,
+        store: JobStore | None = None,
+        workspace: WorkspacePaths | None = None,
+        allowed_roots: tuple[str | Path, ...] = (),
+        network_allowed: bool = False,
+    ) -> None:
+        self.store = store or JobStore()
+        self.workspace = workspace
+        roots = [Path(item).expanduser().resolve() for item in allowed_roots]
+        if workspace is not None:
+            roots.append(workspace.root.resolve())
+        self.allowed_roots = tuple(dict.fromkeys(roots))
+        self.network_allowed = network_allowed
+
+    def set_workspace(self, workspace: WorkspacePaths | None) -> None:
+        """Refresh the removable workspace without changing explicit client roots."""
+        previous = self.workspace.root.resolve() if self.workspace is not None else None
+        roots = [root for root in self.allowed_roots if root != previous]
+        self.workspace = workspace
+        if workspace is not None and workspace.root.resolve() not in roots:
+            roots.append(workspace.root.resolve())
+        self.allowed_roots = tuple(roots)
+
+    def _allowed_path(self, value: str | Path, *, must_exist: bool = True) -> Path:
+        raw = Path(value).expanduser()
+        if raw.is_symlink():
+            raise PermissionError("Sembolik bağlantı MCP/çekirdek dosya kökü sınırını aşamaz.")
+        path = raw.resolve()
+        if must_exist and not path.exists():
+            raise FileNotFoundError("İzin verilen kökte dosya bulunamadı.")
+        if not any(path == root or root in path.parents for root in self.allowed_roots):
+            raise PermissionError("Dosya izin verilen KSI köklerinin dışında.")
+        return path
+
+    def preflight(self, source: str, **options: Any) -> dict[str, Any]:
+        if self.workspace is None:
+            raise RuntimeError("Ön inceleme için bağlı KSI-Workspace gereklidir.")
+        normalized = source.strip()
+        if normalized.casefold().startswith("https://"):
+            if not self.network_allowed:
+                raise PermissionError("Ağ kaynağı için açık ağ yetkisi gereklidir.")
+        else:
+            normalized = str(self._allowed_path(normalized))
+        result = inspect_source(normalized, workspace=self.workspace, **options)
+        return result.to_dict()
+
+    def create_job(
+        self,
+        *,
+        source: str,
+        job_directory: str | Path,
+        source_language: str = "auto",
+        want_subtitle: bool = False,
+        want_summary: bool = False,
+        want_dub: bool = False,
+        download_only: bool = False,
+        job_kind: str = "video",
+        job_id: str | None = None,
+    ) -> dict[str, Any]:
+        normalized = source.strip()
+        if normalized.casefold().startswith("https://"):
+            if not self.network_allowed:
+                raise PermissionError("Ağ işi için açık ağ yetkisi gereklidir.")
+        else:
+            normalized = str(self._allowed_path(normalized))
+        directory = self._allowed_path(job_directory, must_exist=False)
+        if directory.exists() and (directory.is_symlink() or any(directory.iterdir())):
+            raise FileExistsError("İş klasörü yeni ve boş olmalıdır.")
+        directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+        identifier = job_id or str(uuid.uuid4())
+        return _record(
+            self.store.create_job(
+                job_id=identifier,
+                source=normalized,
+                source_language=source_language,
+                want_subtitle=want_subtitle,
+                want_summary=want_summary,
+                want_dub=want_dub,
+                download_only=download_only,
+                job_kind=job_kind,
+                job_directory=directory,
+            )
+        )
+
+    def status(self, job_id: str) -> dict[str, Any]:
+        job = self.store.get_job(job_id)
+        payload = _record(job)
+        payload["stages"] = [asdict(item) for item in self.store.list_stages(job_id)]
+        return payload
+
+    def stop(self, job_id: str, *, confirm: bool) -> dict[str, Any]:
+        if not confirm:
+            raise PermissionError("İşi durdurmak için açık onay gereklidir.")
+        queue = JobQueue(self.store, lambda: self.workspace is not None)
+        return _record(queue.cancel(job_id))
+
+    def resume(self, job_id: str) -> dict[str, Any]:
+        return _record(self.store.retry_job(job_id))
+
+    def results(self, job_id: str) -> list[dict[str, Any]]:
+        job = self.store.get_job(job_id)
+        root = self._allowed_path(job.job_directory)
+        output_root = root / "outputs"
+        if not output_root.is_dir() or output_root.is_symlink():
+            return []
+        items: list[dict[str, Any]] = []
+        for path in sorted(output_root.rglob("*")):
+            if len(items) >= 500:
+                break
+            if (
+                path.is_file()
+                and not path.is_symlink()
+                and path.suffix.casefold() in ALLOWED_ARTIFACT_SUFFIXES
+                and ".part" not in path.name
+            ):
+                items.append({"path": str(path), "relative_path": str(path.relative_to(root)), "size_bytes": path.stat().st_size})
+        return items
+
+    def export(
+        self,
+        job_id: str,
+        *,
+        destination_directory: str | Path,
+        folder_name: str = "KSI Local Studio Çıktısı",
+        confirm: bool,
+    ) -> dict[str, Any]:
+        if not confirm:
+            raise PermissionError("Dışa aktarma yazma işlemi için açık onay gereklidir.")
+        destination = self._allowed_path(destination_directory)
+        job = self.store.get_job(job_id)
+        self._allowed_path(job.job_directory)
+        artifacts = select_job_artifacts(
+            job.job_directory, export_kind="all", title=f"KSI Local Studio {job.id[:8]}"
+        )
+        output = export_artifacts(artifacts, desktop=destination, folder_name=folder_name)
+        return {"output_directory": str(output), "source_preserved": True}

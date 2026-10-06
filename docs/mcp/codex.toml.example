@@ -1,0 +1,5 @@
+[mcp_servers.ksi_local]
+command = "/absolute/path/to/ksi"
+args = ["mcp-server"]
+env = { KSI_MCP_ROOTS = "/absolute/path/to/KSI-Workspace:/Users/you/Desktop", KSI_MCP_ALLOW_NETWORK = "0" }
+

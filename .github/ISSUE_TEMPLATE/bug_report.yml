@@ -1,0 +1,33 @@
+name: Bug report
+description: Report a reproducible KSI Local Studio defect using synthetic data.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "Do not include media, documents, cookies, tokens, private URLs, disk UUIDs or browser profiles."
+  - type: input
+    id: version
+    attributes:
+      label: KSI Local Studio version
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction with synthetic data
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+

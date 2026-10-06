@@ -1,0 +1,257 @@
+#!/bin/zsh
+
+set -euo pipefail
+umask 077
+
+INSTALLER_APP="${0:A:h:h:h}"
+MEDIA_ROOT="${INSTALLER_APP:h}"
+PAYLOAD_ROOT="$MEDIA_ROOT/.payload"
+SOURCE_APP="$PAYLOAD_ROOT/KSI Local Studio.app"
+SOURCE_RUNTIME="$PAYLOAD_ROOT/runtime"
+PAYLOAD_MANIFEST="$MEDIA_ROOT/payload.sha256"
+TARGET_HOME="${KSI_INSTALL_HOME:-$HOME}"
+TARGET_APP="$TARGET_HOME/Desktop/KSI Local Studio/1 - Programı Aç.app"
+SUPPORT_ROOT="$TARGET_HOME/Library/Application Support/KSI Local Studio"
+TARGET_RUNTIME="$SUPPORT_ROOT/runtime"
+BACKUP_ROOT="$SUPPORT_ROOT/backups"
+STAMP="$(/bin/date +%Y%m%d-%H%M%S)-$$"
+STAGED_APP="$SUPPORT_ROOT/.KSI Local Studio-install-$STAMP.app"
+STAGED_RUNTIME="$SUPPORT_ROOT/.runtime-install-$STAMP"
+APP_BACKUP=""
+RUNTIME_BACKUP=""
+APP_SWAPPED=false
+RUNTIME_SWAPPED=false
+ROLLBACK_BACKUP=""
+FAILURE_MESSAGE="Kurulum tamamlanamadı. Önceki KSI Local Studio sürümü korundu. Disk alanını kontrol edip KSI Local Studio Kur simgesini yeniden açın."
+LOCK_READY="$SUPPORT_ROOT/.install-lock-ready-$STAMP"
+LOCK_RELEASE="$SUPPORT_ROOT/.install-lock-release-$STAMP"
+LOCK_PID=""
+CHECKSUM_LIST=""
+
+release_checksum_list() {
+  if [[ -n "$CHECKSUM_LIST" && "$CHECKSUM_LIST" == /private/tmp/ksi-payload-files.* ]]; then
+    /bin/rm -f "$CHECKSUM_LIST"
+    CHECKSUM_LIST=""
+  fi
+}
+
+release_install_lock() {
+  if [[ -n "$LOCK_PID" ]]; then
+    : >"$LOCK_RELEASE"
+    wait "$LOCK_PID" 2>/dev/null || true
+    LOCK_PID=""
+  fi
+  /bin/rm -f "$LOCK_READY" "$LOCK_RELEASE"
+}
+
+acquire_install_lock() {
+  PYTHONDONTWRITEBYTECODE=1 "$STAGED_RUNTIME/venv/bin/python" - "$SUPPORT_ROOT/app.lock" \
+    "$LOCK_READY" "$LOCK_RELEASE" <<'PY' &
+import fcntl
+import sys
+import time
+from pathlib import Path
+
+lock_path, ready_path, release_path = map(Path, sys.argv[1:])
+with lock_path.open("a+", encoding="utf-8") as handle:
+    try:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        raise SystemExit(73)
+    ready_path.write_text("ready\n", encoding="utf-8")
+    while not release_path.exists():
+        time.sleep(0.05)
+PY
+  LOCK_PID=$!
+  local attempt
+  for attempt in {1..100}; do
+    [[ -e "$LOCK_READY" ]] && return 0
+    if ! /bin/kill -0 "$LOCK_PID" 2>/dev/null; then
+      wait "$LOCK_PID" 2>/dev/null || true
+      LOCK_PID=""
+      return 1
+    fi
+    /bin/sleep 0.05
+  done
+  release_install_lock
+  return 1
+}
+
+show_error() {
+  local message="$1"
+  if [[ "${KSI_INSTALL_QUIET:-0}" == "1" ]]; then
+    print -u2 "$message"
+    return
+  fi
+  /usr/bin/osascript \
+    -e 'on run argv' \
+    -e 'display alert "KSI Local Studio kurulamadı" message (item 1 of argv) as critical' \
+    -e 'end run' "$message" >/dev/null
+}
+
+fail() {
+  FAILURE_MESSAGE="$1"
+  exit 1
+}
+
+rollback() {
+  local rollback_status=$?
+  trap - EXIT HUP INT TERM
+  if (( rollback_status == 0 )); then
+    return
+  fi
+  if [[ "$APP_SWAPPED" == true ]]; then
+    [[ ! -e "$STAGED_APP" && -e "$TARGET_APP" ]] && /bin/mv "$TARGET_APP" "$STAGED_APP"
+    [[ -n "$APP_BACKUP" && -e "$APP_BACKUP" ]] && /bin/mv "$APP_BACKUP" "$TARGET_APP"
+  fi
+  if [[ "$RUNTIME_SWAPPED" == true ]]; then
+    [[ ! -e "$STAGED_RUNTIME" && -e "$TARGET_RUNTIME" ]] && /bin/mv "$TARGET_RUNTIME" "$STAGED_RUNTIME"
+    [[ -n "$RUNTIME_BACKUP" && -e "$RUNTIME_BACKUP" ]] && /bin/mv "$RUNTIME_BACKUP" "$TARGET_RUNTIME"
+  fi
+  [[ -e "$STAGED_APP" ]] && /bin/rm -rf "$STAGED_APP"
+  [[ -e "$STAGED_RUNTIME" ]] && /bin/rm -rf "$STAGED_RUNTIME"
+  release_install_lock
+  release_checksum_list
+  show_error "$FAILURE_MESSAGE"
+  exit "$rollback_status"
+}
+trap rollback EXIT HUP INT TERM
+
+if [[ "$(/usr/bin/uname -m)" != "arm64" ]]; then
+  fail "Bu kişisel paket yalnız Apple Silicon (ARM64) Mac için hazırlanmıştır."
+fi
+if [[ ! -d "$SOURCE_APP" || ! -d "$SOURCE_RUNTIME" ]]; then
+  fail "Kurulum paketi eksik. DMG içindeki KSI Local Studio Kur simgesini doğrudan açın."
+fi
+if [[ ! -f "$PAYLOAD_MANIFEST" || -L "$PAYLOAD_MANIFEST" ]]; then
+  fail "Kurulum paketinin bütünlük manifesti eksik. Mevcut sürüm değiştirilmedi."
+fi
+if [[ -L "$SOURCE_APP" || -L "$SOURCE_RUNTIME" || -L "$TARGET_APP" || -L "$TARGET_RUNTIME" ]]; then
+  fail "Güvenlik için sembolik bağlantı içeren kurulum hedefi kullanılmadı."
+fi
+
+/bin/mkdir -p "$TARGET_HOME/Desktop/KSI Local Studio" "$SUPPORT_ROOT" "$BACKUP_ROOT"
+CHECKSUM_LIST="$(/usr/bin/mktemp /private/tmp/ksi-payload-files.XXXXXX)"
+/bin/chmod 600 "$CHECKSUM_LIST"
+
+# Verify the complete offline payload with trusted macOS tools before copying or
+# backing up anything. Manifest paths are package-relative and cannot traverse.
+while IFS= read -r manifest_line; do
+  kind="${manifest_line%% *}"
+  remainder="${manifest_line#* }"
+  expected="${remainder%%  *}"
+  relative="${remainder#*  }"
+  if [[ "$kind" != "F" && "$kind" != "L" ]] || (( ${#expected} != 64 )) || [[ "$expected" == *[^a-f0-9]* || "$relative" != .payload/* || "$relative" == *'/../'* || "$relative" == /* ]]; then
+    fail "Kurulum paketi bütünlük manifesti geçersiz. Mevcut sürüm değiştirilmedi."
+  fi
+  candidate="$MEDIA_ROOT/$relative"
+  if [[ "$kind" == "F" && ( ! -f "$candidate" || -L "$candidate" ) ]]; then
+    fail "Kurulum paketi eksik veya bozuk. Mevcut sürüm değiştirilmedi."
+  fi
+  if [[ "$kind" == "L" && ! -L "$candidate" ]]; then
+    fail "Kurulum paketi sembolik bağlantı manifestiyle uyuşmuyor. Mevcut sürüm değiştirilmedi."
+  fi
+  if [[ "$kind" == "L" ]]; then
+    link_target="$(/usr/bin/readlink "$candidate")"
+    actual="$(printf '%s' "$link_target" | /usr/bin/shasum -a 256 | /usr/bin/awk '{print $1}')"
+    if [[ "$actual" != "$expected" ]]; then
+      fail "Kurulum paketi SHA-256 doğrulamasını geçemedi. Mevcut sürüm değiştirilmedi."
+    fi
+  else
+    print -r -- "$expected  $relative" >>"$CHECKSUM_LIST"
+  fi
+done <"$PAYLOAD_MANIFEST"
+if ! (cd "$MEDIA_ROOT" && /usr/bin/shasum -a 256 -c "$CHECKSUM_LIST" >/dev/null); then
+  fail "Kurulum paketi SHA-256 doğrulamasını geçemedi. Mevcut sürüm değiştirilmedi."
+fi
+release_checksum_list
+MANIFEST_COUNT="$(/usr/bin/wc -l <"$PAYLOAD_MANIFEST" | /usr/bin/tr -d ' ')"
+PAYLOAD_COUNT="$(/usr/bin/find "$PAYLOAD_ROOT" \( -type f -o -type l \) | /usr/bin/wc -l | /usr/bin/tr -d ' ')"
+if [[ "$MANIFEST_COUNT" != "$PAYLOAD_COUNT" ]]; then
+  fail "Kurulum paketinde manifest dışı dosya veya bağlantı bulundu. Mevcut sürüm değiştirilmedi."
+fi
+
+PAYLOAD_KIB="$(/usr/bin/du -sk "$SOURCE_RUNTIME" | /usr/bin/awk '{print $1}')"
+AVAILABLE_KIB="$(/bin/df -Pk "$SUPPORT_ROOT" | /usr/bin/awk 'END {print $4}')"
+REQUIRED_KIB=$((PAYLOAD_KIB + 1048576))
+if (( AVAILABLE_KIB < REQUIRED_KIB )); then
+  fail "İç diskte kurulum için yeterli boş alan yok. En az 1 GB güvenlik payıyla yaklaşık $((REQUIRED_KIB / 1048576)) GB boş alan gerekir."
+fi
+if [[ "${KSI_INSTALL_QUIET:-0}" != "1" ]]; then
+  /usr/bin/osascript -e 'display notification "Yerel çalışma ortamı hazırlanıyor…" with title "KSI Local Studio Kur"' >/dev/null
+fi
+
+# First copy and validate both replacements. The currently working installation
+# remains untouched until every payload check has passed.
+/usr/bin/ditto "$SOURCE_RUNTIME" "$STAGED_RUNTIME"
+/usr/bin/ditto "$SOURCE_APP" "$STAGED_APP"
+
+if [[ ! -x "$STAGED_RUNTIME/venv/bin/python" || ! -d "$STAGED_RUNTIME/src/ksi_local" ]]; then
+  fail "Paket içindeki yerel Python çalışma ortamı doğrulanamadı."
+fi
+if [[ "$(PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$STAGED_RUNTIME/src" "$STAGED_RUNTIME/venv/bin/python" -c 'import platform, ksi_local; print(platform.machine() + " " + ksi_local.__version__)')" != "arm64 2.0.0.dev0" ]]; then
+  fail "KSI Local Studio çalışma ortamının sürümü veya ARM64 mimarisi doğrulanamadı."
+fi
+/usr/bin/codesign --verify --deep --strict "$STAGED_APP"
+if [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$STAGED_APP/Contents/Info.plist")" != "2.0.0.dev0" ]]; then
+  fail "Uygulama paketi sürümü doğrulanamadı."
+fi
+if ! acquire_install_lock; then
+  fail "KSI Local Studio açık. Kurulum için uygulamayı kapatıp yeniden deneyin."
+fi
+
+# Create a compact, verified pre-update rollback point. User media, completed
+# outputs and model weights remain in place and are never copied or removed.
+if [[ -x "$TARGET_RUNTIME/venv/bin/python" && -d "$TARGET_RUNTIME/src/ksi_local" && -d "$TARGET_APP" ]]; then
+  ROLLBACK_BACKUP="$BACKUP_ROOT/pre-update-$STAMP"
+  PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$TARGET_RUNTIME/src" "$TARGET_RUNTIME/venv/bin/python" - \
+    "$ROLLBACK_BACKUP" "$TARGET_APP" "$SUPPORT_ROOT" <<'PY'
+import sys
+from ksi_local import __version__
+from ksi_local.release_backup import create_release_backup, verify_release_backup
+
+target = create_release_backup(
+    destination=sys.argv[1],
+    app_path=sys.argv[2],
+    state_root=sys.argv[3],
+    release_version=__version__,
+)
+valid, failures = verify_release_backup(target)
+if not valid:
+    raise SystemExit("; ".join(failures))
+PY
+fi
+
+RUNTIME_SWAPPED=true
+if [[ -e "$TARGET_RUNTIME" ]]; then
+  RUNTIME_BACKUP="$BACKUP_ROOT/runtime-$STAMP"
+  /bin/mv "$TARGET_RUNTIME" "$RUNTIME_BACKUP"
+fi
+/bin/mv "$STAGED_RUNTIME" "$TARGET_RUNTIME"
+
+APP_SWAPPED=true
+if [[ -e "$TARGET_APP" ]]; then
+  APP_BACKUP="$BACKUP_ROOT/KSI Local Studio-$STAMP.app"
+  /bin/mv "$TARGET_APP" "$APP_BACKUP"
+fi
+/bin/mv "$STAGED_APP" "$TARGET_APP"
+
+/usr/bin/codesign --verify --deep --strict "$TARGET_APP"
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$TARGET_RUNTIME/src" "$TARGET_RUNTIME/venv/bin/python" -c 'import ksi_local; assert ksi_local.__version__ == "2.0.0.dev0"'
+{
+  print "KSI Local Studio 2.0.0.dev0"
+  print "Kurulum: $STAMP"
+  print "Uygulama: $TARGET_APP"
+  print "Runtime: $TARGET_RUNTIME"
+  [[ -n "$ROLLBACK_BACKUP" ]] && print "Geri dönüş yedeği: $ROLLBACK_BACKUP"
+} >"$SUPPORT_ROOT/install-receipt.txt"
+/bin/chmod 600 "$SUPPORT_ROOT/install-receipt.txt"
+
+release_install_lock
+release_checksum_list
+trap - EXIT HUP INT TERM
+if [[ "${KSI_INSTALL_NO_LAUNCH:-0}" != "1" ]]; then
+  /usr/bin/osascript -e 'display alert "KSI Local Studio hazır" message "Uygulama Masaüstüne kuruldu. Büyük yapay zekâ modelleri harici SSD üzerinde kaldı." buttons {"KSI Local Studio’yi Aç"} default button 1' >/dev/null
+  /usr/bin/open "$TARGET_APP"
+fi
+print "KSI Local Studio kuruldu: $TARGET_APP"
