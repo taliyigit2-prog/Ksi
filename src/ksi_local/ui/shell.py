@@ -6,11 +6,12 @@ from pathlib import Path
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
-    QButtonGroup, QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget,
+    QButtonGroup, QFrame, QHBoxLayout, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget,
 )
 
 from ksi_local import __version__
-from ksi_local.ui.components import Card
+from ksi_local.ui.components import Card, ModelRow
+from ksi_local.ui.strings import text as studio_text
 
 
 LABELS = {
@@ -95,7 +96,26 @@ class StudioShell:
             button.clicked.connect(lambda checked, selected=index: window.tabs.setCurrentIndex(selected))
             self.group.addButton(button, index)
             self.buttons.append(button)
-        for index in (0, 5, 6, 1, 2):
+        from ksi_local.ui.workflow_page import WorkflowPage
+        from ksi_local.ui.library_page import LibraryPage
+
+        window.workflow_page = WorkflowPage(window)
+        window.library_page = LibraryPage(window)
+        window.tabs.addTab(window.library_page, "Library")
+        self.routes = {"download": 0, "video": 8, "document": 9, "images": 6,
+                       "queue": 1, "history": 2, "library": 7, "help": 4, "settings": 3}
+        for index, route in ((7, "library"), (8, "video"), (9, "document")):
+            button = QPushButton()
+            button.setProperty("nav", True)
+            button.setCheckable(True)
+            button.clicked.connect(lambda checked, selected=route: self._navigate(selected))
+            self.group.addButton(button, index)
+            self.buttons.append(button)
+        self.buttons[0].clicked.disconnect()
+        self.buttons[0].clicked.connect(lambda checked: self._navigate("download"))
+        for route, index in self.routes.items():
+            self.buttons[index].setObjectName(f"nav-{route}")
+        for index in (0, 8, 9, 6, 1, 2, 7):
             navigation.addWidget(self.buttons[index])
         navigation.addStretch(1)
         navigation.addWidget(self.buttons[4])
@@ -103,7 +123,11 @@ class StudioShell:
         window.tabs.currentChanged.connect(self._selected)
         self._selected(window.tabs.currentIndex())
         row.addWidget(self.sidebar)
-        row.addWidget(window.tabs, 1)
+        content = QScrollArea()
+        content.setWidgetResizable(True)
+        content.setFrameShape(QFrame.Shape.NoFrame)
+        content.setWidget(window.tabs)
+        row.addWidget(content, 1)
         root_layout.addWidget(container, 1)
         self.container = container
         for index in range(window.tabs.count()):
@@ -112,11 +136,28 @@ class StudioShell:
                 page_layout.setContentsMargins(30, 28, 30, 36)
                 page_layout.setSpacing(18)
         self._settings()
+        from ksi_local.ui.model_controller import ModelController
+
+        window.model_controller = ModelController(window)
+        window.model_controller.inventoryReady.connect(self._models_ready)
+        window.model_controller.failed.connect(self.model_status.setText)
+        window.tabs.currentChanged.connect(lambda index: window.model_controller.refresh() if index == 3 else None)
         self.retranslate()
 
     def _selected(self, index):
+        if index == 0:
+            index = self.routes.get(self.window.workflow_page.mode, 8)
+        elif index == 5:
+            index = 8
         if 0 <= index < len(self.buttons):
             self.buttons[index].setChecked(True)
+
+    def _navigate(self, route):
+        if route in ("download", "video", "document"):
+            self.window.workflow_page.select(route)
+        else:
+            self.window.tabs.setCurrentIndex(self.routes[route])
+        self.buttons[self.routes[route]].setChecked(True)
 
     def _settings(self):
         window = self.window
@@ -169,12 +210,16 @@ class StudioShell:
 
     def retranslate(self):
         labels = LABELS.get(self.window.preferences.ui_language, LABELS["en"])
-        glyphs = ("◈", "≡", "◷", "⚙", "?")
-        for index, button in enumerate(self.buttons):
-            if index >= len(glyphs):
-                continue
-            button.setText(f"{glyphs[index]}   {labels[index]}")
-            button.setAccessibleName(labels[index])
+        glyphs = {"download": "↓", "video": "▷", "document": "▤", "images": "◇",
+                  "queue": "≡", "history": "◷", "library": "▦", "help": "?", "settings": "⚙"}
+        for route, index in self.routes.items():
+            label = studio_text(route, self.window.preferences.ui_language)
+            self.buttons[index].setText(f"{glyphs[route]}   {label}")
+            self.buttons[index].setAccessibleName(label)
+        self.window.workflow_page.retranslate()
+        self.window.library_page.retranslate()
+        self.window.media_tools_page.retranslate()
+        self.window.image_tools_page.retranslate()
         self.window.system_heading.setText(labels[3])
         self.window.ui_language_label.setText(labels[5])
         self.window.theme_label.setText(labels[6])
@@ -183,3 +228,28 @@ class StudioShell:
         self.description.setText(labels[9])
         self.advanced.setText(labels[10])
         self.model_status.setText(self.window._t("system.waiting"))
+
+    def _models_ready(self, rows):
+        while self.model_list.count():
+            item = self.model_list.takeAt(0)
+            if item.widget() and item.widget() is not self.model_status:
+                item.widget().deleteLater()
+        language = self.window.preferences.ui_language
+        words = {
+            "tr": ("Kurulu", "Doğrulandı", "Eksik", "Bozuk", "Doğrula", "Paketten kur"),
+            "en": ("Installed", "Verified", "Missing", "Corrupt", "Verify", "Install from bundle"),
+            "ru": ("Установлено", "Проверено", "Отсутствует", "Повреждено", "Проверить", "Установить из пакета"),
+            "es": ("Instalado", "Verificado", "Falta", "Dañado", "Verificar", "Instalar del paquete"),
+            "de": ("Installiert", "Geprüft", "Fehlt", "Beschädigt", "Prüfen", "Aus Paket installieren"),
+            "fr": ("Installé", "Vérifié", "Absent", "Corrompu", "Vérifier", "Installer du paquet"),
+            "it": ("Installato", "Verificato", "Mancante", "Danneggiato", "Verifica", "Installa dal pacchetto"),
+            "zh": ("已安装", "已验证", "缺失", "损坏", "验证", "从安装包安装"),
+        }.get(language, ("Installed", "Verified", "Missing", "Corrupt", "Verify", "Install from bundle"))
+        indices = {"installed": 0, "verified": 1, "missing": 2, "corrupt": 3}
+        for model in rows:
+            row = ModelRow(model.identifier, model.title, model.description)
+            row.set_status(badge=words[indices[model.state]], size=self.window._format_model_bytes(model.total_bytes), action=words[5] if model.state == "missing" else words[4])
+            row.actionRequested.connect(lambda identifier, state=model.state: self.window.model_controller.refresh(verify=True, install=state == "missing"))
+            self.model_list.addWidget(row)
+        self.model_status.setVisible(not rows)
+        self.model_list.addWidget(self.model_status)

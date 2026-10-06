@@ -1763,7 +1763,38 @@ def build_parser() -> argparse.ArgumentParser:
     mux_subtitle.add_argument("--ffprobe", required=True)
     mux_subtitle.set_defaults(handler=_mux_subtitle)
 
+    local_media = subparsers.add_parser("media-tools", help="Yerel dönüştürme, kesme ve altyazı araçları")
+    local_media.add_argument("sources", nargs="+")
+    local_media.add_argument("--operation", choices=("convert", "trim", "join", "remux", "burn_subtitle"), default="convert")
+    local_media.add_argument("--format", choices=("mp4", "mkv", "mov", "webm", "mp3", "wav", "flac", "aac", "gif"), default="mp4")
+    local_media.add_argument("--profile", choices=("share", "small", "archive"), default="share")
+    local_media.add_argument("--start", type=float, default=0)
+    local_media.add_argument("--end", type=float)
+    local_media.add_argument("--lossless", action="store_true")
+    local_media.add_argument("--subtitle")
+    local_media.set_defaults(handler=_local_media_tool)
+
     return parser
+
+
+def _local_media_tool(args: argparse.Namespace) -> int:
+    from ksi_local.core_service import CoreService
+
+    workspace = resolve_workspace()
+    sources = [str(Path(source).expanduser().resolve()) for source in args.sources]
+    destination = workspace.outputs / (Path(sources[0]).stem + "-ksi." + args.format)
+    roots = tuple(Path(source).parent for source in sources)
+    if args.subtitle:
+        roots += (Path(args.subtitle).expanduser().resolve().parent,)
+    service = CoreService(workspace=workspace, allowed_roots=roots)
+    job = service.submit_media_tool({
+        "sources": sources, "destination": str(destination), "operation": args.operation,
+        "profile": args.profile, "start": args.start, "end": args.end,
+        "lossless": args.lossless, "subtitle": args.subtitle,
+    }, confirm=True)
+    result = service.execute_tool_job(job["id"], confirm=True)
+    print(json.dumps(result, ensure_ascii=False))
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:

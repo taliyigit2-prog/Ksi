@@ -13,6 +13,7 @@ from ksi_local.atomic_files import atomic_write_json
 from ksi_local.bundle_runtime import digest_file
 from ksi_local.network_policy import local_only_socket_guard
 from ksi_local.privacy import redact_sensitive_text
+from ksi_local.resource_governor import single_model_lock
 
 
 def _verified_model(value: str, expected: str) -> Path:
@@ -139,7 +140,7 @@ def main() -> int:
     request = json.loads(request_path.read_text(encoding="utf-8"))
     logging.getLogger().setLevel(logging.ERROR)
     try:
-        with local_only_socket_guard():
+        with single_model_lock(), local_only_socket_guard():
             if request.get("operation") == "remove_background":
                 result = remove_background(request)
             elif request.get("operation") == "translate":

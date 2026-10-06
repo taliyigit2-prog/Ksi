@@ -10,6 +10,7 @@ from typing import Any
 
 from ksi_local.ollama_client import OllamaClient
 from ksi_local.subtitles import Cue
+from ksi_local.resource_governor import serialized_model
 
 
 ALLOWED_CATEGORIES = {"ana_konu", "önemli_fikir", "sonuç", "eylem"}
@@ -518,6 +519,7 @@ def _render_summary(
     return "\n".join(lines), traceability, quality
 
 
+@serialized_model
 def summarize_cues(
     cues: list[Cue],
     *,

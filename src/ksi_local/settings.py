@@ -38,7 +38,7 @@ class WorkspacePaths:
     deno: Path
 
 
-def resolve_workspace() -> WorkspacePaths:
+def resolve_workspace(*, initialize: bool = False) -> WorkspacePaths:
     selection = load_selection()
     if selection is not None:
         if selection.workspace_location is WorkspaceLocation.EXTERNAL:
@@ -54,6 +54,8 @@ def resolve_workspace() -> WorkspacePaths:
                 raise RuntimeError("Seçili harici çalışma alanı bağlı ve yazılabilir değil.")
         return _selected_paths(Path(selection.workspace_root), selection.workspace_id)
     if not identity_file().exists() and not os.environ.get("KSI_IDENTITY_FILE"):
+        if not initialize:
+            raise RuntimeError("KSI çalışma alanı henüz kurulmadı; uygulamayı açarak ilk kurulumu tamamlayın.")
         selection = new_internal_selection()
         root = Path(selection.workspace_root)
         if root.is_symlink() or (root.exists() and any(root.iterdir())):

@@ -17,6 +17,8 @@ from ksi_local.job_store import JobRecord, JobStatus, JobStore
 from ksi_local.preflight import inspect_source
 from ksi_local.privacy import redact_sensitive_text
 from ksi_local.settings import WorkspacePaths
+from ksi_local.media_tools import MediaRequest
+from ksi_local.tool_jobs import ToolJobService
 
 
 def _record(job: JobRecord) -> dict[str, Any]:
@@ -119,6 +121,46 @@ class CoreService:
         payload = _record(job)
         payload["stages"] = [asdict(item) for item in self.store.list_stages(job_id)]
         return payload
+
+    def submit_media_tool(self, request: dict[str, Any], *, confirm: bool) -> dict[str, Any]:
+        if not confirm or self.workspace is None:
+            raise PermissionError("Yerel araç işi için açık onay ve çalışma alanı gerekir.")
+        sources = request.get("sources")
+        if not isinstance(sources, (tuple, list)) or not sources:
+            raise ValueError("Medya girdisi listesi geçersiz.")
+        paths = tuple(str(self._allowed_path(source)) for source in sources)
+        output = self._allowed_path(request["destination"], must_exist=False)
+        data = dict(request, sources=paths, destination=str(output))
+        if data.get("subtitle"):
+            data["subtitle"] = str(self._allowed_path(data["subtitle"]))
+        identifier = ToolJobService(self.workspace, self.store).submit_media(MediaRequest(**data))
+        return self.status(identifier)
+
+    def execute_tool_job(self, job_id: str, *, confirm: bool, cancel=None, on_progress=None) -> dict[str, Any]:
+        if not confirm or self.workspace is None:
+            raise PermissionError("Yerel araç işlemi için açık onay ve çalışma alanı gerekir.")
+        import json
+
+        record = self.store.get_job(job_id)
+        directory = self._allowed_path(record.job_directory)
+        manifest = self._allowed_path(directory / "tool-request.json")
+        if manifest.stat().st_size > 2 * 1024**2:
+            raise ValueError("Araç iş tanımı boyut sınırını aşıyor.")
+        data = json.loads(manifest.read_text(encoding="utf-8"))["request"]
+        for source in data.get("sources", [data.get("source")]):
+            self._allowed_path(source)
+        if data.get("subtitle"):
+            self._allowed_path(data["subtitle"])
+        return ToolJobService(self.workspace, self.store).execute(job_id, cancel=cancel, on_progress=on_progress)
+
+    def submit_image_tool(self, request: dict[str, Any], *, confirm: bool) -> dict[str, Any]:
+        if not confirm or self.workspace is None:
+            raise PermissionError("Yerel görsel işi için açık onay ve çalışma alanı gerekir.")
+        source = self._allowed_path(request["source"])
+        destination = self._allowed_path(request["destination"], must_exist=False)
+        data = dict(request, source=str(source), destination=str(destination))
+        identifier = ToolJobService(self.workspace, self.store).submit_image(data)
+        return self.status(identifier)
 
     def stop(self, job_id: str, *, confirm: bool) -> dict[str, Any]:
         if not confirm:

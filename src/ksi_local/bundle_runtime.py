@@ -92,6 +92,8 @@ class OfflinePayload:
 
     @classmethod
     def load(cls, root: Path, *, architecture: str | None = None) -> OfflinePayload:
+        if root.is_symlink():
+            raise ValueError("Paket kökü sembolik bağlantı olamaz.")
         base = root.resolve()
         manifest = safe_member(base, "offline-manifest.json")
         if manifest.stat().st_size > MAX_MANIFEST_BYTES:
@@ -158,7 +160,11 @@ class OfflinePayload:
         # The first use still verifies hashes; changes to the manifest or any
         # installed file's size/mtime invalidate the in-process shortcut.
         with _MODEL_INSTALL_LOCK:
+            if destination.is_symlink():
+                raise ValueError("Model hedefi sembolik bağlantı olamaz.")
             entries = [entry for entry in self.files if entry.role == "model"]
+            if any(not entry.path.startswith("models/") for entry in entries):
+                raise ValueError("Model kaydı models dizini içinde olmalıdır.")
             key = (str(self.root), str(destination.absolute()))
 
             def stamp():

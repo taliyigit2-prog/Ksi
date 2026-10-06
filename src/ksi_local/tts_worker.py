@@ -30,6 +30,7 @@ from ksi_local.dubbing import (
 )
 from ksi_local.media import sha256_file
 from ksi_local.privacy import redact_sensitive_text
+from ksi_local.resource_governor import serialized_model
 from ksi_local.subtitles import Cue, read_srt
 from ksi_local.worker_protocol import WorkerEvent, encode_worker_event
 
@@ -343,6 +344,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+@serialized_model
 def main(argv: list[str] | None = None) -> int:
     signal.signal(signal.SIGTERM, _handle_termination)
     args = build_parser().parse_args(argv)

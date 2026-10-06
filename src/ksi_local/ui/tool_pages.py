@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
 
 from ksi_local.media_tools import MediaRequest
 from ksi_local.ui.components import Card, DropZone
+from ksi_local.ui.strings import text
 
 
 class ToolPage(QWidget):
@@ -39,6 +40,8 @@ class ToolPage(QWidget):
         self.body.addWidget(self.file_list)
         card = Card()
         form = QFormLayout()
+        self.form = form
+        self.form_keys = []
         self.operation = QComboBox()
         choices = (("Biçim dönüştür", "convert_image"), ("PNG kayıpsız optimize et", "optimize_png"), ("AI arka planı kaldır", "remove_background")) if images else (("Dönüştür / sıkıştır", "convert"), ("Kes", "trim"), ("Parçaları birleştir", "join"), ("Kayıpsız kap değiştir", "remux"), ("Kalıcı altyazı ekle", "burn_subtitle"))
         for title, data in choices:
@@ -73,6 +76,7 @@ class ToolPage(QWidget):
             form.addRow("Kesme modu", self.lossless)
             form.addRow("Altyazı", self.subtitle)
         form.addRow("Gizlilik", self.strip)
+        self.form_keys = ["operation", "format"] + ([] if images else ["profile", "start_time", "end_time", "trim_mode", "subtitle"]) + ["privacy"]
         card.body.addLayout(form)
         card.body.addWidget(self.precision)
         self.body.addWidget(card)
@@ -106,12 +110,42 @@ class ToolPage(QWidget):
         self._operation_changed()
         self.start_button.setEnabled(False)
         self.cancel_button.setEnabled(False)
+        self.retranslate()
+
+    def _text(self, key):
+        return text(key, self.controller.window.preferences.ui_language)
+
+    def retranslate(self):
+        self.heading.setText(self._text("images" if self.images else "video"))
+        self.intro.setText(self._text("tool_local"))
+        self.drop.caption.setText(self._text("drop"))
+        self.drop.choose.setText(self._text("choose"))
+        self.file_list.setAccessibleName(self._text("selected_files"))
+        for row, key in enumerate(self.form_keys):
+            self.form.itemAt(row, QFormLayout.ItemRole.LabelRole).widget().setText(self._text(key))
+        for combo in (self.operation, self.profile):
+            blocked = combo.blockSignals(True)
+            for index in range(combo.count()):
+                combo.setItemText(index, self._text(combo.itemData(index)))
+            combo.blockSignals(blocked)
+        self.end_time.setSpecialValueText(self._text("end_file"))
+        self.lossless.setText(self._text("lossless"))
+        self.strip.setText(self._text("strip"))
+        if not self.subtitle_path:
+            self.subtitle.setText(self._text("subtitle"))
+        self.start_button.setText(self._text("tool_start"))
+        self.cancel_button.setText(self._text("stop"))
+        self.open_button.setText(self._text("show_output"))
+        self._operation_changed()
 
     def _select(self, files):
         if self.controller.busy:
             return
         valid = [str(Path(path).expanduser().resolve()) for path in files if Path(path).is_file() and not Path(path).is_symlink()]
-        self.sources = list(dict.fromkeys(valid))[:100]
+        if len(valid) != len(files) or len(valid) > 100:
+            QMessageBox.warning(self, self._text("failed_start"), self._text("selected_files") + ": 1–100")
+            return
+        self.sources = list(dict.fromkeys(valid))
         self.file_list.clear()
         self.file_list.addItems([Path(path).name for path in self.sources])
         self.start_button.setEnabled(bool(self.sources))
@@ -129,10 +163,10 @@ class ToolPage(QWidget):
             self.format.setEnabled(False)
         else:
             self.format.setEnabled(True)
-        self.precision.setText("Kayıpsız kesme anahtar karelere bağlıdır. Hassas kesme yeniden kodlar." if operation == "trim" else "Yeni çıktı iş klasörüne kaydedilir; kaynak dosyanın üzerine yazılmaz.")
+        self.precision.setText(self._text("precision" if operation == "trim" else "output_hint"))
 
     def _choose_subtitle(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Altyazı seç", "", "SRT (*.srt)")
+        path, _ = QFileDialog.getOpenFileName(self, self._text("subtitle"), "", "SRT (*.srt)")
         if path:
             self.subtitle_path = path
             self.subtitle.setText(Path(path).name)
@@ -163,7 +197,7 @@ class ToolPage(QWidget):
             self.cancel_button.setEnabled(True)
             self.progress.setValue(0)
         except (OSError, RuntimeError, ValueError) as error:
-            QMessageBox.warning(self, "İşlem başlatılamadı", str(error))
+            QMessageBox.warning(self, self._text("failed_start"), str(error))
 
     def _result(self, result):
         if not self._active():
@@ -171,7 +205,7 @@ class ToolPage(QWidget):
         self.last_output = result.get("output")
         self.open_button.setEnabled(bool(self.last_output))
         warnings = "\n".join(result.get("warnings", ()))
-        self.status.setText("Tamamlandı." + ("\n" + warnings if warnings else ""))
+        self.status.setText(self._text("completed") + ("\n" + warnings if warnings else ""))
 
     def _finished(self):
         self.start_button.setEnabled(bool(self.sources))

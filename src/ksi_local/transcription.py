@@ -10,6 +10,7 @@ from ksi_local.languages import AUTO_LANGUAGE, SUPPORTED_SOURCE_LANGUAGES
 from ksi_local.media import probe_local_media
 from ksi_local.subtitles import Cue, write_srt
 from ksi_local.bundle_runtime import host_architecture
+from ksi_local.resource_governor import serialized_model
 
 
 DEFAULT_WHISPER_MODEL = "mlx-community/whisper-large-v3-turbo-8bit"
@@ -76,6 +77,7 @@ def filter_speech_segments(
     return kept, dropped
 
 
+@serialized_model
 def transcribe_media(
     input_path: str | Path,
     output_srt: str | Path,

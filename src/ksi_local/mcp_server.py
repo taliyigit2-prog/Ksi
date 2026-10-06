@@ -21,6 +21,9 @@ TOOLS: tuple[dict[str, Any], ...] = (
     {"name": "ksi_job_resume", "description": "Queue a resumable stopped or failed job.", "inputSchema": {"type": "object", "properties": {"job_id": {"type": "string"}}, "required": ["job_id"], "additionalProperties": False}, "annotations": {"readOnlyHint": False, "destructiveHint": False}},
     {"name": "ksi_results_list", "description": "List preserved artifacts inside a job directory.", "inputSchema": {"type": "object", "properties": {"job_id": {"type": "string"}}, "required": ["job_id"], "additionalProperties": False}, "annotations": {"readOnlyHint": True, "destructiveHint": False}},
     {"name": "ksi_export", "description": "Copy verified job artifacts to an allowed local destination.", "inputSchema": {"type": "object", "properties": {"job_id": {"type": "string"}, "destination_directory": {"type": "string"}, "folder_name": {"type": "string"}, "confirm": {"type": "boolean"}}, "required": ["job_id", "destination_directory", "confirm"], "additionalProperties": False}, "annotations": {"readOnlyHint": False, "destructiveHint": False}},
+    {"name": "ksi_media_tool_submit", "description": "Queue an explicitly approved local media operation; preserves originals.", "inputSchema": {"type": "object", "properties": {"request": {"type": "object"}, "confirm": {"type": "boolean"}}, "required": ["request", "confirm"], "additionalProperties": False}, "annotations": {"readOnlyHint": False, "destructiveHint": False}},
+    {"name": "ksi_image_tool_submit", "description": "Queue an explicitly approved local image operation; no cloud uploads.", "inputSchema": {"type": "object", "properties": {"request": {"type": "object"}, "confirm": {"type": "boolean"}}, "required": ["request", "confirm"], "additionalProperties": False}, "annotations": {"readOnlyHint": False, "destructiveHint": False}},
+    {"name": "ksi_tool_job_execute", "description": "Execute an approved queued local tools job within allowed file roots.", "inputSchema": {"type": "object", "properties": {"job_id": {"type": "string"}, "confirm": {"type": "boolean"}}, "required": ["job_id", "confirm"], "additionalProperties": False}, "annotations": {"readOnlyHint": False, "destructiveHint": False}},
 )
 
 
@@ -52,6 +55,12 @@ def call_tool(service: CoreService, name: str, arguments: dict[str, Any]) -> Any
         return service.results(**arguments)
     if name == "ksi_export":
         return service.export(**arguments)
+    if name == "ksi_media_tool_submit":
+        return service.submit_media_tool(**arguments)
+    if name == "ksi_image_tool_submit":
+        return service.submit_image_tool(**arguments)
+    if name == "ksi_tool_job_execute":
+        return service.execute_tool_job(**arguments)
     raise KeyError("Bilinmeyen MCP aracı.")
 
 

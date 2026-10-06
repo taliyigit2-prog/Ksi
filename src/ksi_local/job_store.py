@@ -387,6 +387,18 @@ class JobStore:
             )
         return self.get_job(job_id)
 
+    def claim_queued_job(self, job_id: str, *, stage: str) -> JobRecord:
+        """Atomically reserve a queued job for one GUI/CLI/MCP executor."""
+        with self._connect() as connection:
+            cursor = connection.execute(
+                """UPDATE jobs SET status = ?, current_stage = ?, last_error = NULL,
+                updated_at = ? WHERE id = ? AND status = ?""",
+                (JobStatus.RUNNING, stage, _now(), job_id, JobStatus.QUEUED),
+            )
+            if cursor.rowcount != 1:
+                raise ValueError("İş başka bir istemci tarafından başlatıldı veya artık sırada değil.")
+        return self.get_job(job_id)
+
     def ensure_stages(self, job_id: str, names: Iterable[str]) -> None:
         with self._connect() as connection:
             row = connection.execute(

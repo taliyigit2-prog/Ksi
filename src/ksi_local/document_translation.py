@@ -21,6 +21,7 @@ from ksi_local.glossary import Glossary, empty_glossary, load_glossary
 from ksi_local.language_detection import detect_document_language
 from ksi_local.languages import SUPPORTED_SOURCE_LANGUAGES
 from ksi_local.ollama_client import OllamaClient
+from ksi_local.resource_governor import serialized_model
 
 
 SCHEMA_VERSION = 1
@@ -1000,6 +1001,7 @@ def _readable_translation(records: list[dict[str, object]]) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+@serialized_model
 def translate_document(
     canonical_path: str | Path,
     output_directory: str | Path,

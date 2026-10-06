@@ -14,6 +14,7 @@ from typing import Callable
 
 from ksi_local.network_policy import local_worker_environment
 from ksi_local.privacy import redact_sensitive_text
+from ksi_local.resource_governor import active_model_descriptor
 
 
 class OperationCancelled(RuntimeError):
@@ -49,10 +50,12 @@ def run_engine(
         raise ValueError("Motor süre sınırı geçersiz.")
     if cancel is not None and cancel.is_set():
         raise OperationCancelled("İşlem iptal edildi.")
+    descriptor = active_model_descriptor()
     process = subprocess.Popen(
         argv, cwd=cwd, env=local_worker_environment(environment),
         stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         start_new_session=True, shell=False,
+        pass_fds=(descriptor,) if descriptor is not None else (),
     )
     lines: deque[str] = deque(maxlen=80)
     buffer = b""

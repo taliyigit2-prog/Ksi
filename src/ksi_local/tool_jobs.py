@@ -21,6 +21,49 @@ from ksi_local.media_tools import MediaRequest, _validate, process_media
 from ksi_local.settings import WorkspacePaths
 
 
+class JobCancellation:
+    def __init__(self, store: JobStore, identifier: str, event: threading.Event | None):
+        self.store, self.identifier, self.event = store, identifier, event
+
+    def is_set(self):
+        return bool((self.event is not None and self.event.is_set()) or self.store.get_job(self.identifier).status in {JobStatus.CANCELLED, JobStatus.PAUSED, JobStatus.WAITING_FOR_SSD})
+
+
+def validate_image_request(request: dict) -> None:
+    if not isinstance(request, dict):
+        raise ValueError("Görsel istek tanımı geçersiz.")
+    operation = request.get("operation")
+    if operation not in {"optimize_png", "convert_image", "remove_background"}:
+        raise ValueError("Görsel işlemi desteklenmiyor.")
+    allowed_keys = {"operation", "source", "destination", "width", "quality", "strip_metadata"}
+    if set(request) - allowed_keys:
+        raise ValueError("Görsel istek seçenekleri desteklenmiyor.")
+    if not all(isinstance(request.get(key), str) and request[key] for key in ("source", "destination")):
+        raise ValueError("Görsel dosya yolları geçersiz.")
+    path = Path(request["source"]).expanduser()
+    output = Path(request["destination"]).expanduser()
+    if path.is_symlink() or not path.is_file():
+        raise ValueError("Görsel girdisi normal bir dosya olmalıdır.")
+    if not output.is_absolute() or output.is_symlink() or output.exists() or output.resolve() == path.resolve():
+        raise ValueError("Görsel çıktısı yeni ve mutlak bir dosya yolu olmalıdır.")
+    if any(char in str(output) for char in ("\x00", "\r", "\n")):
+        raise ValueError("Görsel çıktı adında denetim karakteri olamaz.")
+    allowed = {".png", ".jpg", ".jpeg", ".webp", ".heic", ".avif", ".gif", ".tif", ".tiff"}
+    if path.suffix.lower() not in allowed or output.suffix.lower() not in allowed:
+        raise ValueError("Görsel biçimi desteklenmiyor.")
+    if operation in {"optimize_png", "remove_background"} and output.suffix.lower() != ".png":
+        raise ValueError("Bu görsel işlemi PNG çıktı gerektirir.")
+    if operation == "optimize_png" and path.suffix.lower() != ".png":
+        raise ValueError("PNG optimizasyonu PNG girdi gerektirir.")
+    quality, width = request.get("quality", 85), request.get("width")
+    if type(quality) is not int or not 1 <= quality <= 100:
+        raise ValueError("Kalite 1–100 arasında tam sayı olmalıdır.")
+    if width is not None and (type(width) is not int or not 1 <= width <= 6000):
+        raise ValueError("Genişlik 1–6000 arasında tam sayı olmalıdır.")
+    if type(request.get("strip_metadata", False)) is not bool:
+        raise ValueError("Metadata seçimi geçersiz.")
+
+
 class ToolJobService:
     def __init__(self, workspace: WorkspacePaths, store: JobStore):
         self.workspace = workspace
@@ -44,18 +87,9 @@ class ToolJobService:
         return self._new_job(request.sources[0], JobKind.MEDIA, request.operation, asdict(request))
 
     def submit_image(self, request: dict) -> str:
-        operation = request.get("operation")
-        if operation not in {"optimize_png", "convert_image", "remove_background"}:
-            raise ValueError("Görsel işlemi desteklenmiyor.")
-        path = Path(str(request.get("source", ""))).expanduser()
-        if path.is_symlink() or not path.is_file():
-            raise ValueError("Görsel girdisi normal bir dosya olmalıdır.")
-        allowed_keys = {"operation", "source", "destination", "width", "quality", "strip_metadata"}
-        if set(request) - allowed_keys:
-            raise ValueError("Görsel istek seçenekleri desteklenmiyor.")
-        if Path(str(request.get("destination", ""))).name in {"", ".", ".."}:
-            raise ValueError("Görsel çıktı adı geçersiz.")
-        return self._new_job(str(path.resolve()), JobKind.IMAGE, operation, request)
+        validate_image_request(request)
+        normalized = dict(request, source=str(Path(request["source"]).expanduser().resolve()))
+        return self._new_job(normalized["source"], JobKind.IMAGE, request["operation"], normalized)
 
     def execute(
         self, identifier: str, *, cancel: threading.Event | None = None,
@@ -72,6 +106,8 @@ class ToolJobService:
         if payload.get("schema_version") != 1 or payload.get("kind") != record.job_kind.value:
             raise ValueError("Araç iş tanımı geçersiz.")
         request = payload["request"]
+        if not isinstance(request, dict) or payload.get("operation") != request.get("operation"):
+            raise ValueError("Araç işlem tanımı tutarsız.")
         # Results belong to the job and are exportable through the shared client
         # boundary. A persisted request cannot redirect publication elsewhere.
         basename = Path(request["destination"]).name
@@ -80,10 +116,15 @@ class ToolJobService:
         output = directory / "outputs" / basename
         if output.parent.is_symlink() or output.exists() or output.is_symlink():
             raise FileExistsError("Mevcut araç çıktısına yazılmaz.")
+        if record.job_kind is JobKind.IMAGE:
+            validate_image_request(dict(request, destination=str(output)))
+        else:
+            _validate(MediaRequest(**dict(request, sources=tuple(request["sources"]), destination=str(output))))
         if record.status is not JobStatus.QUEUED:
             self.store.retry_job(identifier)
-        self.store.transition_job(identifier, JobStatus.RUNNING, current_stage="local_tools")
+        self.store.claim_queued_job(identifier, stage="local_tools")
         self.store.set_stage(identifier, "local_tools", StageStatus.RUNNING)
+        cancel = JobCancellation(self.store, identifier, cancel)
         try:
             if record.job_kind is JobKind.MEDIA:
                 media = MediaRequest(**dict(request, sources=tuple(request["sources"])))
@@ -101,7 +142,9 @@ class ToolJobService:
         except Exception as error:
             cancelled = isinstance(error, OperationCancelled)
             self.store.set_stage(identifier, "local_tools", StageStatus.CANCELLED if cancelled else StageStatus.FAILED, error=str(error))
-            self.store.transition_job(identifier, JobStatus.CANCELLED if cancelled else JobStatus.FAILED, error=str(error))
+            # A second client may already have paused/cancelled the persisted job.
+            if self.store.get_job(identifier).status is JobStatus.RUNNING:
+                self.store.transition_job(identifier, JobStatus.CANCELLED if cancelled else JobStatus.FAILED, error=str(error))
             raise
 
     def _background(self, source: str, output: Path, *, cancel: threading.Event | None) -> dict:

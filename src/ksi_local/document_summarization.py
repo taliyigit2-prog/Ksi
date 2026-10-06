@@ -21,6 +21,7 @@ from pypdf import PdfReader
 from ksi_local.atomic_files import atomic_write_bytes, atomic_write_json, atomic_write_text
 from ksi_local.document_translation import _canonical_blocks
 from ksi_local.ollama_client import OllamaClient
+from ksi_local.resource_governor import serialized_model
 
 
 SCHEMA_VERSION = 1
@@ -979,6 +980,7 @@ def _checkpoint_records(
     return completed, claims
 
 
+@serialized_model
 def summarize_document(
     canonical_path: str | Path,
     output_directory: str | Path,

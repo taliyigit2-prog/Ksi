@@ -1914,6 +1914,10 @@ class MainWindow(QMainWindow):
     def _t(self, key: str, **values: object) -> str:
         return ui_text(key, self.preferences.ui_language, **values)
 
+    @staticmethod
+    def _format_model_bytes(value: int) -> str:
+        return _human_bytes(value)
+
     def _actionable_message(self, message: str, action: str) -> str:
         return _actionable_message(
             message,
@@ -2251,7 +2255,7 @@ class MainWindow(QMainWindow):
 
     def _resolve_workspace_in_background(self, recover_interrupted: bool) -> None:
         try:
-            resolved = resolve_workspace()
+            resolved = resolve_workspace(initialize=True)
         except (OSError, RuntimeError, ValueError) as error:
             resolved = None
             resolution_error: RuntimeError | None = RuntimeError(
@@ -2348,6 +2352,8 @@ class MainWindow(QMainWindow):
         was_missing = self.workspace is None
         self.workspace = resolved
         self.core.set_workspace(resolved)
+        if recover_interrupted or was_missing:
+            self.model_controller.refresh()
         if recover_interrupted:
             recovered = self.store.recover_interrupted_jobs(workspace_available=True)
             if recovered:
@@ -5556,8 +5562,7 @@ class MainWindow(QMainWindow):
         self.start_button.setEnabled(self.workspace is not None and not self._process_is_running())
         self.cancel_button.setEnabled(False)
         self._refresh_history()
-        if self._process_is_running():
-            assert self.process is not None
+        if self.process is not None and self.process.state() != QProcess.ProcessState.NotRunning:
             self._terminate_process(self.process)
         if show_dialog:
             QMessageBox.critical(self, self._t("error.failed_title"), safe_message)
@@ -5717,6 +5722,10 @@ class MainWindow(QMainWindow):
         self._refresh_history()
 
     def _cancel(self) -> None:
+        controller = getattr(self, "tool_controller", None)
+        if controller is not None and controller.busy:
+            controller.cancel()
+            return
         if (
             self.document_import_thread is not None
             and self.document_import_thread.is_alive()

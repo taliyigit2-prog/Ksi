@@ -9,6 +9,7 @@ from ksi_local.glossary import Glossary, empty_glossary
 from ksi_local.languages import SUPPORTED_SOURCE_LANGUAGES
 from ksi_local.ollama_client import OllamaClient
 from ksi_local.subtitles import Cue
+from ksi_local.resource_governor import serialized_model
 from ksi_local.translation_targets import (
     VERIFIED_TARGET_LANGUAGES,
     normalize_target_language,
@@ -26,6 +27,7 @@ def _clean_translation(text: str) -> str:
     return text.strip().strip('"').replace("\\n", "\n")
 
 
+@serialized_model
 def translate_cues(
     cues: list[Cue],
     *,

@@ -56,7 +56,9 @@ def selection_path() -> Path:
     override = os.environ.get("KSI_WORKSPACE_SELECTION_FILE")
     if override:
         return Path(override).expanduser()
-    return Path.home() / "Library/Application Support/KSI Local Studio/workspace-selection.json"
+    from ksi_local.job_store import default_database_path
+
+    return default_database_path().parent / "workspace-selection.json"
 
 
 def save_selection(selection: WorkspaceSelection, path: str | Path | None = None) -> Path:

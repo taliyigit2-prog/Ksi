@@ -8,7 +8,7 @@ from unittest.mock import patch
 from ksi_local.job_store import JobKind, JobStatus, JobStore
 from ksi_local.media_tools import MediaRequest, MediaResult
 from ksi_local.settings import WorkspacePaths
-from ksi_local.tool_jobs import ToolJobService
+from ksi_local.tool_jobs import ToolJobService, validate_image_request
 
 
 class ToolJobTests(unittest.TestCase):
@@ -28,6 +28,18 @@ class ToolJobTests(unittest.TestCase):
     def test_kind_survives_reopening_database(self):
         identifier = self.service.submit_media(self.request)
         self.assertEqual(JobStore(self.store.path).get_job(identifier).job_kind, JobKind.MEDIA)
+
+    def test_only_one_executor_can_claim_the_job(self):
+        identifier = self.service.submit_media(self.request)
+        self.store.claim_queued_job(identifier, stage="local_tools")
+        with self.assertRaises(ValueError):
+            JobStore(self.store.path).claim_queued_job(identifier, stage="local_tools")
+
+    def test_image_validation_rejects_wrong_png_input_before_queueing(self):
+        with self.assertRaises(ValueError):
+            validate_image_request({"operation": "optimize_png", "source": str(self.source),
+                                    "destination": str(self.root / "outputs/result.png")})
+        self.assertEqual(self.store.list_jobs(), [])
 
     def test_result_is_owned_by_job(self):
         identifier = self.service.submit_media(self.request)

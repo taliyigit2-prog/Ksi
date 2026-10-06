@@ -1,13 +1,18 @@
 """Qt signal bridge to sequential shared tool jobs; no engine on the UI thread."""
 
 import threading
+import json
+from dataclasses import asdict
+from pathlib import Path
 
 from PySide6.QtCore import QObject, Signal
 
 from ksi_local.engine_runner import OperationCancelled
 from ksi_local.job_store import JobStatus
 from ksi_local.privacy import redact_sensitive_text
-from ksi_local.tool_jobs import ToolJobService
+from ksi_local.core_service import CoreService
+from ksi_local.media_tools import _validate
+from ksi_local.tool_jobs import validate_image_request
 
 
 class ToolController(QObject):
@@ -36,10 +41,10 @@ class ToolController(QObject):
     def busy(self):
         return self._busy
 
-    def _service(self):
+    def _service(self, roots=()):
         if self.window.workspace is None:
             raise RuntimeError("Önce kullanılabilir bir KSI çalışma alanı gerekir.")
-        return ToolJobService(self.window.workspace, self.window.store)
+        return CoreService(workspace=self.window.workspace, store=self.window.store, allowed_roots=tuple(roots))
 
     def _available(self):
         if self.busy or self.window._process_is_running() or self.window.preflight_pending or self.window.maintenance_pending:
@@ -47,19 +52,40 @@ class ToolController(QObject):
 
     def start_media(self, requests):
         self._available()
-        service = self._service()
-        identifiers = [service.submit_media(request) for request in requests]
+        requests = tuple(requests)
+        if not 1 <= len(requests) <= 100:
+            raise ValueError("Toplu iş sayısı 1–100 olmalıdır.")
+        for request in requests:
+            _validate(request)
+        roots = [path for request in requests for path in request.sources]
+        roots += [request.subtitle for request in requests if request.subtitle]
+        service = self._service(roots)
+        identifiers = [service.submit_media_tool(asdict(request), confirm=True)["id"] for request in requests]
         self._start(service, identifiers)
 
     def start_images(self, requests):
         self._available()
-        service = self._service()
-        identifiers = [service.submit_image(request) for request in requests]
+        requests = tuple(requests)
+        if not 1 <= len(requests) <= 100:
+            raise ValueError("Toplu iş sayısı 1–100 olmalıdır.")
+        for request in requests:
+            validate_image_request(request)
+        service = self._service([request["source"] for request in requests])
+        identifiers = [service.submit_image_tool(request, confirm=True)["id"] for request in requests]
         self._start(service, identifiers)
 
     def resume(self, identifier):
         self._available()
-        self._start(self._service(), [identifier])
+        # Resuming is an explicit GUI action granting only this job's input files.
+        record = self.window.store.get_job(identifier)
+        manifest = Path(record.job_directory) / "tool-request.json"
+        if manifest.is_symlink() or manifest.stat().st_size > 2 * 1024**2:
+            raise ValueError("Araç iş tanımı güvenli sınırların dışında.")
+        request = json.loads(manifest.read_text(encoding="utf-8"))["request"]
+        roots = list(request.get("sources", [request.get("source")]))
+        if request.get("subtitle"):
+            roots.append(request["subtitle"])
+        self._start(self._service(roots), [identifier])
 
     def _start(self, service, identifiers):
         if not identifiers:
@@ -83,7 +109,7 @@ class ToolController(QObject):
                 self.status.emit(f"{index + 1}/{len(identifiers)}")
                 self.activeChanged.emit(identifier)
                 try:
-                    result = service.execute(identifier, cancel=self.cancel_event, on_progress=lambda value, current=index: self.progress.emit((current + value) / len(identifiers)))
+                    result = service.execute_tool_job(identifier, confirm=True, cancel=self.cancel_event, on_progress=lambda value, current=index: self.progress.emit((current + value) / len(identifiers)))
                     self.result.emit(result)
                 except OperationCancelled:
                     continue
@@ -113,5 +139,7 @@ class ToolController(QObject):
         record = self.window.store.get_job(identifier)
         self.window.current_job_id = identifier
         self.window.current_job = Path(record.job_directory)
+        self.window.progress.setRange(0, 100)
+        self.window.cancel_button.setEnabled(True)
         self.window._update_job_context(record)
         self.window._refresh_history()
