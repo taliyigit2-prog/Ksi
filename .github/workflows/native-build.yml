@@ -1,0 +1,54 @@
+name: Native offline build inputs
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: arm64
+            runner: macos-14
+          - architecture: x86_64
+            runner: macos-15-intel
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    env:
+      PYTHONPATH: src
+      PYTHONDONTWRITEBYTECODE: '1'
+      KSI_BUILD_PYTHON: build/ci-bootstrap/python/bin/python3.12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Bootstrap from public locked CPython and packaging wheel
+        run: python3 scripts/bootstrap_build_environment.py build/ci-bootstrap
+      - name: Fetch exact architecture-specific wheelhouses
+        run: |
+          "$KSI_BUILD_PYTHON" scripts/lock_python_wheels.py fetch "config/python-wheels-${{ matrix.architecture }}.json" build/wheelhouse-main
+          "$KSI_BUILD_PYTHON" scripts/lock_python_wheels.py fetch "config/python-build-wheels-${{ matrix.architecture }}.json" build/wheelhouse-tools
+      - name: Assemble fresh offline prefixes on the native processor
+        run: |
+          "$KSI_BUILD_PYTHON" scripts/assemble_clean_runtime.py "${{ matrix.architecture }}" "build/cache/python-${{ matrix.architecture }}-3.12.15.tar.gz" build/wheelhouse-main build/runtime-main
+          "$KSI_BUILD_PYTHON" scripts/assemble_clean_runtime.py "${{ matrix.architecture }}" "build/cache/python-${{ matrix.architecture }}-3.12.15.tar.gz" build/wheelhouse-tools build/runtime-tools --build-tools
+      - name: Fetch and compile pinned independent CPU speech engine
+        run: |
+          "$KSI_BUILD_PYTHON" scripts/prepare_native_component.py fetch-whisper-source build/whisper-source
+          "$KSI_BUILD_PYTHON" scripts/prepare_native_component.py build-whisper build/whisper-source build/runtime-tools/python/lib/python3.12/site-packages/cmake/data/bin/cmake build/whisper-compiled
+      - name: Archive only the engine and pinned public upstream source notices
+        run: |
+          mkdir -p build/native-artifact
+          install -m 755 build/whisper-compiled/build/bin/whisper-cli build/native-artifact/whisper-cli
+          install -m 644 build/whisper-source/LICENSE build/native-artifact/LICENSE.whisper
+          tar -czf "build/native-engine-${{ matrix.architecture }}.tar.gz" -C build native-artifact whisper-source
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: native-engine-${{ matrix.architecture }}
+          path: build/native-engine-${{ matrix.architecture }}.tar.gz
+          if-no-files-found: error
+          retention-days: 7

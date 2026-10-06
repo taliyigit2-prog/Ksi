@@ -50,6 +50,13 @@ discovery cannot accidentally label it with the enclosing KSI repository commit.
 Official oxipng macOS archives are independently digest-checked and extracted
 with their license into clean staging, rejecting links and path escapes.
 
+The manual `Native offline build inputs` GitHub workflow uses native Apple
+Silicon and Intel runners. It bootstraps from the same pinned inputs, builds
+both dependency prefixes and the CPU CLI, and retains only a narrow engine
+artifact with its pinned public source and upstream license headers. It does not run the final product
+acceptance suite or publish a release. Native runtime/engine assembly is not
+evidence that the final DMG, GUI or model processing works.
+
 Successful assembly records `acceptance_tested: false`. It is not native
 functional/quality evidence, a successful clean installation, notarization,
 or release approval. Each final architecture still needs automated acceptance
