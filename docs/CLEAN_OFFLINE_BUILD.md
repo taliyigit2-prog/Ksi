@@ -183,3 +183,26 @@ model revision cannot reuse audio from another revision. The isolated ARM speech
 runtime has its own official PyPI lock, independent of the GUI's NumPy/Torch.
 The Intel Whisper GGML input is pinned to the official LFS SHA-256 and revision;
 neither this pin nor successful input downloads constitute inference acceptance.
+
+Idle Core clients revalidate the saved selection, marker and external volume
+inside their reader transaction before resuming work. A workspace changed by
+another client cannot silently keep receiving writes through an old Core object.
+Corresponding-source downloads preserve recipe SHA-256 pins even when upstream
+has no trustworthy Content-Length, using a hard download bound instead. LGPL
+components and combined license expressions require source records too; source
+collection alone does not approve a binary release.
+
+On-demand Ollama has an owned supervisor holding the active reader/model/job
+descriptors. The parent keeps a liveness pipe open; normal close or parent death
+triggers termination of only that supervisor's server process group, including
+runners. The sealed app refuses an already-ready foreign server instead of
+silently sending text to a different model store. Development-only daemon reuse
+remains available outside a sealed bundle.
+
+Upstream PyPI Chatterbox 0.1.7 does not expose the pinned Git commit's V3 API.
+The source-bound runtime builder preserves its fresh wheel prefix, creates a
+separate prefix using the exact verified Git package files, and records the
+override plus a regenerated wheel RECORD. It does not borrow a patched personal
+environment. That commit uses `grapheme_mtl_merged_expanded_v1.json`; the other
+upstream `mtl_tokenizer.json` is not interchangeable. Both model API and actual
+speech output require final acceptance on the source-bound prefix.

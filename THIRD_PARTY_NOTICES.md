@@ -30,6 +30,15 @@ PyPI license-expression field was absent; it does not grant redistribution
 permission. Actual wheel license texts, native transitive library notices and
 the final binary SBOM remain mandatory before release. See
 [clean build documentation](docs/CLEAN_OFFLINE_BUILD.md).
+
+The isolated ARM Turkish speech environment is locked separately in
+`config/python-chatterbox-wheels-arm64.json` (Chatterbox 0.1.7 and its exact
+public transitive artifacts). It is rebuilt from official wheels, not a user
+environment. Piper's ARM/Intel locks are separate too. All these locks are input
+inventories: missing license-expression fields still require actual upstream
+license texts, and the final binary SPDX inventory must include their complete
+contents. The primary GUI uses PySide6-Essentials plus Shiboken rather than the
+unused PySide6-Addons distribution.
 # Desktop engine additions (implementation candidates)
 
 The following adapters do not copy complete third-party applications. Exact

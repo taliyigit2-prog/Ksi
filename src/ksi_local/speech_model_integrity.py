@@ -8,7 +8,7 @@ from ksi_local.bundle_runtime import OfflinePayload, digest_file, safe_member
 
 CHATTERBOX_FILES = frozenset({
     "t3_mtl23ls_v3.safetensors", "s3gen.pt", "ve.pt", "conds.pt",
-    "mtl_tokenizer.json",
+    "grapheme_mtl_merged_expanded_v1.json",
 })
 
 

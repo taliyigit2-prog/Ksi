@@ -66,7 +66,7 @@ def seal_offline_payload(resources: Path, specification: dict) -> dict:
             raise ValueError("Bileşen kaynak URL'si herkese açık ve temiz HTTPS olmalıdır.")
         if not isinstance(row.get("revision"), str) or not row["revision"].strip():
             raise ValueError("Bileşen sabit kaynak sürümü eksik.")
-        if row["license"].startswith(("GPL", "AGPL")):
+        if re.search(r"\b(?:A?GPL|LGPL)(?:-|\b)", row["license"]):
             if ("support", row.get("corresponding_source")) not in records:
                 raise ValueError("Copyleft motorun karşılık gelen kaynak arşivi eksik.")
     models = specification.get("models")

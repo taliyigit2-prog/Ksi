@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import asdict
+from functools import wraps
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,15 @@ from ksi_local.settings import WorkspacePaths
 from ksi_local.media_tools import MediaRequest
 from ksi_local.tool_jobs import ToolJobService
 from ksi_local.workspace_access import workspace_reader
+
+
+def _workspace_operation(function):
+    @workspace_reader
+    @wraps(function)
+    def wrapped(self, *args, **kwargs):
+        self._validate_workspace()
+        return function(self, *args, **kwargs)
+    return wrapped
 
 
 def _record(job: JobRecord) -> dict[str, Any]:
@@ -56,6 +66,21 @@ class CoreService:
             roots.append(workspace.root.resolve())
         self.allowed_roots = tuple(roots)
 
+    def _validate_workspace(self) -> None:
+        """An idle client must not resume writes against an obsolete selection."""
+        if self.workspace is None:
+            return
+        from ksi_local.workspace_management import load_selection
+        from ksi_local.settings import resolve_workspace
+        selection = load_selection()
+        if selection is None:
+            return  # Explicit legacy/test workspaces retain their existing policy.
+        if Path(selection.workspace_root).expanduser().resolve() != self.workspace.root.resolve():
+            raise RuntimeError("Çalışma alanı başka bir istemcide değiştirildi; konumu yenileyin.")
+        current = resolve_workspace(initialize=False)
+        if current.root.resolve() != self.workspace.root.resolve():
+            raise RuntimeError("Aktif çalışma alanı doğrulanamadı.")
+
     def _allowed_path(self, value: str | Path, *, must_exist: bool = True) -> Path:
         raw = Path(value).expanduser()
         if raw.is_symlink():
@@ -67,7 +92,7 @@ class CoreService:
             raise PermissionError("Dosya izin verilen KSI köklerinin dışında.")
         return path
 
-    @workspace_reader
+    @_workspace_operation
     def preflight(self, source: str, **options: Any) -> dict[str, Any]:
         if self.workspace is None:
             raise RuntimeError("Ön inceleme için bağlı KSI-Workspace gereklidir.")
@@ -80,7 +105,7 @@ class CoreService:
         result = inspect_source(normalized, workspace=self.workspace, **options)
         return result.to_dict()
 
-    @workspace_reader
+    @_workspace_operation
     def create_job(
         self,
         *,
@@ -119,6 +144,7 @@ class CoreService:
             )
         )
 
+    @_workspace_operation
     def status(self, job_id: str) -> dict[str, Any]:
         job = self.store.get_job(job_id)
         self._allowed_path(job.job_directory, must_exist=False)
@@ -126,7 +152,7 @@ class CoreService:
         payload["stages"] = [asdict(item) for item in self.store.list_stages(job_id)]
         return payload
 
-    @workspace_reader
+    @_workspace_operation
     def submit_media_tool(self, request: dict[str, Any], *, confirm: bool) -> dict[str, Any]:
         if confirm is not True or self.workspace is None:
             raise PermissionError("Yerel araç işi için açık onay ve çalışma alanı gerekir.")
@@ -141,7 +167,7 @@ class CoreService:
         identifier = ToolJobService(self.workspace, self.store).submit_media(MediaRequest(**data))
         return self.status(identifier)
 
-    @workspace_reader
+    @_workspace_operation
     def execute_tool_job(self, job_id: str, *, confirm: bool, cancel=None, on_progress=None) -> dict[str, Any]:
         if confirm is not True or self.workspace is None:
             raise PermissionError("Yerel araç işlemi için açık onay ve çalışma alanı gerekir.")
@@ -159,7 +185,7 @@ class CoreService:
             self._allowed_path(data["subtitle"], must_exist=False)
         return ToolJobService(self.workspace, self.store).execute(job_id, cancel=cancel, on_progress=on_progress)
 
-    @workspace_reader
+    @_workspace_operation
     def submit_image_tool(self, request: dict[str, Any], *, confirm: bool) -> dict[str, Any]:
         if confirm is not True or self.workspace is None:
             raise PermissionError("Yerel görsel işi için açık onay ve çalışma alanı gerekir.")
@@ -169,6 +195,7 @@ class CoreService:
         identifier = ToolJobService(self.workspace, self.store).submit_image(data)
         return self.status(identifier)
 
+    @_workspace_operation
     def stop(self, job_id: str, *, confirm: bool) -> dict[str, Any]:
         if confirm is not True:
             raise PermissionError("İşi durdurmak için açık onay gereklidir.")
@@ -176,10 +203,12 @@ class CoreService:
         queue = JobQueue(self.store, lambda: self.workspace is not None)
         return _record(queue.cancel(job_id))
 
+    @_workspace_operation
     def resume(self, job_id: str) -> dict[str, Any]:
         self._allowed_path(self.store.get_job(job_id).job_directory, must_exist=False)
         return _record(self.store.retry_job(job_id))
 
+    @_workspace_operation
     def results(self, job_id: str) -> list[dict[str, Any]]:
         job = self.store.get_job(job_id)
         root = self._allowed_path(job.job_directory)
@@ -199,7 +228,7 @@ class CoreService:
                 items.append({"path": str(path), "relative_path": str(path.relative_to(root)), "size_bytes": path.stat().st_size})
         return items
 
-    @workspace_reader
+    @_workspace_operation
     def export(
         self,
         job_id: str,

@@ -53,9 +53,11 @@ class OfflineBuildTests(unittest.TestCase):
             seal_offline_payload(self.resources, self.specification)
 
     def test_copyleft_engine_requires_corresponding_source(self):
-        self.specification["files"][0]["license"] = "GPL-3.0-only"
-        with self.assertRaises(ValueError):
-            seal_offline_payload(self.resources, self.specification)
+        for license_expression in ("GPL-3.0-only", "LGPL-2.1-or-later", "MIT AND LGPL-3.0-only", "AGPL-3.0-only"):
+            with self.subTest(license=license_expression):
+                self.specification["files"][0]["license"] = license_expression
+                with self.assertRaises(ValueError):
+                    seal_offline_payload(self.resources, self.specification)
 
     def test_all_model_files_must_be_in_the_visible_catalog(self):
         self.specification["models"][0]["members"] = ["unknown"]

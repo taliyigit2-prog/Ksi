@@ -60,6 +60,24 @@ PUBLIC_SCRIPTS = (
     "scripts/seal_offline_payload.py",
     "scripts/build_offline_dmg.py",
     "scripts/fetch_build_input.py",
+    "scripts/assemble_clean_runtime.py",
+    "scripts/assemble_offline_app.py",
+    "scripts/bootstrap_build_environment.py",
+    "scripts/collect_native_notices.py",
+    "scripts/fetch_corresponding_source.py",
+    "scripts/fetch_ollama_models.py",
+    "scripts/import_native_artifact.py",
+    "scripts/import_speech_artifact.py",
+    "scripts/lock_native_libraries.py",
+    "scripts/lock_python_wheels.py",
+    "scripts/prepare_native_component.py",
+    "scripts/resolve_engine_wheels.py",
+    "scripts/resolve_native_packages.py",
+    "scripts/review_model_input.py",
+    "scripts/select_wheelhouse.py",
+    "scripts/stage_chatterbox_source_runtime.py",
+    "scripts/stage_native_engines.py",
+    "scripts/stage_portable_font.py",
 )
 ALLOWED_BINARY_SUFFIXES = {".png", ".gif", ".icns"}
 BLOCKED_PARTS = {
@@ -195,7 +213,7 @@ def _iter_public_inputs(source: Path) -> Iterable[tuple[Path, Path]]:
             if path.suffix in {".pyc", ".pyo"} or ".egg-info" in relative.parts:
                 continue
             yield path, relative
-    for relative in ("config/glossary.json", "config/public-catalog.json", "config/runtime-sources.json", "config/native-sources.json", "config/native-libraries-arm64.json", "config/native-libraries-x86_64.json", "config/python-wheels-arm64.json", "config/python-wheels-x86_64.json", "config/python-build-wheels-arm64.json", "config/python-build-wheels-x86_64.json"):
+    for relative in ("config/glossary.json", "config/public-catalog.json", "config/runtime-sources.json", "config/native-sources.json", "config/model-sources.json", "config/ollama-model-sources.json", "config/native-libraries-arm64.json", "config/native-libraries-x86_64.json", "config/python-wheels-arm64.json", "config/python-wheels-x86_64.json", "config/python-build-wheels-arm64.json", "config/python-build-wheels-x86_64.json", "config/python-piper-wheels-arm64.json", "config/python-piper-wheels-x86_64.json", "config/python-chatterbox-wheels-arm64.json"):
         path = source / relative
         if path.is_file():
             yield path, Path(relative)
@@ -257,6 +275,19 @@ def _spdx_document(root: Path, manifest: list[dict[str, object]]) -> dict[str, o
         ("mlx-whisper", "0.4", "MIT"),
     )
     relationships: list[dict[str, str]] = []
+    # This inventories exact declared build inputs, not successful installation
+    # or completed redistribution review. Binary SBOM remains a separate gate.
+    locked = []
+    for filename in ("python-wheels-arm64.json", "python-wheels-x86_64.json",
+                     "python-piper-wheels-arm64.json", "python-piper-wheels-x86_64.json",
+                     "python-chatterbox-wheels-arm64.json"):
+        lock_path = root / "config" / filename
+        if lock_path.is_file():
+            from ksi_local.wheel_lock import validate_wheel_lock
+            lock = json.loads(lock_path.read_text(encoding="utf-8"))
+            locked.extend((row, filename) for row in validate_wheel_lock(lock))
+    if locked:
+        dependency_data = ()
     for index, (name, version, license_id) in enumerate(dependency_data, start=1):
         package_id = f"SPDXRef-Dependency-{index}"
         packages.append(
@@ -278,6 +309,20 @@ def _spdx_document(root: Path, manifest: list[dict[str, object]]) -> dict[str, o
                 "relatedSpdxElement": package_id,
             }
         )
+    seen = set()
+    for row, filename in locked:
+        identity = (row["name"], row["version"], row["sha256"])
+        if identity in seen:
+            continue
+        seen.add(identity)
+        package_id = f"SPDXRef-LockedWheel-{len(seen)}"
+        packages.append({"SPDXID": package_id, "name": row["name"],
+            "versionInfo": row["version"], "downloadLocation": row["url"],
+            "filesAnalyzed": False, "licenseConcluded": "NOASSERTION",
+            "licenseDeclared": row.get("license", "NOASSERTION"),
+            "copyrightText": "NOASSERTION", "checksums": [{"algorithm": "SHA256", "checksumValue": row["sha256"]}],
+            "comment": f"Declared public build input from {filename}; installed speech code may have an explicit pinned Git source override. Not binary acceptance or license approval."})
+        relationships.append({"spdxElementId": "SPDXRef-Package-KSI", "relationshipType": "DEPENDS_ON", "relatedSpdxElement": package_id})
     return {
         "spdxVersion": "SPDX-2.3",
         "dataLicense": "CC0-1.0",
