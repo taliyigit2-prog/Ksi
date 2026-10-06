@@ -9,6 +9,7 @@ from typing import Any
 from ksi_local.languages import AUTO_LANGUAGE, SUPPORTED_SOURCE_LANGUAGES
 from ksi_local.media import probe_local_media
 from ksi_local.subtitles import Cue, write_srt
+from ksi_local.bundle_runtime import host_architecture
 
 
 DEFAULT_WHISPER_MODEL = "mlx-community/whisper-large-v3-turbo-8bit"
@@ -96,6 +97,13 @@ def transcribe_media(
     media_info = probe_local_media(str(source))
     duration = media_info.get("duration_seconds")
     duration_seconds = float(duration) if isinstance(duration, (int, float)) else None
+    if host_architecture() == "x86_64" or model.endswith(".bin"):
+        from ksi_local.cpu_transcription import transcribe_cpu
+
+        return transcribe_cpu(
+            source, Path(output_srt).expanduser().resolve(), model=model,
+            language=language, duration_seconds=duration_seconds, initial_prompt=initial_prompt,
+        )
     try:
         import mlx_whisper
     except ImportError as error:

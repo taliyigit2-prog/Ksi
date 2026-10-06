@@ -14,6 +14,7 @@ import platform
 import re
 import shutil
 import sys
+import threading
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Callable
@@ -22,6 +23,8 @@ from typing import Callable
 MAX_MANIFEST_BYTES = 2 * 1024 * 1024
 MAX_PAYLOAD_FILES = 50000
 ARCHITECTURES = {"arm64", "x86_64"}
+_MODEL_INSTALL_CACHE: dict[tuple[str, str], tuple] = {}
+_MODEL_INSTALL_LOCK = threading.Lock()
 
 
 def host_architecture(machine: str | None = None) -> str:
@@ -149,6 +152,37 @@ class OfflinePayload:
         raise RuntimeError(f"Çevrimdışı paket bileşeni bulunamadı: {identifier}")
 
     def install_models(
+        self, destination: Path, *, on_progress: Callable[[int, int], None] | None = None
+    ) -> None:
+        # Removable-storage polling must not hash gigabytes every five seconds.
+        # The first use still verifies hashes; changes to the manifest or any
+        # installed file's size/mtime invalidate the in-process shortcut.
+        with _MODEL_INSTALL_LOCK:
+            entries = [entry for entry in self.files if entry.role == "model"]
+            key = (str(self.root), str(destination.absolute()))
+
+            def stamp():
+                values = []
+                for entry in entries:
+                    path = safe_member(destination, entry.path.removeprefix("models/"))
+                    try:
+                        stat = path.stat()
+                    except FileNotFoundError:
+                        return None
+                    values.append((entry.path, entry.sha256, entry.size, stat.st_size, stat.st_mtime_ns))
+                return tuple(values)
+
+            current = stamp()
+            if key in _MODEL_INSTALL_CACHE and current == _MODEL_INSTALL_CACHE[key]:
+                return
+            self._install_models(destination, on_progress=on_progress)
+            verified = stamp()
+            if verified is not None:
+                if len(_MODEL_INSTALL_CACHE) >= 32:
+                    _MODEL_INSTALL_CACHE.pop(next(iter(_MODEL_INSTALL_CACHE)))
+                _MODEL_INSTALL_CACHE[key] = verified
+
+    def _install_models(
         self, destination: Path, *, on_progress: Callable[[int, int], None] | None = None
     ) -> None:
         """Copy verified bundled models atomically, preserving existing files.

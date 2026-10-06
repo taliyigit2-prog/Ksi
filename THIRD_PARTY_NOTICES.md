@@ -22,3 +22,19 @@ this file and its SPDX SBOM from the exact package contents.
 This table is informational and does not replace the license text supplied by
 each component. Versions, hashes, notices and transitive dependencies are
 validated during release preparation.
+# Desktop engine additions (implementation candidates)
+
+The following adapters do not copy complete third-party applications. Exact
+locked binary versions, transitive libraries and model-weight permissions must
+be included in the final distribution SBOM before shipping:
+
+- oxipng: MIT; https://github.com/oxipng/oxipng
+- Argos Translate: MIT; https://github.com/argosopentech/argos-translate
+- rembg: MIT; https://github.com/danielgatis/rembg
+- ONNX Runtime: MIT; https://github.com/microsoft/onnxruntime
+- ImageMagick: ImageMagick License; https://github.com/ImageMagick/ImageMagick
+- whisper.cpp: MIT; https://github.com/ggml-org/whisper.cpp
+
+Models have separate licenses. rembg's commercial BRIA model and cloud
+backend are not selected by KSI. Native FFmpeg binaries have build-dependent
+LGPL/GPL obligations; nonfree builds must not be distributed.

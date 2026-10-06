@@ -14,6 +14,7 @@ dependencies = [
 [project.optional-dependencies]
 gui = ["PySide6>=6.8,<7"]
 ai = ["mlx-whisper>=0.4,<1"]
+local-tools = ["rembg[cpu]>=2.0.67,<3", "argostranslate>=1.10,<2"]
 
 [project.scripts]
 ksi = "ksi_local.cli:main"
