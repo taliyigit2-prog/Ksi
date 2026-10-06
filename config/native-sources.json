@@ -1,6 +1,14 @@
 {
   "schema_version": 1,
   "inputs": {
+    "whisper-source": {
+      "type": "git",
+      "version": "1.9.4",
+      "revision": "v1.9.4",
+      "commit": "927cfce34f31707e17f2bff35c349632fb9e2c3a",
+      "url": "https://github.com/ggml-org/whisper.cpp.git",
+      "license": "MIT"
+    },
     "oxipng-arm64": {
       "architecture": "arm64",
       "version": "10.2.1",

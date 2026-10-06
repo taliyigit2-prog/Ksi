@@ -1,0 +1,35 @@
+{
+  "architecture": "arm64",
+  "minimum_macos": "14.0",
+  "python": "3.12",
+  "schema_version": 1,
+  "wheels": [
+    {
+      "filename": "cmake-4.4.4-py3-none-macosx_10_10_universal2.whl",
+      "license": "NOASSERTION",
+      "name": "cmake",
+      "sha256": "883962a72b1b3a16ff445427f24c8caca9797dd9e563bbe208cbcd89e877f9d3",
+      "size": 54404900,
+      "url": "https://files.pythonhosted.org/packages/3f/02/86b484e16c91de4bdf90dfab37a33c3e5512bc30d3a494759976df0943b9/cmake-4.4.4-py3-none-macosx_10_10_universal2.whl",
+      "version": "4.4.4"
+    },
+    {
+      "filename": "meson-1.12.1-py3-none-any.whl",
+      "license": "NOASSERTION",
+      "name": "meson",
+      "sha256": "930bc7542cbd9f57009e182fd014eba48cf1a0180a7b9006d2d32d8f168d8b02",
+      "size": 1108668,
+      "url": "https://files.pythonhosted.org/packages/57/99/36cd25f9598eef70db97577440a70a360af505f6f01c2338a18d1556079c/meson-1.12.1-py3-none-any.whl",
+      "version": "1.12.1"
+    },
+    {
+      "filename": "ninja-1.13.2-py3-none-macosx_10_9_universal2.whl",
+      "license": "Apache-2.0",
+      "name": "ninja",
+      "sha256": "fd82e26c0706ad4ab88e5fdd26f3fab0a987a90f810160f6c322e752c6af298b",
+      "size": 306611,
+      "url": "https://files.pythonhosted.org/packages/b5/b8/90a9518f2264637084d6199bc20c2f3fb97fefc4c474d277720150c3bd6d/ninja-1.13.2-py3-none-macosx_10_9_universal2.whl",
+      "version": "1.13.2"
+    }
+  ]
+}

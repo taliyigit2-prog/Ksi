@@ -41,6 +41,15 @@ an isolated runtime and must be separately locked and staged. Intel speech uses
 the separately licensed Piper engine. No engine or model is implicitly fetched
 by the installed application.
 
+Build-only CMake/Ninja/Meson wheels have separate locks; they are not added to
+the application runtime. `scripts/prepare_native_component.py` fetches the
+whisper.cpp release tag only when it resolves to the pinned commit, records and
+rechecks every source file, and produces a static CPU CLI without Homebrew or
+OpenMP dependencies. Compiler prefix maps exclude local source paths; Git
+discovery cannot accidentally label it with the enclosing KSI repository commit.
+Official oxipng macOS archives are independently digest-checked and extracted
+with their license into clean staging, rejecting links and path escapes.
+
 Successful assembly records `acceptance_tested: false`. It is not native
 functional/quality evidence, a successful clean installation, notarization,
 or release approval. Each final architecture still needs automated acceptance

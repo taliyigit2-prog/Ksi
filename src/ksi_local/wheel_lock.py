@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import re
 import urllib.request
+import urllib.error
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
@@ -92,7 +93,13 @@ def fetch_wheelhouse(data: dict, directory: Path, *, on_progress=None) -> list[P
     directory.mkdir(parents=True, exist_ok=True, mode=0o700)
     paths = []
     for index, row in enumerate(rows):
-        paths.append(fetch_pinned_input(row, (directory / row["filename"]).absolute()))
+        for attempt in range(3):
+            try:
+                paths.append(fetch_pinned_input(row, (directory / row["filename"]).absolute()))
+                break
+            except (TimeoutError, ConnectionError, urllib.error.URLError):
+                if attempt == 2:
+                    raise
         if on_progress:
             on_progress(index + 1, len(rows))
     return paths

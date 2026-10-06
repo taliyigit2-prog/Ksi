@@ -14,10 +14,12 @@ def main():
     parser.add_argument("python_archive", type=Path)
     parser.add_argument("wheelhouse", type=Path)
     parser.add_argument("destination", type=Path)
+    parser.add_argument("--build-tools", action="store_true")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     inputs = json.loads((root / "config/runtime-sources.json").read_text(encoding="utf-8"))
-    lock = json.loads((root / f"config/python-wheels-{args.architecture}.json").read_text(encoding="utf-8"))
+    kind = "python-build-wheels" if args.build_tools else "python-wheels"
+    lock = json.loads((root / f"config/{kind}-{args.architecture}.json").read_text(encoding="utf-8"))
     result = assemble_python_runtime(args.python_archive.absolute(), inputs["inputs"]["python-" + args.architecture], lock, args.wheelhouse.absolute(), args.destination.absolute())
     print(json.dumps({"architecture": result["architecture"], "packages": len(result["packages"]), "acceptance_tested": False}))
 
