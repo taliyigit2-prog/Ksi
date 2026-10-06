@@ -7,6 +7,7 @@ import hashlib
 import stat
 from contextvars import ContextVar
 from pathlib import Path
+from ksi_local.workspace_access import workspace_access
 
 
 _DESCRIPTOR = ContextVar("ksi_job_lease", default=None)
@@ -27,6 +28,13 @@ def _path(state: Path, identifier: str):
 
 @contextlib.contextmanager
 def execution_lease(state: Path, identifier: str):
+    with workspace_access():
+        with _execution_lease(state, identifier):
+            yield
+
+
+@contextlib.contextmanager
+def _execution_lease(state: Path, identifier: str):
     path = _path(state, identifier)
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     descriptor = os.open(path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)

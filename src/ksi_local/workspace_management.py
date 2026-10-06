@@ -83,10 +83,14 @@ def load_selection(path: str | Path | None = None) -> WorkspaceSelection | None:
             workspace_id=str(payload["workspace_id"]),
             volume_uuid=str(payload["volume_uuid"]) if payload.get("volume_uuid") else None,
         )
-    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+    except FileNotFoundError:
         return None
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+        raise RuntimeError("Kayıtlı çalışma alanı seçimi okunamadı; otomatik konum değişikliği yapılmadı.") from error
     root = Path(selection.workspace_root).expanduser()
-    return selection if root.is_absolute() and "\x00" not in selection.workspace_root else None
+    if payload.get("schema_version") != 1 or not root.is_absolute() or "\x00" in selection.workspace_root or (selection.workspace_location is WorkspaceLocation.EXTERNAL and not selection.volume_uuid):
+        raise RuntimeError("Kayıtlı çalışma alanı seçimi geçersiz; otomatik konum değişikliği yapılmadı.")
+    return selection
 
 
 def new_internal_selection() -> WorkspaceSelection:

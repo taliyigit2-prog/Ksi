@@ -47,6 +47,13 @@ class WorkspacePaths:
 
 
 def resolve_workspace(*, initialize: bool = False) -> WorkspacePaths:
+    from ksi_local.workspace_access import workspace_access
+    initial_creation = initialize and load_selection() is None and not identity_file().exists()
+    with workspace_access(mutation=initial_creation):
+        return _resolve_workspace(initialize=initialize)
+
+
+def _resolve_workspace(*, initialize: bool = False) -> WorkspacePaths:
     selection = load_selection()
     if selection is not None:
         if selection.workspace_location is WorkspaceLocation.EXTERNAL:

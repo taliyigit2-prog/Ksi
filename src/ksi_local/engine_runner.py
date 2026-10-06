@@ -17,6 +17,7 @@ from ksi_local.privacy import redact_sensitive_text
 from ksi_local.resource_governor import active_model_descriptor
 from ksi_local.job_leases import active_job_descriptor
 from ksi_local.bundle_runtime import OfflinePayload, bundle_root
+from ksi_local.workspace_access import active_workspace_descriptor
 
 
 class OperationCancelled(RuntimeError):
@@ -53,7 +54,8 @@ def run_engine(
     if cancel is not None and cancel.is_set():
         raise OperationCancelled("İşlem iptal edildi.")
     descriptor = active_model_descriptor()
-    descriptors = tuple(dict.fromkeys(fd for fd in (descriptor, active_job_descriptor()) if fd is not None))
+    workspace_descriptor = active_workspace_descriptor()
+    descriptors = tuple(dict.fromkeys(fd for fd in (descriptor, active_job_descriptor(), workspace_descriptor) if fd is not None))
     worker_environment = local_worker_environment(environment)
     resources = bundle_root()
     if resources is not None and Path(argv[0]).name in {"ffmpeg", "magick"}:
@@ -66,6 +68,9 @@ def run_engine(
         worker_environment["FONTCONFIG_FILE"] = str(font_config)
         worker_environment.pop("FONTCONFIG_SYSROOT", None)
     worker_environment.pop("KSI_MODEL_LOCK_FD", None)
+    worker_environment.pop("KSI_WORKSPACE_LOCK_FD", None)
+    if workspace_descriptor is not None:
+        worker_environment["KSI_WORKSPACE_LOCK_FD"] = str(workspace_descriptor)
     if descriptor is not None:
         worker_environment["KSI_MODEL_LOCK_FD"] = str(descriptor)
     process = subprocess.Popen(

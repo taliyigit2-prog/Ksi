@@ -132,3 +132,17 @@ states its model-training work is covered by MIT/CC0. Preserve the original
 model README and corpus citations together with the chosen MIT notice. Do not
 label this as a new license grant for training corpora or a legal determination
 about training-data rights; corpus data is not included in this package.
+
+The settings storage card exposes an explicit workspace-location choice even
+when a previously selected SSD is unavailable. It never moves/deletes previous
+files: it creates a new named KSI folder or adopts a valid existing marker.
+Unrelated populated folders and missing `/Volumes` paths are rejected. External
+locations retain actual disk UUID identity. Corrupt selection files fail closed
+instead of silently creating an internal fallback.
+
+Workspace selection holds a cross-client exclusive transaction lock. CLI work,
+shared tool execution, model operations and workspace resolution hold readers;
+owned engine children inherit the reader descriptor so an orphan cannot release
+the protection early. Active processing blocks explicit location changes. The
+physical-copy relocation helper still preserves its source; settings do not
+expose it as a completed job-database/path migration feature.

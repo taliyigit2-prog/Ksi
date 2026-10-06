@@ -19,6 +19,7 @@ from ksi_local.privacy import redact_sensitive_text
 from ksi_local.settings import WorkspacePaths
 from ksi_local.media_tools import MediaRequest
 from ksi_local.tool_jobs import ToolJobService
+from ksi_local.workspace_access import workspace_reader
 
 
 def _record(job: JobRecord) -> dict[str, Any]:
@@ -66,6 +67,7 @@ class CoreService:
             raise PermissionError("Dosya izin verilen KSI köklerinin dışında.")
         return path
 
+    @workspace_reader
     def preflight(self, source: str, **options: Any) -> dict[str, Any]:
         if self.workspace is None:
             raise RuntimeError("Ön inceleme için bağlı KSI-Workspace gereklidir.")
@@ -78,6 +80,7 @@ class CoreService:
         result = inspect_source(normalized, workspace=self.workspace, **options)
         return result.to_dict()
 
+    @workspace_reader
     def create_job(
         self,
         *,
@@ -123,6 +126,7 @@ class CoreService:
         payload["stages"] = [asdict(item) for item in self.store.list_stages(job_id)]
         return payload
 
+    @workspace_reader
     def submit_media_tool(self, request: dict[str, Any], *, confirm: bool) -> dict[str, Any]:
         if confirm is not True or self.workspace is None:
             raise PermissionError("Yerel araç işi için açık onay ve çalışma alanı gerekir.")
@@ -137,6 +141,7 @@ class CoreService:
         identifier = ToolJobService(self.workspace, self.store).submit_media(MediaRequest(**data))
         return self.status(identifier)
 
+    @workspace_reader
     def execute_tool_job(self, job_id: str, *, confirm: bool, cancel=None, on_progress=None) -> dict[str, Any]:
         if confirm is not True or self.workspace is None:
             raise PermissionError("Yerel araç işlemi için açık onay ve çalışma alanı gerekir.")
@@ -154,6 +159,7 @@ class CoreService:
             self._allowed_path(data["subtitle"], must_exist=False)
         return ToolJobService(self.workspace, self.store).execute(job_id, cancel=cancel, on_progress=on_progress)
 
+    @workspace_reader
     def submit_image_tool(self, request: dict[str, Any], *, confirm: bool) -> dict[str, Any]:
         if confirm is not True or self.workspace is None:
             raise PermissionError("Yerel görsel işi için açık onay ve çalışma alanı gerekir.")
@@ -193,6 +199,7 @@ class CoreService:
                 items.append({"path": str(path), "relative_path": str(path.relative_to(root)), "size_bytes": path.stat().st_size})
         return items
 
+    @workspace_reader
     def export(
         self,
         job_id: str,

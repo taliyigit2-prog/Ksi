@@ -1835,7 +1835,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
-        return int(args.handler(args))
+        from ksi_local.workspace_access import workspace_access
+        with workspace_access():
+            return int(args.handler(args))
     except SourceURLValidationError as error:
         print(f"Geçersiz kaynak: {error}", file=sys.stderr)
         return 2

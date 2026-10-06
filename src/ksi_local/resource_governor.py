@@ -11,6 +11,7 @@ from functools import wraps
 from pathlib import Path
 
 from ksi_local.job_store import default_database_path
+from ksi_local.workspace_access import workspace_access
 
 _MODEL_DESCRIPTOR: ContextVar[int | None] = ContextVar("ksi_model_descriptor", default=None)
 
@@ -21,6 +22,13 @@ def active_model_descriptor() -> int | None:
 
 @contextlib.contextmanager
 def single_model_lock():
+    with workspace_access():
+        with _single_model_lock():
+            yield
+
+
+@contextlib.contextmanager
+def _single_model_lock():
     if active_model_descriptor() is not None:
         yield
         return
