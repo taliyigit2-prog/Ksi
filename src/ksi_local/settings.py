@@ -11,6 +11,11 @@ from ksi_local.migration import workspace_directory_candidates
 from ksi_local.project_metadata import WORKSPACE_DIRECTORY
 from ksi_local.storage import discover_mounted_volumes, validate_selected_workspace
 from ksi_local.tool_integrity import pinned_tool_version
+from ksi_local.atomic_files import atomic_write_json
+from ksi_local.bundle_runtime import OfflinePayload, bundle_root, host_architecture, safe_member, tool_path
+from ksi_local.workspace_management import (
+    WorkspaceLocation, load_selection, new_internal_selection, save_selection,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -34,6 +39,31 @@ class WorkspacePaths:
 
 
 def resolve_workspace() -> WorkspacePaths:
+    selection = load_selection()
+    if selection is not None:
+        if selection.workspace_location is WorkspaceLocation.EXTERNAL:
+            # A missing selected SSD never falls back to internal storage.
+            volumes = discover_mounted_volumes()
+            if not any(
+                volume.volume_uuid == selection.volume_uuid
+                and volume.workspace_id == selection.workspace_id
+                and volume.writable and volume.internal is False
+                and Path(selection.workspace_root).resolve().is_relative_to(Path(volume.mount_point).resolve())
+                for volume in volumes
+            ):
+                raise RuntimeError("Seçili harici çalışma alanı bağlı ve yazılabilir değil.")
+        return _selected_paths(Path(selection.workspace_root), selection.workspace_id)
+    if not identity_file().exists() and not os.environ.get("KSI_IDENTITY_FILE"):
+        selection = new_internal_selection()
+        root = Path(selection.workspace_root)
+        if root.is_symlink() or (root.exists() and any(root.iterdir())):
+            raise RuntimeError("İlk kurulum hedefi boş değil; mevcut kullanıcı verisine dokunulmadı.")
+        root.mkdir(parents=True, exist_ok=True, mode=0o700)
+        atomic_write_json(safe_member(root, ".workspace-id"), {"workspace_id": selection.workspace_id})
+        # Persist before model copying: an interrupted install resumes this same
+        # workspace rather than generating a new identity over existing files.
+        save_selection(selection)
+        return _selected_paths(root, selection.workspace_id)
     try:
         identity = json.loads(identity_file().read_text(encoding="utf-8"))
         expected_uuid = str(identity["volume_uuid"])
@@ -70,4 +100,40 @@ def resolve_workspace() -> WorkspacePaths:
         models_whisper=root / "models" / "whisper" / "large-v3-turbo-8bit",
         yt_dlp=yt_dlp,
         deno=deno,
+    )
+
+
+def _selected_paths(root: Path, workspace_id: str) -> WorkspacePaths:
+    if root.is_symlink():
+        raise RuntimeError("Çalışma alanı kökü sembolik bağlantı olamaz.")
+    if not root.is_absolute():
+        raise RuntimeError("Çalışma alanı yolu mutlak olmalıdır.")
+    marker = safe_member(root, ".workspace-id")
+    try:
+        data = json.loads(marker.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise RuntimeError("Çalışma alanı kimliği okunamadı.") from error
+    if not isinstance(data, dict) or data.get("workspace_id") != workspace_id:
+        raise RuntimeError("Çalışma alanı kimliği seçilen konumla eşleşmiyor.")
+    if not os.access(root, os.W_OK):
+        raise RuntimeError("Çalışma alanı yazılabilir değil.")
+    for relative in ("jobs", "outputs", "models/ollama", "models/whisper"):
+        safe_member(root, relative).mkdir(parents=True, exist_ok=True, mode=0o700)
+    resources = bundle_root()
+    if resources is not None:
+        payload = OfflinePayload.load(resources)
+        # Model installation is a first-run background task, never a download.
+        payload.install_models(safe_member(root, "models"))
+        yt_dlp = Path(payload.component("tool", "yt-dlp"))
+        deno = Path(payload.component("tool", "deno"))
+    else:
+        yt_dlp = Path(tool_path("yt-dlp", required=False) or "yt-dlp")
+        deno = Path(tool_path("deno", required=False) or "deno")
+    whisper = root / "models/whisper/large-v3-turbo-8bit"
+    if resources is not None and host_architecture() == "x86_64":
+        whisper = root / "models/whisper/ggml-large-v3-turbo.bin"
+    return WorkspacePaths(
+        root=root, jobs=root / "jobs", outputs=root / "outputs",
+        models_ollama=root / "models/ollama", models_whisper=whisper,
+        yt_dlp=yt_dlp, deno=deno,
     )

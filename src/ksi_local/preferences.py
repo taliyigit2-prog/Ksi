@@ -25,7 +25,7 @@ class UserPreferences:
     last_export_directory: str | None = None
     application_location: str = "user_applications"
     workspace_location: str = "internal"
-    theme: str = "system"
+    theme: str = "dark"
 
 
 def preferences_path() -> Path:
@@ -74,12 +74,12 @@ def load_preferences(path: str | Path | None = None) -> UserPreferences:
         workspace_location=(
             str(payload.get("workspace_location"))
             if payload.get("workspace_location") in {"internal", "external"}
-            else "external"
+            else "internal"
         ),
         theme=(
             str(payload.get("theme"))
             if payload.get("theme") in THEMES
-            else "system"
+            else "dark"
         ),
     )
 

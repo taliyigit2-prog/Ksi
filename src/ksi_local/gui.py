@@ -1,4 +1,4 @@
-"""Small personal macOS GUI for the verified KSI Local Studio pipeline."""
+"""Native KSI desktop clients for the shared local service boundary."""
 
 from __future__ import annotations
 
@@ -1064,8 +1064,8 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("KSI Local Studio")
-        self.resize(1120, 820)
-        self.setMinimumSize(620, 560)
+        self.resize(1180, 820)
+        self.setMinimumSize(860, 600)
         application = QApplication.instance()
         self._system_palette = QPalette(application.palette()) if application else QPalette()
         self._system_style_name = application.style().objectName() if application else "macos"
@@ -1897,6 +1897,9 @@ class MainWindow(QMainWindow):
         self.setTabOrder(self.retry_button, self.open_output_button)
         self.setTabOrder(self.open_output_button, self.open_final_video_button)
         self.setTabOrder(self.open_final_video_button, self.open_last_export_button)
+        from ksi_local.ui.shell import StudioShell
+
+        self.studio_shell = StudioShell(self, root_layout, header_layout, logo_path)
         self._apply_accessible_palette()
         self._apply_ui_language()
         self._apply_theme(self.preferences.theme)
@@ -1982,6 +1985,16 @@ class MainWindow(QMainWindow):
             self.setStyleSheet("")
             self.setStyleSheet(style_sheet)
         self._apply_accessible_palette()
+
+        from ksi_local.ui.theme import studio_palette, studio_stylesheet
+
+        is_dark = palette.color(QPalette.ColorRole.Window).lightness() < 128
+        palette = studio_palette(is_dark)
+        application.setPalette(palette)
+        self.setPalette(palette)
+        for widget in self.findChildren(QWidget):
+            widget.setPalette(palette)
+        self.setStyleSheet(studio_stylesheet(is_dark))
 
     def _apply_ui_language(self) -> None:
         """Retranslate the persistent shell without rebuilding active job state."""
@@ -2175,10 +2188,12 @@ class MainWindow(QMainWindow):
         self.log.setAccessibleName(self._t("log.placeholder"))
         self._sync_kind_cards()
         self._source_changed(self.source.text())
+        if hasattr(self, "studio_shell"):
+            self.studio_shell.retranslate()
 
     def _apply_accessible_palette(self) -> None:
         """Keep placeholder text readable across live macOS theme changes."""
-        foreground = self.palette().color(QPalette.ColorRole.WindowText)
+        foreground = self.palette().color(QPalette.ColorRole.Mid)
         for widget in (self.source, self.log):
             palette = widget.palette()
             palette.setColor(QPalette.ColorRole.PlaceholderText, foreground)

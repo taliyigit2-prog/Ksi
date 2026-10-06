@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
+from ksi_local.bundle_runtime import tool_path
 
 
 MAX_DURATION_SECONDS = 3 * 60 * 60
@@ -66,7 +66,7 @@ def probe_local_media(raw_path: str, *, ffprobe_path: str | None = None) -> dict
     if not path.is_file():
         raise ValueError("Seçilen yol normal bir dosya değil.")
 
-    executable = ffprobe_path or shutil.which("ffprobe")
+    executable = ffprobe_path or tool_path("ffprobe", required=False)
     if executable is None:
         raise RuntimeError("ffprobe bulunamadı.")
 
