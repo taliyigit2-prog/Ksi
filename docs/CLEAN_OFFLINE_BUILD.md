@@ -221,3 +221,10 @@ archives remain intact; an explicit `--adhoc-sign` build step creates a separate
 strictly verified ad-hoc copy and records the failed upstream signature status.
 This is not an Apple notarization or valid-upstream-certificate claim. Functional
 download-tool acceptance and final package audits are still required.
+
+Settings can display each model's complete verified offline notices in an inert
+read-only text dialog. Catalog notices are bound to sealed license identifiers;
+no arbitrary path or network page is opened. Empty licenses are rejected, and
+Gemma families require the original terms layer, current official terms snapshot,
+prohibited-use snapshot, required Notice and KSI model-specific terms. These are
+not personal acceptance records or a legal-review certification.

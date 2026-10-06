@@ -43,6 +43,8 @@ def seal_offline_payload(resources: Path, specification: dict) -> dict:
             raise ValueError("Onaylı dosya bütünlük değeri geçersiz.")
         if entry.role not in {"tool", "model", "license", "support"}:
             raise ValueError("Paket dosya rolü geçersiz.")
+        if entry.role == "license" and entry.size == 0:
+            raise ValueError("Paket lisans metni boş olamaz.")
         if not isinstance(entry.identifier, str) or not re.fullmatch(r"[A-Za-z0-9_.-]{1,128}", entry.identifier):
             raise ValueError("Paket bileşeni kimliği geçersiz.")
         if not path.is_file() or path.stat().st_size != entry.size or digest_file(path) != entry.sha256:
@@ -84,6 +86,15 @@ def seal_offline_payload(resources: Path, specification: dict) -> dict:
             raise ValueError("Aynı model dosyası iki aileye ait olamaz.")
         covered.update(members)
         model_ids.add(model["id"])
+        notices = model.get("notices", [])
+        if not isinstance(notices, list) or any(not isinstance(notice, str) or ("license", notice) not in records for notice in notices):
+            raise ValueError("Model katalog lisans bildirimi doğrulanamadı.")
+        required_notices = {records[("model", member)]["license_file"] for member in members}
+        model["notices"] = sorted(set(notices) | required_notices)
+        if "gemma" in model["license"].casefold():
+            gemma_notices = {"gemma-original-license", "gemma-terms", "gemma-prohibited-use", "gemma-notice", "ksi-model-terms"}
+            if not gemma_notices <= set(model["notices"]):
+                raise ValueError("Gemma modelinin koşulları, kullanım kısıtlamaları ve zorunlu bildirimi eksik.")
     if covered != known:
         raise ValueError("Bazı paket model dosyalarının katalog ailesi yok.")
     if ("support", "model-catalog") in records or "model-catalog.json" in seen:

@@ -79,6 +79,7 @@ class DropZone(QFrame):
 
 class ModelRow(Card):
     actionRequested = Signal(str)
+    licenseRequested = Signal(str)
 
     def __init__(self, identifier: str, title: str, description: str, parent=None):
         super().__init__(parent)
@@ -99,13 +100,17 @@ class ModelRow(Card):
         self.badge = QLabel()
         self.badge.setObjectName("modelBadge")
         self.action = QPushButton()
+        self.license_button = QPushButton()
+        self.license_button.clicked.connect(lambda: self.licenseRequested.emit(self.identifier))
         self.action.clicked.connect(lambda: self.actionRequested.emit(self.identifier))
         row.addLayout(copy, 1)
         row.addWidget(self.size_label)
         row.addWidget(self.badge)
+        row.addWidget(self.license_button)
         row.addWidget(self.action)
         self.body.addLayout(row)
         self.action.hide()
+        self.license_button.hide()
 
     def set_status(self, *, badge: str, size: str, action: str | None = None):
         self.badge.setText(badge)

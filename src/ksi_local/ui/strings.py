@@ -18,6 +18,7 @@ NAV = {
 LANG_ORDER = SUPPORTED_UI_LANGUAGES
 # Column order: tr, ru, en, es, de, fr, it, zh.
 COPY = {
+    "model_license": ("Lisans ve koşullar", "Лицензия и условия", "License and terms", "Licencia y condiciones", "Lizenz und Bedingungen", "Licence et conditions", "Licenza e condizioni", "许可证与条款"),
     "local": ("Tamamen yerel medya stüdyosu", "Локальная медиастудия", "Fully local media studio", "Estudio multimedia local", "Lokales Medienstudio", "Studio multimédia local", "Studio multimediale locale", "完全本地的媒体工作室"),
     "drop": ("Dosyayı buraya sürükle ve bırak", "Перетащите файл сюда", "Drop a file here", "Arrastra un archivo aquí", "Datei hier ablegen", "Déposez un fichier ici", "Trascina un file qui", "将文件拖放到此处"),
     "choose": ("Dosya seç", "Выбрать файл", "Choose file", "Elegir archivo", "Datei wählen", "Choisir un fichier", "Scegli file", "选择文件"),

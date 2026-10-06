@@ -21,3 +21,12 @@ Sources: [voice repository](https://huggingface.co/rhasspy/piper-voices/tree/v1.
 
 U²-NetP and every Argos language pair also need weight-specific notices. Engine
 licenses alone do not establish permission to redistribute their models.
+
+TranslateGemma keeps the exact original Gemma license layer, plus a current
+offline snapshot of the official Terms and Prohibited Use Policy, the required
+Gemma Notice and model-specific terms incorporating the usage restrictions.
+These restrictions are not replaced by Apache-2.0 and do not relicense unrelated
+KSI source code. Official terms: https://ai.google.dev/gemma/terms and
+https://ai.google.dev/gemma/prohibited_use_policy. Snapshot records distinguish
+observed HTTPS hashes from immutable upstream digests; they are not personal
+acceptance records or completed legal-review claims.

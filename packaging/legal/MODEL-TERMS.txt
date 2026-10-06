@@ -1,0 +1,20 @@
+KSI Local Studio model-specific terms
+
+KSI source code retains its Apache-2.0 license. Separately licensed model weights
+are not relicensed as KSI source code.
+
+Use or redistribution of the included TranslateGemma model is subject to the
+Gemma Terms of Use and the Gemma Prohibited Use Policy included with the model.
+The use restrictions in Section 3.2 of the Gemma Terms of Use, including the
+Prohibited Use Policy incorporated there, are binding conditions of use and
+redistribution of this model. You must not use this model for those restricted
+uses or in violation of applicable laws. These conditions concern the model,
+not unrelated KSI source code or independent model engines.
+
+The original model license, current official terms snapshot, prohibited-use
+policy snapshot and required Gemma notice are provided offline in the package.
+The upstream quantized model is preserved without KSI weight modifications.
+No Google endorsement, legal advice or personal license acceptance is claimed.
+
+Other included engines and model weights retain their individual license and
+notice files. Preserve those files and applicable conditions when redistributing.

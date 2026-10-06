@@ -46,6 +46,26 @@ class ModelManager:
                 raise ValueError("Model katalog bileşeni bilinmiyor veya çakışıyor.")
             self.specifications[model["id"]] = model
 
+    def license_text(self, identifier: str) -> str:
+        """Read only manifest-bound offline notices, never arbitrary local files."""
+        spec = self.specifications.get(identifier)
+        if spec is None:
+            raise ValueError("Model lisans kaydı bulunamadı.")
+        notices = spec.get("notices")
+        if not isinstance(notices, list) or not 1 <= len(notices) <= 64 or any(not isinstance(value, str) for value in notices):
+            raise RuntimeError("Modelin çevrimdışı lisans metni pakette bulunamadı.")
+        results, total = [], 0
+        for identifier in dict.fromkeys(notices):
+            entry = next((row for row in self.payload.files if row.role == "license" and row.identifier == identifier), None)
+            if entry is None or entry.size > 256 * 1024:
+                raise ValueError("Model lisans dosyası eksik veya boyut sınırını aşıyor.")
+            total += entry.size
+            if total > 2 * 1024**2:
+                raise ValueError("Model lisans metinleri toplam boyut sınırını aşıyor.")
+            verified = self.payload.verify(entry)
+            results.append(identifier + "\n\n" + verified.read_text(encoding="utf-8"))
+        return "\n\n────────\n\n".join(results)
+
     def inventory(self, *, verify: bool = False) -> tuple[ModelInventory, ...]:
         result = []
         for identifier, spec in self.specifications.items():

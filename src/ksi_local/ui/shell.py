@@ -7,7 +7,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
-    QButtonGroup, QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget,
+    QButtonGroup, QComboBox, QDialog, QDialogButtonBox, QFrame, QHBoxLayout, QLabel, QPlainTextEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget,
 )
 
 from ksi_local import __version__
@@ -281,8 +281,39 @@ class StudioShell:
         indices = {"installed": 0, "verified": 1, "missing": 2, "corrupt": 3}
         for model in rows:
             row = ModelRow(model.identifier, model.title, model.description + "\n" + model.license)
+            row.license_button.setText(studio_text("model_license", language))
+            row.license_button.show()
+            row.licenseRequested.connect(self._show_model_license)
             row.set_status(badge=words[indices[model.state]], size=self.window._format_model_bytes(model.total_bytes), action=words[5] if model.state == "missing" else words[4])
             row.actionRequested.connect(lambda identifier, state=model.state: self.window.model_controller.refresh(verify=True, install=state == "missing"))
             self.model_list.addWidget(row)
         self.model_status.setVisible(not rows)
         self.model_list.addWidget(self.model_status)
+
+    def _show_model_license(self, identifier):
+        from ksi_local.bundle_runtime import bundle_root
+        from ksi_local.model_manager import ModelManager
+        from ksi_local.privacy import redact_sensitive_text
+        resources = bundle_root()
+        if resources is None:
+            return
+        workspace = self.window.workspace
+        installed = workspace.root / "models" if workspace is not None else resources / "models"
+        try:
+            content = ModelManager(resources, installed).license_text(identifier)
+        except (OSError, RuntimeError, ValueError) as error:
+            self.model_status.setText(redact_sensitive_text(str(error)))
+            self.model_status.show()
+            return
+        dialog = QDialog(self.window)
+        dialog.setWindowTitle(studio_text("model_license", self.window.preferences.ui_language))
+        dialog.resize(760, 560)
+        body = QVBoxLayout(dialog)
+        viewer = QPlainTextEdit()
+        viewer.setReadOnly(True)
+        viewer.setPlainText(content)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.rejected.connect(dialog.reject)
+        body.addWidget(viewer)
+        body.addWidget(buttons)
+        dialog.exec()

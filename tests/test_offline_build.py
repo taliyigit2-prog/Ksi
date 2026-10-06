@@ -38,6 +38,7 @@ class OfflineBuildTests(unittest.TestCase):
         result = seal_offline_payload(self.resources, self.specification)
         self.assertFalse(result["tested"])
         self.assertEqual(result["files"], 3)
+        self.assertIn("MIT fixture", ModelManager(self.resources, self.root / "installed").license_text("cpu"))
         with self.assertRaises(FileExistsError):
             seal_offline_payload(self.resources, self.specification)
 
@@ -51,6 +52,23 @@ class OfflineBuildTests(unittest.TestCase):
         self.specification["files"][0]["license_file"] = "absent"
         with self.assertRaises(ValueError):
             seal_offline_payload(self.resources, self.specification)
+
+    def test_unknown_license_notice_cannot_reference_arbitrary_local_files(self):
+        self.specification["models"][0]["notices"] = ["outside-license"]
+        with self.assertRaises(ValueError):
+            seal_offline_payload(self.resources, self.specification)
+
+    def test_gemma_cannot_ship_only_a_generic_license_label(self):
+        self.specification["models"][0]["license"] = "Gemma"
+        with self.assertRaises(ValueError):
+            seal_offline_payload(self.resources, self.specification)
+
+    def test_changed_offline_license_does_not_open_unverified_text(self):
+        seal_offline_payload(self.resources, self.specification)
+        (self.resources / "licenses/example.txt").write_text("different terms")
+        manager = ModelManager(self.resources, self.root / "installed")
+        with self.assertRaises(RuntimeError):
+            manager.license_text("cpu")
 
     def test_copyleft_engine_requires_corresponding_source(self):
         for license_expression in ("GPL-3.0-only", "LGPL-2.1-or-later", "MIT AND LGPL-3.0-only", "AGPL-3.0-only"):

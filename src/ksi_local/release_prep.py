@@ -79,6 +79,7 @@ PUBLIC_SCRIPTS = (
     "scripts/stage_argos_model.py",
     "scripts/stage_deno_input.py",
     "scripts/stage_ollama_input.py",
+    "scripts/snapshot_model_terms.py",
     "scripts/stage_native_engines.py",
     "scripts/stage_portable_font.py",
 )
