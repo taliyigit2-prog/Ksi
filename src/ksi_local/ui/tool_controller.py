@@ -1,0 +1,117 @@
+"""Qt signal bridge to sequential shared tool jobs; no engine on the UI thread."""
+
+import threading
+
+from PySide6.QtCore import QObject, Signal
+
+from ksi_local.engine_runner import OperationCancelled
+from ksi_local.job_store import JobStatus
+from ksi_local.privacy import redact_sensitive_text
+from ksi_local.tool_jobs import ToolJobService
+
+
+class ToolController(QObject):
+    progress = Signal(float)
+    status = Signal(str)
+    result = Signal(dict)
+    failed = Signal(str)
+    finished = Signal()
+    busyChanged = Signal(bool)
+    activeChanged = Signal(str)
+
+    def __init__(self, window):
+        super().__init__(window)
+        self.window = window
+        self._busy = False
+        self.cancel_event = threading.Event()
+        self.thread = None
+        self.active_kind = None
+        self.finished.connect(self._finished)
+        self.activeChanged.connect(self._active_changed)
+        self.progress.connect(lambda value: window.progress.setValue(round(value * 100)))
+        self.status.connect(window.status.setText)
+        self.failed.connect(window.status.setText)
+
+    @property
+    def busy(self):
+        return self._busy
+
+    def _service(self):
+        if self.window.workspace is None:
+            raise RuntimeError("Önce kullanılabilir bir KSI çalışma alanı gerekir.")
+        return ToolJobService(self.window.workspace, self.window.store)
+
+    def _available(self):
+        if self.busy or self.window._process_is_running() or self.window.preflight_pending or self.window.maintenance_pending:
+            raise RuntimeError("Başka bir işlem sürüyor; kuyruk bitince yeniden deneyin.")
+
+    def start_media(self, requests):
+        self._available()
+        service = self._service()
+        identifiers = [service.submit_media(request) for request in requests]
+        self._start(service, identifiers)
+
+    def start_images(self, requests):
+        self._available()
+        service = self._service()
+        identifiers = [service.submit_image(request) for request in requests]
+        self._start(service, identifiers)
+
+    def resume(self, identifier):
+        self._available()
+        self._start(self._service(), [identifier])
+
+    def _start(self, service, identifiers):
+        if not identifiers:
+            raise ValueError("İşlenecek dosya seçilmedi.")
+        self.cancel_event.clear()
+        self._busy = True
+        self.active_kind = service.store.get_job(identifiers[0]).job_kind.value
+        self.busyChanged.emit(True)
+        self.window._refresh_history()
+        self.thread = threading.Thread(target=self._run, args=(service, identifiers), name="KSI-local-tools", daemon=True)
+        self.thread.start()
+
+    def _run(self, service, identifiers):
+        try:
+            for index, identifier in enumerate(identifiers):
+                if self.cancel_event.is_set():
+                    for pending in identifiers[index:]:
+                        if service.store.get_job(pending).status is JobStatus.QUEUED:
+                            service.store.transition_job(pending, JobStatus.CANCELLED)
+                    break
+                self.status.emit(f"{index + 1}/{len(identifiers)}")
+                self.activeChanged.emit(identifier)
+                try:
+                    result = service.execute(identifier, cancel=self.cancel_event, on_progress=lambda value, current=index: self.progress.emit((current + value) / len(identifiers)))
+                    self.result.emit(result)
+                except OperationCancelled:
+                    continue
+                except Exception as error:
+                    self.failed.emit(redact_sensitive_text(str(error))[:1000])
+                self.progress.emit((index + 1) / len(identifiers))
+        finally:
+            try:
+                self.finished.emit()
+            except RuntimeError:
+                # Only possible when the parent application is shutting down.
+                pass
+
+    def _finished(self):
+        self._busy = False
+        self.busyChanged.emit(False)
+        if not self.window.closing:
+            self.window._refresh_history()
+            self.window._schedule_interrupted_job_resume()
+
+    def cancel(self):
+        self.cancel_event.set()
+
+    def _active_changed(self, identifier):
+        from pathlib import Path
+
+        record = self.window.store.get_job(identifier)
+        self.window.current_job_id = identifier
+        self.window.current_job = Path(record.job_directory)
+        self.window._update_job_context(record)
+        self.window._refresh_history()

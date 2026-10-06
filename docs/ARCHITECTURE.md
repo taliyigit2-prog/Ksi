@@ -2,6 +2,34 @@
 
 KSI Local Studio is a local-first modular monolith.
 
+## Accepted desktop revision (in implementation)
+
+The 2026-10 revision targets Apple Silicon and Intel macOS with required models
+on offline installation media. It retains PySide6 and the service boundary.
+`ui` contains native Halite-referenced design tokens, sidebar, cards, tool forms
+and a threaded signal bridge. `media_tools`, `image_engines`, `local_ai_worker`
+and `cpu_transcription` contain original local engine adapters. Heavy ONNX and
+Argos imports only occur inside the dedicated local-only worker.
+
+`bundle_runtime` validates architecture, paths, sizes and SHA-256 hashes without
+network access. Packaged tools never fall back to Homebrew. First-run internal
+workspace selection is persisted before model copying, so an interrupted copy
+can resume. A selected missing external volume never becomes an internal one.
+In-process model install caching is invalidated by manifest/file size/mtime
+changes; hashes are verified on initial use and again when an AI worker loads
+the selected model.
+
+SQLite schema 6 adds `media` and `image` job kinds. Tool requests stay in private
+job directories; persisted output paths cannot redirect publication outside the
+job's outputs. Existing review/dubbing actions are unavailable for tool jobs.
+Native processes have deadlines, cancellation and bounded/redacted diagnostics.
+
+The strict earlier human/notarized release gates below remain historical APIs.
+The user-approved new distribution permits clearly labeled ad-hoc signing and
+requires autonomous acceptance instead of invented human scores. New binary
+release evidence is not yet available; do not interpret source checkpoints as
+successful cross-architecture, model-quality or installation verification.
+
 ```text
 GUI ─┐
 CLI ─┼─> KSI Core ─> jobs, storage, security and resource governor

@@ -2394,6 +2394,9 @@ class MainWindow(QMainWindow):
             return
         if record.status is not JobStatus.QUEUED:
             return
+        if record.job_kind in {JobKind.MEDIA, JobKind.IMAGE}:
+            self.tool_controller.resume(record.id)
+            return
         try:
             platform = (
                 validate_source_url(record.source_reference).platform
@@ -2412,8 +2415,9 @@ class MainWindow(QMainWindow):
 
     def _process_is_running(self) -> bool:
         return bool(
-            self.process is not None
-            and self.process.state() != QProcess.ProcessState.NotRunning
+            (getattr(self, "tool_controller", None) is not None and self.tool_controller.busy)
+            or (self.process is not None
+            and self.process.state() != QProcess.ProcessState.NotRunning)
         )
 
     def _poll_workspace(self) -> None:
@@ -3023,6 +3027,13 @@ class MainWindow(QMainWindow):
                 and not Path(last_export).is_symlink()
             )
         )
+        if record and record.job_kind in {JobKind.MEDIA, JobKind.IMAGE}:
+            for button in (
+                self.review_button, self.summary_review_button, self.open_dub_button,
+                self.add_outputs_button, self.create_codex_package_button,
+                self.import_codex_package_button, self.undo_codex_review_button,
+            ):
+                button.setEnabled(False)
 
     def _job_directory_is_valid(self, job_directory: Path) -> bool:
         if self.workspace is None:
@@ -3447,6 +3458,9 @@ class MainWindow(QMainWindow):
         if record is None or self.workspace is None or self._process_is_running():
             return
         try:
+            if record.job_kind in {JobKind.MEDIA, JobKind.IMAGE}:
+                self.tool_controller.resume(record.id)
+                return
             self._start(existing_job=record)
         except (OSError, RuntimeError, ValueError) as error:
             safe_message = self._actionable_message(
@@ -6172,6 +6186,12 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     def closeEvent(self, event: QCloseEvent) -> None:
+        controller = getattr(self, "tool_controller", None)
+        if controller is not None and controller.busy:
+            controller.cancel()
+            event.ignore()
+            QTimer.singleShot(200, self.close)
+            return
         if self.maintenance_pending:
             QMessageBox.information(
                 self,

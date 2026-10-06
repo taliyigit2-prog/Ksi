@@ -80,7 +80,22 @@ class StudioShell:
             button.clicked.connect(lambda checked, selected=index: window.tabs.setCurrentIndex(selected))
             self.group.addButton(button, index)
             self.buttons.append(button)
-        for index in (0, 1, 2):
+        from ksi_local.ui.tool_controller import ToolController
+        from ksi_local.ui.tool_pages import ToolPage
+
+        window.tool_controller = ToolController(window)
+        window.media_tools_page = ToolPage(window.tool_controller)
+        window.image_tools_page = ToolPage(window.tool_controller, images=True)
+        for page, name in ((window.media_tools_page, "Video ve Ses"), (window.image_tools_page, "Görseller")):
+            index = window.tabs.addTab(page, name)
+            button = QPushButton(name)
+            button.setProperty("nav", True)
+            button.setCheckable(True)
+            button.setObjectName(f"nav-{index}")
+            button.clicked.connect(lambda checked, selected=index: window.tabs.setCurrentIndex(selected))
+            self.group.addButton(button, index)
+            self.buttons.append(button)
+        for index in (0, 5, 6, 1, 2):
             navigation.addWidget(self.buttons[index])
         navigation.addStretch(1)
         navigation.addWidget(self.buttons[4])
@@ -156,6 +171,8 @@ class StudioShell:
         labels = LABELS.get(self.window.preferences.ui_language, LABELS["en"])
         glyphs = ("◈", "≡", "◷", "⚙", "?")
         for index, button in enumerate(self.buttons):
+            if index >= len(glyphs):
+                continue
             button.setText(f"{glyphs[index]}   {labels[index]}")
             button.setAccessibleName(labels[index])
         self.window.system_heading.setText(labels[3])

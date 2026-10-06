@@ -14,12 +14,14 @@ from ksi_local.privacy import redact_sensitive_text, safe_source_reference
 from ksi_local.project_metadata import STATE_DIRECTORY
 
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 
 class JobKind(StrEnum):
     VIDEO = "video"
     DOCUMENT = "document"
+    MEDIA = "media"
+    IMAGE = "image"
 
 
 class JobStatus(StrEnum):
@@ -231,7 +233,7 @@ class JobStore:
                 )
             connection.execute(
                 "UPDATE jobs SET job_kind = 'video' "
-                "WHERE job_kind IS NULL OR job_kind NOT IN ('video', 'document')"
+                "WHERE job_kind IS NULL OR job_kind NOT IN ('video', 'document', 'media', 'image')"
             )
             connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
         try:
@@ -285,7 +287,7 @@ class JobStore:
         try:
             normalized_job_kind = JobKind(job_kind)
         except ValueError as error:
-            raise ValueError("İş türü video veya belge olmalıdır.") from error
+            raise ValueError("İş türü video, belge, medya veya görsel olmalıdır.") from error
         if isinstance(max_height, bool) or not isinstance(max_height, int):
             raise ValueError("İndirme yüksekliği tam sayı olmalıdır.")
         if max_height < 144 or max_height > 1080:
@@ -351,7 +353,7 @@ class JobStore:
             try:
                 normalized_kind = JobKind(job_kind)
             except ValueError as error:
-                raise ValueError("İş türü video veya belge olmalıdır.") from error
+                raise ValueError("İş türü video, belge, medya veya görsel olmalıdır.") from error
         with self._connect() as connection:
             if normalized_kind is None:
                 rows = connection.execute(

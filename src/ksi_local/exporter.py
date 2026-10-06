@@ -32,6 +32,15 @@ ALLOWED_ARTIFACT_SUFFIXES = {
     ".json",
     ".wav",
     ".m4a",
+    ".mp3",
+    ".flac",
+    ".aac",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".webp",
+    ".avif",
+    ".gif",
 }
 EXPORT_RESERVE_BYTES = 2 * 1024**3
 ICLOUD_LARGE_EXPORT_BYTES = 100 * 1024**2
