@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import fcntl
 import os
+import stat
 from contextvars import ContextVar
 from functools import wraps
 from pathlib import Path
@@ -30,7 +31,7 @@ def single_model_lock():
         try:
             inherited_fd = int(inherited)
             actual, expected = os.fstat(inherited_fd), path.stat(follow_symlinks=False)
-            if inherited_fd < 3 or (actual.st_dev, actual.st_ino) != (expected.st_dev, expected.st_ino):
+            if inherited_fd < 3 or not stat.S_ISREG(actual.st_mode) or (actual.st_dev, actual.st_ino) != (expected.st_dev, expected.st_ino):
                 raise ValueError("Miras alınan model kilidi geçersiz.")
             fcntl.flock(inherited_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except (OSError, ValueError) as error:
@@ -42,10 +43,12 @@ def single_model_lock():
             # Parent owns the shared open-file description; never unlock it here.
             _MODEL_DESCRIPTOR.reset(token)
         return
-    descriptor = os.open(path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+    descriptor = os.open(path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
     acquired = False
     token = None
     try:
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise ValueError("Model kilidi normal dosya olmalıdır.")
         try:
             fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
             acquired = True

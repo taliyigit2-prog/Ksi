@@ -59,6 +59,7 @@ PUBLIC_SCRIPTS = (
     "scripts/notarize_release.sh",
     "scripts/seal_offline_payload.py",
     "scripts/build_offline_dmg.py",
+    "scripts/fetch_build_input.py",
 )
 ALLOWED_BINARY_SUFFIXES = {".png", ".gif", ".icns"}
 BLOCKED_PARTS = {
@@ -193,7 +194,7 @@ def _iter_public_inputs(source: Path) -> Iterable[tuple[Path, Path]]:
             if path.suffix in {".pyc", ".pyo"} or ".egg-info" in relative.parts:
                 continue
             yield path, relative
-    for relative in ("config/glossary.json", "config/public-catalog.json"):
+    for relative in ("config/glossary.json", "config/public-catalog.json", "config/runtime-sources.json"):
         path = source / relative
         if path.is_file():
             yield path, Path(relative)

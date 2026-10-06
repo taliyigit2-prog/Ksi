@@ -1,5 +1,6 @@
 """Recompose existing workflow controls into a native Halite-style page."""
 
+from pathlib import Path
 from PySide6.QtWidgets import QFormLayout, QHBoxLayout, QLabel, QMessageBox, QPushButton
 
 from ksi_local.ui.components import Card, DropZone
@@ -10,6 +11,10 @@ class WorkflowPage:
     def __init__(self, window):
         self.window = window
         self.mode = "video"
+        self.outputs = {
+            "video": (window.want_subtitle.isChecked(), window.want_summary.isChecked(), window.want_dub.isChecked()),
+            "document": (True, False, False),
+        }
         body = window.new_job_tab.layout()
         body.removeWidget(window.new_job_group)
         window.new_job_group.hide()
@@ -69,16 +74,25 @@ class WorkflowPage:
         if len(files) != 1:
             QMessageBox.information(self.window, text(self.mode, self.window.preferences.ui_language), text("single", self.window.preferences.ui_language))
             return
+        if Path(files[0]).suffix.lower() in {".pdf", ".docx", ".md", ".txt"}:
+            self.window.studio_shell._navigate("document")
         self.window.source.setText(files[0])
 
     def select(self, mode):
         if mode not in {"download", "video", "document"}:
             raise ValueError("Bilinmeyen iş ekranı.")
+        if self.mode in self.outputs and not self.window.download_only.isChecked():
+            self.outputs[self.mode] = tuple(widget.isChecked() for widget in (
+                self.window.want_subtitle, self.window.want_summary, self.window.want_dub))
         self.mode = mode
         kind = "document" if mode == "document" else "video"
         self.window._select_kind_card(kind, True)
         self.window.download_only.setChecked(mode == "download")
+        if mode in self.outputs:
+            for widget, value in zip((self.window.want_subtitle, self.window.want_summary, self.window.want_dub), self.outputs[mode], strict=True):
+                widget.setChecked(value)
         self.window.output_group.setVisible(mode != "download")
+        self.drop.setVisible(mode != "download")
         self.tools.setVisible(mode == "video")
         self.window.tabs.setCurrentIndex(0)
         self.retranslate()

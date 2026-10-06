@@ -59,6 +59,7 @@ cookies.txt
 # Generated application and installer artifacts
 *.app/
 *.dmg
+*.dmgpart
 *.pkg
 *.exe
 *.msi

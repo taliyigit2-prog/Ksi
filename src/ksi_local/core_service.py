@@ -118,15 +118,16 @@ class CoreService:
 
     def status(self, job_id: str) -> dict[str, Any]:
         job = self.store.get_job(job_id)
+        self._allowed_path(job.job_directory, must_exist=False)
         payload = _record(job)
         payload["stages"] = [asdict(item) for item in self.store.list_stages(job_id)]
         return payload
 
     def submit_media_tool(self, request: dict[str, Any], *, confirm: bool) -> dict[str, Any]:
-        if not confirm or self.workspace is None:
+        if confirm is not True or self.workspace is None:
             raise PermissionError("Yerel araç işi için açık onay ve çalışma alanı gerekir.")
         sources = request.get("sources")
-        if not isinstance(sources, (tuple, list)) or not sources:
+        if not isinstance(sources, (tuple, list)) or not 1 <= len(sources) <= 100 or any(not isinstance(source, str) or not 0 < len(source) <= 4096 for source in sources):
             raise ValueError("Medya girdisi listesi geçersiz.")
         paths = tuple(str(self._allowed_path(source)) for source in sources)
         output = self._allowed_path(request["destination"], must_exist=False)
@@ -137,7 +138,7 @@ class CoreService:
         return self.status(identifier)
 
     def execute_tool_job(self, job_id: str, *, confirm: bool, cancel=None, on_progress=None) -> dict[str, Any]:
-        if not confirm or self.workspace is None:
+        if confirm is not True or self.workspace is None:
             raise PermissionError("Yerel araç işlemi için açık onay ve çalışma alanı gerekir.")
         import json
 
@@ -148,13 +149,13 @@ class CoreService:
             raise ValueError("Araç iş tanımı boyut sınırını aşıyor.")
         data = json.loads(manifest.read_text(encoding="utf-8"))["request"]
         for source in data.get("sources", [data.get("source")]):
-            self._allowed_path(source)
+            self._allowed_path(source, must_exist=False)
         if data.get("subtitle"):
-            self._allowed_path(data["subtitle"])
+            self._allowed_path(data["subtitle"], must_exist=False)
         return ToolJobService(self.workspace, self.store).execute(job_id, cancel=cancel, on_progress=on_progress)
 
     def submit_image_tool(self, request: dict[str, Any], *, confirm: bool) -> dict[str, Any]:
-        if not confirm or self.workspace is None:
+        if confirm is not True or self.workspace is None:
             raise PermissionError("Yerel görsel işi için açık onay ve çalışma alanı gerekir.")
         source = self._allowed_path(request["source"])
         destination = self._allowed_path(request["destination"], must_exist=False)
@@ -163,12 +164,14 @@ class CoreService:
         return self.status(identifier)
 
     def stop(self, job_id: str, *, confirm: bool) -> dict[str, Any]:
-        if not confirm:
+        if confirm is not True:
             raise PermissionError("İşi durdurmak için açık onay gereklidir.")
+        self._allowed_path(self.store.get_job(job_id).job_directory, must_exist=False)
         queue = JobQueue(self.store, lambda: self.workspace is not None)
         return _record(queue.cancel(job_id))
 
     def resume(self, job_id: str) -> dict[str, Any]:
+        self._allowed_path(self.store.get_job(job_id).job_directory, must_exist=False)
         return _record(self.store.retry_job(job_id))
 
     def results(self, job_id: str) -> list[dict[str, Any]]:
@@ -185,7 +188,7 @@ class CoreService:
                 path.is_file()
                 and not path.is_symlink()
                 and path.suffix.casefold() in ALLOWED_ARTIFACT_SUFFIXES
-                and ".part" not in path.name
+                and not any(part.startswith(".") for part in path.relative_to(output_root).parts)
             ):
                 items.append({"path": str(path), "relative_path": str(path.relative_to(root)), "size_bytes": path.stat().st_size})
         return items
@@ -198,7 +201,7 @@ class CoreService:
         folder_name: str = "KSI Local Studio Çıktısı",
         confirm: bool,
     ) -> dict[str, Any]:
-        if not confirm:
+        if confirm is not True:
             raise PermissionError("Dışa aktarma yazma işlemi için açık onay gereklidir.")
         destination = self._allowed_path(destination_directory)
         job = self.store.get_job(job_id)

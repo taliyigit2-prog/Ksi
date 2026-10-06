@@ -72,7 +72,10 @@ def parse_srt_text(content: str) -> list[Cue]:
 
 
 def read_srt(path: str | Path) -> list[Cue]:
-    return parse_srt_text(Path(path).read_text(encoding="utf-8-sig"))
+    source = Path(path)
+    if not source.is_file() or source.stat().st_size > MAX_TEXT_SOURCE_BYTES:
+        raise ValueError("SRT kaynağı normal dosya ve güvenli metin boyutu içinde olmalıdır.")
+    return parse_srt_text(source.read_text(encoding="utf-8-sig"))
 
 
 def _srt_timestamp(value: str) -> str:

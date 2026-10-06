@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "inputs": {
+    "python-arm64": {
+      "architecture": "arm64",
+      "version": "3.12.15",
+      "revision": "20261003",
+      "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261003/cpython-3.12.15%2B20261003-aarch64-apple-darwin-install_only.tar.gz",
+      "sha256": "316a463172740e71d8dca1f2730784e325f3f720941137b5d674d5801a632213",
+      "size": 25146462,
+      "license": "Python-2.0",
+      "digest_source": "GitHub release asset digest"
+    },
+    "python-x86_64": {
+      "architecture": "x86_64",
+      "version": "3.12.15",
+      "revision": "20261003",
+      "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261003/cpython-3.12.15%2B20261003-x86_64-apple-darwin-install_only.tar.gz",
+      "sha256": "a8fd7a91852f19b6d959793ef41fad048631ccb2a334a9ecdf573255298f7978",
+      "size": 24850741,
+      "license": "Python-2.0",
+      "digest_source": "GitHub release asset digest"
+    }
+  }
+}

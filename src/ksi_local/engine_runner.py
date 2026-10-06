@@ -15,6 +15,7 @@ from typing import Callable
 from ksi_local.network_policy import local_worker_environment
 from ksi_local.privacy import redact_sensitive_text
 from ksi_local.resource_governor import active_model_descriptor
+from ksi_local.job_leases import active_job_descriptor
 
 
 class OperationCancelled(RuntimeError):
@@ -51,6 +52,7 @@ def run_engine(
     if cancel is not None and cancel.is_set():
         raise OperationCancelled("İşlem iptal edildi.")
     descriptor = active_model_descriptor()
+    descriptors = tuple(dict.fromkeys(fd for fd in (descriptor, active_job_descriptor()) if fd is not None))
     worker_environment = local_worker_environment(environment)
     worker_environment.pop("KSI_MODEL_LOCK_FD", None)
     if descriptor is not None:
@@ -59,7 +61,7 @@ def run_engine(
         argv, cwd=cwd, env=worker_environment,
         stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         start_new_session=True, shell=False,
-        pass_fds=(descriptor,) if descriptor is not None else (),
+        pass_fds=descriptors,
     )
     lines: deque[str] = deque(maxlen=80)
     buffer = b""

@@ -14,6 +14,7 @@ MAX_DURATION_SECONDS = 3 * 60 * 60
 MEDIA_SUFFIXES = {".mp4", ".mkv", ".mov", ".webm", ".m4v"}
 AUDIO_SUFFIXES = {".m4a", ".mp3", ".opus", ".ogg", ".wav", ".aac"}
 PROCESSING_MEDIA_SUFFIXES = MEDIA_SUFFIXES | AUDIO_SUFFIXES
+LOCAL_FORMAT_WHITELIST = "mov,mp4,m4a,3gp,3g2,mj2,matroska,webm,mp3,wav,flac,aac,ogg,avi,gif"
 
 
 def summarize_ffprobe(payload: dict[str, Any]) -> dict[str, Any]:
@@ -77,6 +78,8 @@ def probe_local_media(raw_path: str, *, ffprobe_path: str | None = None) -> dict
             "error",
             "-protocol_whitelist",
             "file,pipe",
+            "-format_whitelist",
+            LOCAL_FORMAT_WHITELIST,
             "-show_entries",
             (
                 "format=duration,size,format_name:"

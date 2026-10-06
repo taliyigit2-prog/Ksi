@@ -35,6 +35,8 @@ COPY = {
 
 
 TOOL_COPY = {
+    "preview": "Önizleme|Предпросмотр|Preview|Vista previa|Vorschau|Aperçu|Anteprima|预览",
+    "preview_hint": "Küçük önizleme · desteklenen yerel görseller|Миниатюра · поддерживаемые локальные изображения|Thumbnail · supported local images|Miniatura · imágenes locales compatibles|Miniatur · unterstützte lokale Bilder|Miniature · images locales compatibles|Miniatura · immagini locali supportate|缩略图 · 支持的本地图像",
     "remove_background_video": "AI video arka planını kaldır|Удалить фон видео с ИИ|AI video background removal|Eliminar fondo de vídeo con IA|KI-Videohintergrund entfernen|Supprimer le fond vidéo par IA|Rimuovi sfondo video con IA|AI 移除视频背景",
     "video_mask_hint": "En fazla 30 sn · 20 fps · 1280×720. MOV: şeffaf; MP4: siyah arka plan.|До 30 с · 20 кадров/с · 1280×720. MOV: прозрачность; MP4: чёрный фон.|Up to 30 s · 20 fps · 1280×720. MOV: alpha; MP4: black background.|Hasta 30 s · 20 fps · 1280×720. MOV: transparencia; MP4: fondo negro.|Bis 30 s · 20 fps · 1280×720. MOV: transparent; MP4: schwarzer Hintergrund.|30 s max · 20 fps · 1280×720. MOV : transparence ; MP4 : fond noir.|Fino a 30 s · 20 fps · 1280×720. MOV: trasparenza; MP4: sfondo nero.|最多 30 秒 · 20 fps · 1280×720。MOV：透明；MP4：黑色背景。",
     "batch_result": "Tamamlanan: {ok} · Hatalı: {failed} · İptal: {cancelled}|Готово: {ok} · Ошибки: {failed} · Отменено: {cancelled}|Completed: {ok} · Failed: {failed} · Cancelled: {cancelled}|Completados: {ok} · Errores: {failed} · Cancelados: {cancelled}|Fertig: {ok} · Fehler: {failed} · Abgebrochen: {cancelled}|Terminés : {ok} · Échecs : {failed} · Annulés : {cancelled}|Completati: {ok} · Errori: {failed} · Annullati: {cancelled}|完成：{ok} · 失败：{failed} · 取消：{cancelled}",

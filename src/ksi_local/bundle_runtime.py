@@ -69,10 +69,13 @@ def safe_member(root: Path, value: str) -> Path:
     return candidate
 
 
-def digest_file(path: Path) -> str:
+def digest_file(path: Path, *, cancel=None) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            if cancel is not None and cancel.is_set():
+                from ksi_local.engine_runner import OperationCancelled
+                raise OperationCancelled("Dosya bütünlük denetimi iptal edildi.")
             digest.update(chunk)
     return digest.hexdigest()
 

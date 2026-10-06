@@ -5,6 +5,7 @@ from __future__ import annotations
 import ctypes
 import errno
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -93,6 +94,23 @@ def select_job_artifacts(
         raise ValueError("İş klasörü bulunamadı.")
     base = safe_filename(title, fallback=f"KSI Local Studio {job.name[:8]}")
     outputs = job / "outputs"
+    tool_request = job / "tool-request.json"
+    if tool_request.is_file():
+        from ksi_local.bundle_runtime import digest_file
+
+        receipt = job / "tool-result.json"
+        if tool_request.is_symlink() or tool_request.stat().st_size > 2 * 1024**2 or not receipt.is_file() or receipt.is_symlink() or receipt.stat().st_size > 65536:
+            raise ValueError("Araç çıktısının doğrulanmış sonuç kaydı bulunamadı.")
+        definition = json.loads(tool_request.read_text(encoding="utf-8"))
+        result = json.loads(receipt.read_text(encoding="utf-8"))
+        if not isinstance(definition, dict) or definition.get("kind") not in {"media", "image"} or not isinstance(result, dict):
+            raise ValueError("Araç çıktı kaydı geçersiz.")
+        path = Path(result.get("output", ""))
+        if outputs.is_symlink() or path.parent != outputs or path.is_symlink() or not path.is_file() or path.name.startswith(".") or path.suffix.lower() not in ALLOWED_ARTIFACT_SUFFIXES or digest_file(path) != result.get("output_sha256"):
+            raise ValueError("Araç çıktısı iş alanı veya bütünlük denetiminden geçmedi.")
+        if export_kind not in {"all", "video"}:
+            raise ValueError("Bu araç işi için bütün çıktıları seçin.")
+        return [ExportArtifact(path, path.name)]
     document_translation = [
         (outputs / f"belge-turkce{suffix}", f"{base}.tr{suffix}")
         for suffix in (".txt", ".md", ".docx", ".pdf")

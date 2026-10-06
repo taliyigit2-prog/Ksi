@@ -119,7 +119,17 @@ def convert_advanced_image(
         (stage / "policy.xml").write_text(MAGICK_POLICY, encoding="utf-8")
         environment = dict(os.environ, MAGICK_CONFIGURE_PATH=str(stage), MAGICK_TEMPORARY_PATH=str(stage))
         candidate = stage / ("result" + output.suffix.lower())
-        args = [str(tool_path("magick")), str(original), "-auto-orient"]
+        # A fixed basename prevents ImageMagick interpreting user filename
+        # brackets, pseudo-protocols or glob characters as engine syntax.
+        staged_input = stage / ("source" + original.suffix.lower())
+        shutil.copyfile(original, staged_input)
+        input_name = str(staged_input)
+        warnings = []
+        if output.suffix.lower() not in {".gif", ".webp"}:
+            input_name += "[0]"
+            if original.suffix.lower() in {".gif", ".webp", ".tif", ".tiff"}:
+                warnings.append("Tek kareli çıktı biçiminde yalnız ilk kare/sayfa kullanıldı.")
+        args = [str(tool_path("magick")), input_name, "-auto-orient"]
         if width:
             args += ["-resize", f"{width}x>"]
         if strip_metadata:
@@ -131,4 +141,4 @@ def convert_advanced_image(
         if cancel is not None and cancel.is_set():
             raise OperationCancelled("Görsel işlemi iptal edildi.")
         os.link(candidate, output)
-        return ImageEngineResult(str(output), original.stat().st_size, output.stat().st_size, False)
+        return ImageEngineResult(str(output), original.stat().st_size, output.stat().st_size, False, tuple(warnings))

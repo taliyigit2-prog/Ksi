@@ -86,6 +86,7 @@ def remove_background_frames(request: dict) -> dict:
     session, remove = _background_session(request)
     destination.mkdir(mode=0o700)
     masks = 0
+    foreground = 0
     dimensions = None
     for index, frame in enumerate(frames):
         with Image.open(frame) as image:
@@ -98,11 +99,13 @@ def remove_background_frames(request: dict) -> dict:
             if not isinstance(result, Image.Image) or result.size != dimensions:
                 raise RuntimeError("Video arka plan motoru beklenen kareyi üretmedi.")
             result = result.convert("RGBA")
-            masks += int(result.getchannel("A").getextrema()[0] < 255)
+            minimum, maximum = result.getchannel("A").getextrema()
+            masks += int(minimum < 255)
+            foreground += int(maximum > 0)
             with (destination / frame.name).open("xb") as stream:
                 result.save(stream, format="PNG")
         print(f"KSI_FRAME_PROGRESS={index + 1}/{len(frames)}", flush=True)
-    if not masks:
+    if not masks or not foreground:
         raise RuntimeError("Videoda ayrıştırılabilir arka plan maskesi üretilemedi.")
     return {"frames": len(frames), "width": dimensions[0], "height": dimensions[1],
             "engine": "rembg-u2netp-cpu", "masked_frames": masks}

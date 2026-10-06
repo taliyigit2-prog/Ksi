@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from PySide6.QtCore import QUrl
+from PySide6.QtCore import QUrl, Qt
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, QFormLayout, QHBoxLayout,
@@ -38,6 +38,12 @@ class ToolPage(QWidget):
         self.file_list.setMaximumHeight(95)
         self.file_list.setAccessibleName("Seçilen dosyalar")
         self.body.addWidget(self.file_list)
+        self.preview = None
+        if images:
+            from ksi_local.ui.image_preview import ImagePreview
+            self.preview = ImagePreview(controller.window)
+            self.file_list.currentRowChanged.connect(lambda row: self.preview.load(self.sources[row] if 0 <= row < len(self.sources) else None))
+            self.body.addWidget(self.preview)
         card = Card()
         form = QFormLayout()
         self.form = form
@@ -100,6 +106,7 @@ class ToolPage(QWidget):
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
         self.status = QLabel()
+        self.status.setTextFormat(Qt.TextFormat.PlainText)
         self.status.setWordWrap(True)
         self.body.addWidget(self.progress)
         self.body.addWidget(self.status)
@@ -139,6 +146,8 @@ class ToolPage(QWidget):
         self.start_button.setText(self._text("tool_start"))
         self.cancel_button.setText(self._text("stop"))
         self.open_button.setText(self._text("show_output"))
+        if self.preview is not None:
+            self.preview.retranslate()
         self._operation_changed()
 
     def _select(self, files):
@@ -151,6 +160,8 @@ class ToolPage(QWidget):
         self.sources = list(dict.fromkeys(valid))
         self.file_list.clear()
         self.file_list.addItems([Path(path).name for path in self.sources])
+        if self.sources:
+            self.file_list.setCurrentRow(0)
         self.start_button.setEnabled(bool(self.sources))
 
     def _operation_changed(self):
@@ -216,6 +227,8 @@ class ToolPage(QWidget):
             return
         self.last_output = result.get("output")
         self.open_button.setEnabled(bool(self.last_output))
+        if self.preview is not None and self.last_output:
+            self.preview.load(self.last_output)
         warnings = "\n".join(result.get("warnings", ()))
         self.status.setText(self._text("completed") + ("\n" + warnings if warnings else ""))
 

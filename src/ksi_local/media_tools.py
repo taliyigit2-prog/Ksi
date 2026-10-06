@@ -14,7 +14,7 @@ from typing import Callable
 
 from ksi_local.bundle_runtime import tool_path
 from ksi_local.engine_runner import OperationCancelled, run_engine
-from ksi_local.media import MAX_DURATION_SECONDS, probe_local_media
+from ksi_local.media import MAX_DURATION_SECONDS, LOCAL_FORMAT_WHITELIST, probe_local_media
 from ksi_local.subtitles import read_srt
 
 
@@ -66,6 +66,12 @@ def _source(value: str) -> Path:
 
 
 def _validate(request: MediaRequest):
+    if any(type(value) is not bool for value in (request.lossless, request.hardware, request.strip_metadata)):
+        raise ValueError("Medya seçimleri gerçek mantıksal değerler olmalıdır.")
+    if not isinstance(request.sources, (tuple, list)) or any(not isinstance(value, str) for value in request.sources) or not isinstance(request.destination, str):
+        raise ValueError("Medya dosyası yolları metin listesi ve metin hedefi olmalıdır.")
+    if type(request.start) not in {int, float} or (request.end is not None and type(request.end) not in {int, float}):
+        raise ValueError("Medya zamanları sayısal değerler olmalıdır.")
     if request.operation not in {"convert", "trim", "join", "remux", "burn_subtitle", "remove_background_video"}:
         raise ValueError("Medya işlemi desteklenmiyor.")
     if request.profile not in PROFILES:
@@ -144,8 +150,8 @@ def _compatible(information: list[dict]) -> bool:
 
 def _stream_signature(path: Path, ffprobe: str) -> list[dict]:
     result = subprocess.run(
-        [ffprobe, "-v", "error", "-protocol_whitelist", "file,pipe", "-show_entries",
-         "stream=codec_type,codec_name,profile,pix_fmt,width,height,sample_aspect_ratio,r_frame_rate,time_base,sample_rate,channels,channel_layout,extradata_size",
+        [ffprobe, "-v", "error", "-protocol_whitelist", "file,pipe", "-format_whitelist", LOCAL_FORMAT_WHITELIST, "-show_data", "-show_entries",
+         "stream=codec_type,codec_name,profile,level,pix_fmt,width,height,sample_aspect_ratio,r_frame_rate,time_base,sample_rate,channels,channel_layout,extradata_size,extradata,color_space,color_transfer,color_primaries:stream_tags=rotate:stream_side_data=rotation",
          "-of", "json", str(path)],
         capture_output=True, text=True, check=False, timeout=30,
     )
@@ -175,11 +181,11 @@ def process_media(
     if request.operation == "trim" and (request.start >= durations[0] or (request.end is not None and request.end > durations[0] + 0.05)):
         raise ValueError("Kesme aralığı medya süresinin dışında.")
     if request.operation == "join" and not _compatible(information):
-        raise ValueError("Medya parçalarının codec, görüntü veya iz yapısı uyumsuz; önce aynı profile dönüştürün.")
+        raise ValueError("Birleştirme aynı codec, çözünürlük ve iz yapısındaki parçaları gerektirir.")
     if request.operation == "join":
         signatures = [_stream_signature(path, ffprobe) for path in sources]
         if any(signature != signatures[0] for signature in signatures[1:]):
-            raise ValueError("Parçaların ses, kare hızı veya zaman tabanı uyumsuz; önce aynı profile dönüştürün.")
+            raise ValueError("Birleştirme aynı ses ayarları, kare hızı, zaman tabanı ve codec yapılandırmasını gerektirir.")
     if request.operation == "burn_subtitle" and (fmt not in {"mp4", "mov", "mkv", "webm"} or not request.subtitle):
         raise ValueError("Kalıcı altyazı için altyazı dosyası ve video biçimi gerekir.")
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -193,6 +199,7 @@ def process_media(
         stage = Path(staging)
         temporary = stage / f"result.{fmt}"
         args = [ffmpeg, "-hide_banner", "-nostdin", "-loglevel", "warning", "-y", "-protocol_whitelist", "file,pipe"]
+        args += ["-format_whitelist", LOCAL_FORMAT_WHITELIST + (",concat" if request.operation == "join" else "")]
         if request.operation == "join":
             records = "\n".join("file '" + str(path).replace("'", "'\\''") + "'" for path in sources)
             (stage / "inputs.ffconcat").write_text(records + "\n", encoding="utf-8")

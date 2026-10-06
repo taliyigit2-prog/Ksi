@@ -35,6 +35,32 @@ class Phase35Tests(unittest.TestCase):
             self.assertTrue(source.exists())
             self.assertTrue(artifact.exists())
 
+    def test_confirmation_is_a_real_boolean_not_a_truthy_string(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source.txt"
+            source.write_text("safe")
+            service = self.make_service(root)
+            record = service.create_job(source=str(source), job_directory=root / "jobs/one")
+            for value in ("false", "true", 1, [], {}):
+                with self.subTest(value=value), self.assertRaises(PermissionError):
+                    service.stop(record["id"], confirm=value)
+            self.assertEqual(service.status(record["id"])["status"], "queued")
+
+    def test_other_root_cannot_read_or_mutate_private_job_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source.txt"
+            source.write_text("safe")
+            service = self.make_service(root)
+            record = service.create_job(source=str(source), job_directory=root / "jobs/private")
+            limited = CoreService(store=service.store, allowed_roots=(root / "unrelated",))
+            for action in (lambda: limited.status(record["id"]),
+                           lambda: limited.stop(record["id"], confirm=True),
+                           lambda: limited.resume(record["id"])):
+                with self.assertRaises(PermissionError):
+                    action()
+
     def test_core_enforces_roots_network_and_new_job_directory(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -65,7 +91,8 @@ class Phase35Tests(unittest.TestCase):
             initialized = handle_message(service, {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}})
             self.assertEqual(initialized["result"]["protocolVersion"], "2025-06-18")
             listed = handle_message(service, {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
-            self.assertEqual(len(listed["result"]["tools"]), 7)
+            self.assertEqual(len(listed["result"]["tools"]), len(TOOLS))
+            self.assertIn("ksi_tool_job_execute", {tool["name"] for tool in TOOLS})
             failed = handle_message(service, {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "ksi_job_create", "arguments": {"source": "https://example.com/x?token=secret", "job_directory": str(Path(directory) / "job")}}})
             serialized = json.dumps(failed, ensure_ascii=False)
             self.assertTrue(failed["result"]["isError"])

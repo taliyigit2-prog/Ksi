@@ -10,6 +10,7 @@ from pathlib import Path
 from ksi_local.bundle_runtime import tool_path, bundle_root, OfflinePayload, digest_file
 from ksi_local.engine_runner import run_engine
 from ksi_local.subtitles import write_srt
+from ksi_local.media import LOCAL_FORMAT_WHITELIST
 
 
 def transcribe_cpu(
@@ -34,7 +35,7 @@ def transcribe_cpu(
         audio = stage / "input.wav"
         run_engine([
             str(tool_path("ffmpeg")), "-hide_banner", "-nostdin", "-v", "error",
-            "-protocol_whitelist", "file,pipe", "-i", str(source), "-vn", "-ar", "16000",
+            "-protocol_whitelist", "file,pipe", "-format_whitelist", LOCAL_FORMAT_WHITELIST, "-i", str(source), "-vn", "-ar", "16000",
             "-ac", "1", "-c:a", "pcm_s16le", str(audio),
         ], timeout=max(300, duration_seconds * 2))
         result_base = stage / "transcript"

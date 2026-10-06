@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from ksi_local.atomic_files import atomic_replace, atomic_write_json
+from ksi_local.bundle_runtime import bundle_root
 from ksi_local.dubbing import (
     SegmentMetric,
     assemble_timeline,
@@ -167,7 +168,7 @@ def synthesize(args: argparse.Namespace) -> dict[str, object]:
         from ksi_local.piper_backend import verified_voice
         profile = verified_voice(model_directory)
     else:
-        profile = load_voice_profile(args.voice_profile)
+        profile = load_voice_profile(args.voice_profile, bundled_default=bundle_root() is not None)
     if not cpu and profile.engine != "chatterbox-multilingual-v3":
         raise ValueError("Kabul edilen Chatterbox Multilingual V3 profili gerekli.")
     if not source.is_file() or not model_directory.is_dir():
@@ -315,6 +316,7 @@ def synthesize(args: argparse.Namespace) -> dict[str, object]:
             "engine": profile.engine,
             "voice_description": profile.description,
             "voice_profile_sha256": profile.profile_sha256,
+            "voice_profile_policy": "local-default" if cpu or bundle_root() is not None else "user-accepted",
             "input_sha256": sha256_file(source),
             "output_sha256": sha256_file(output),
             "restored_segment_count": len(cues) - len(missing),

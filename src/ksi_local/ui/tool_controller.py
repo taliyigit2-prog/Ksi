@@ -39,6 +39,7 @@ class ToolController(QObject):
         self.status.connect(window.status.setText)
         self.failed.connect(window.status.setText)
         self.summary.connect(self._summary)
+        self.busyChanged.connect(self._window_busy_changed)
 
     @property
     def busy(self):
@@ -141,6 +142,10 @@ class ToolController(QObject):
         if not self.window.closing:
             self.window._refresh_history()
             self.window._schedule_interrupted_job_resume()
+
+    def _window_busy_changed(self, busy):
+        self.window.start_button.setEnabled(not busy and self.window.workspace is not None)
+        self.window.cancel_button.setEnabled(busy)
 
     def cancel(self):
         self.cancel_event.set()

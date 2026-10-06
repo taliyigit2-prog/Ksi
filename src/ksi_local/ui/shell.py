@@ -53,10 +53,10 @@ class StudioShell:
         self.sidebar.setObjectName("studioSidebar")
         self.sidebar.setFixedWidth(232)
         navigation = QVBoxLayout(self.sidebar)
-        navigation.setContentsMargins(12, 26, 12, 18)
-        navigation.setSpacing(8)
+        navigation.setContentsMargins(12, 18, 12, 12)
+        navigation.setSpacing(6)
         brand = QHBoxLayout()
-        brand.setContentsMargins(8, 10, 0, 18)
+        brand.setContentsMargins(8, 6, 0, 12)
         icon = QLabel()
         icon.setFixedSize(40, 40)
         if logo.is_file():
@@ -117,6 +117,8 @@ class StudioShell:
         self.buttons[0].clicked.connect(lambda checked: self._navigate("download"))
         for route, index in self.routes.items():
             self.buttons[index].setObjectName(f"nav-{route}")
+        self.buttons[5].setParent(self.sidebar)
+        self.buttons[5].hide()
         for index in (0, 8, 9, 6, 1, 2, 7):
             navigation.addWidget(self.buttons[index])
         navigation.addStretch(1)
@@ -278,7 +280,7 @@ class StudioShell:
         }.get(language, ("Installed", "Verified", "Missing", "Corrupt", "Verify", "Install from bundle"))
         indices = {"installed": 0, "verified": 1, "missing": 2, "corrupt": 3}
         for model in rows:
-            row = ModelRow(model.identifier, model.title, model.description)
+            row = ModelRow(model.identifier, model.title, model.description + "\n" + model.license)
             row.set_status(badge=words[indices[model.state]], size=self.window._format_model_bytes(model.total_bytes), action=words[5] if model.state == "missing" else words[4])
             row.actionRequested.connect(lambda identifier, state=model.state: self.window.model_controller.refresh(verify=True, install=state == "missing"))
             self.model_list.addWidget(row)

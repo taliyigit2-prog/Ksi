@@ -519,6 +519,8 @@ class JobStore:
         return [row["message"] for row in reversed(rows)]
 
     def recover_interrupted_jobs(self, *, workspace_available: bool) -> int:
+        from ksi_local.job_leases import lease_is_active
+
         target = JobStatus.QUEUED if workspace_available else JobStatus.WAITING_FOR_SSD
         with self._connect() as connection:
             running_ids = [
@@ -534,7 +536,8 @@ class JobStore:
                         "SELECT id FROM jobs WHERE status = ?", (JobStatus.QUEUED,)
                     ).fetchall()
                 )
-            identifiers = sorted(set(running_ids))
+            identifiers = sorted(identifier for identifier in set(running_ids)
+                                 if not workspace_available or not lease_is_active(self.path.parent, identifier))
             for job_id in identifiers:
                 connection.execute(
                     "UPDATE jobs SET status = ?, current_stage = NULL, updated_at = ? WHERE id = ?",

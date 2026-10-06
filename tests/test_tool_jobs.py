@@ -29,6 +29,31 @@ class ToolJobTests(unittest.TestCase):
         identifier = self.service.submit_media(self.request)
         self.assertEqual(JobStore(self.store.path).get_job(identifier).job_kind, JobKind.MEDIA)
 
+    def test_verified_receipt_recovers_published_output_without_rerender(self):
+        from ksi_local.exporter import select_job_artifacts
+
+        identifier = self.service.submit_media(self.request)
+
+        def render(request, **options):
+            Path(request.destination).write_bytes(b"complete synthetic media")
+            return MediaResult(request.destination, self.source.stat().st_size,
+                               Path(request.destination).stat().st_size, 1, False, ())
+
+        with patch("ksi_local.tool_jobs.process_media", side_effect=render) as engine:
+            result = self.service.execute(identifier)
+            self.assertEqual(engine.call_count, 1)
+        # Simulate interruption after a verified result, before final job status.
+        with self.store._connect() as connection:
+            connection.execute("UPDATE jobs SET status = ? WHERE id = ?", (JobStatus.QUEUED, identifier))
+        with patch("ksi_local.tool_jobs.process_media") as engine:
+            recovered = self.service.execute(identifier)
+        engine.assert_not_called()
+        self.assertEqual(recovered["output_sha256"], result["output_sha256"])
+        self.assertEqual(self.store.get_job(identifier).status, JobStatus.COMPLETED)
+        artifacts = select_job_artifacts(self.store.get_job(identifier).job_directory,
+                                         export_kind="all", title="Synthetic")
+        self.assertEqual([artifact.source for artifact in artifacts], [Path(result["output"])])
+
     def test_only_one_executor_can_claim_the_job(self):
         identifier = self.service.submit_media(self.request)
         self.store.claim_queued_job(identifier, stage="local_tools")

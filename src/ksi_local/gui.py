@@ -1299,6 +1299,7 @@ class MainWindow(QMainWindow):
         self.progress.setValue(0)
         layout.addWidget(self.progress)
         self.status = QLabel("SSD denetleniyor…")
+        self.status.setTextFormat(Qt.TextFormat.PlainText)
         layout.addWidget(self.status)
         self.log = QPlainTextEdit()
         self.log.setReadOnly(True)
@@ -2790,6 +2791,8 @@ class MainWindow(QMainWindow):
 
     def _history_selection_changed(self) -> None:
         record = self._selected_record()
+        if record and record.job_kind in {JobKind.MEDIA, JobKind.IMAGE}:
+            self.export_kind.setCurrentIndex(self.export_kind.findData("all"))
         self._update_job_context(record)
         idle = not self._process_is_running() and not self.maintenance_pending
         has_document_translation = bool(

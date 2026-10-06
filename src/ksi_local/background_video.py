@@ -11,7 +11,7 @@ from pathlib import Path
 from ksi_local.atomic_files import atomic_write_json
 from ksi_local.bundle_runtime import OfflinePayload, bundle_root, tool_path
 from ksi_local.engine_runner import OperationCancelled, run_engine
-from ksi_local.media import probe_local_media
+from ksi_local.media import LOCAL_FORMAT_WHITELIST, probe_local_media
 
 
 def process_background_video(request, *, cancel=None, on_progress=None):
@@ -44,7 +44,7 @@ def process_background_video(request, *, cancel=None, on_progress=None):
         frames, masked = stage / "frames", stage / "masked"
         frames.mkdir(mode=0o700)
         run_engine([ffmpeg, "-hide_banner", "-nostdin", "-v", "error", "-threads", "2",
-            "-protocol_whitelist", "file,pipe", "-i", str(source), "-map", "0:v:0", "-an",
+            "-protocol_whitelist", "file,pipe", "-format_whitelist", LOCAL_FORMAT_WHITELIST, "-i", str(source), "-map", "0:v:0", "-an",
             "-vf", "fps=20,scale='min(1280,iw)':'min(720,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2",
             "-frames:v", "600", str(frames / "frame-%06d.png")], timeout=300, cancel=cancel)
         job, result = stage / "request.json", stage / "result.json"
@@ -65,7 +65,7 @@ def process_background_video(request, *, cancel=None, on_progress=None):
             raise RuntimeError("Video maskesi sonucu doğrulanamadı.")
         candidate = stage / ("result." + fmt)
         args = [ffmpeg, "-hide_banner", "-nostdin", "-v", "error", "-threads", "2",
-            "-protocol_whitelist", "file,pipe", "-framerate", "20", "-i", str(masked / "frame-%06d.png"), "-i", str(source)]
+            "-protocol_whitelist", "file,pipe", "-format_whitelist", "image2", "-framerate", "20", "-i", str(masked / "frame-%06d.png"), "-format_whitelist", LOCAL_FORMAT_WHITELIST, "-i", str(source)]
         if fmt == "mov":
             args += ["-map", "0:v:0", "-map", "1:a?", "-c:v", "prores_ks", "-profile:v", "4",
                      "-pix_fmt", "yuva444p10le", "-alpha_bits", "16"]
@@ -73,7 +73,7 @@ def process_background_video(request, *, cancel=None, on_progress=None):
             width, height = data["width"], data["height"]
             if type(width) is not int or type(height) is not int or not 2 <= width <= 1280 or not 2 <= height <= 720:
                 raise ValueError("Video maskesi boyutları geçersiz.")
-            args += ["-f", "lavfi", "-i", f"color=c=black:s={width}x{height}:r=20",
+            args += ["-f", "lavfi", "-format_whitelist", "lavfi", "-i", f"color=c=black:s={width}x{height}:r=20",
                 "-filter_complex", "[2:v][0:v]overlay=shortest=1:format=auto,format=yuv420p[v]",
                 "-map", "[v]", "-map", "1:a?", "-c:v", "libx264", "-crf", "23", "-preset", "medium", "-movflags", "+faststart"]
         args += ["-c:a", "aac", "-t", str(duration)]

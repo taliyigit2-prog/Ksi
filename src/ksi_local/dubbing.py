@@ -103,7 +103,7 @@ def text_sha256(cue: Cue) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def load_voice_profile(path: str | Path) -> VoiceProfile:
+def load_voice_profile(path: str | Path, *, bundled_default: bool = False) -> VoiceProfile:
     source = Path(path).expanduser().resolve()
     if not source.is_file() or source.stat().st_size > 128 * 1024:
         raise ValueError("Dublaj ses profili bulunamadı veya çok büyük.")
@@ -113,7 +113,15 @@ def load_voice_profile(path: str | Path) -> VoiceProfile:
         raise ValueError("Dublaj ses profili geçerli JSON değil.") from error
     if not isinstance(payload, dict) or payload.get("schema_version") != 1:
         raise ValueError("Dublaj ses profili şeması desteklenmiyor.")
-    if payload.get("status") != "accepted":
+    if bundled_default:
+        from ksi_local.bundle_runtime import OfflinePayload, bundle_root
+
+        resources = bundle_root()
+        if resources is None or OfflinePayload.load(resources).component("support", "voice-profile").resolve() != source:
+            raise ValueError("Yerel varsayılan ses profili doğrulanmış pakete ait değil.")
+        if payload.get("status") != "local-default" or payload.get("accepted_at") is not None or "user_evaluation" in payload:
+            raise ValueError("Paket ses profili insan onayı iddiası içermeyen yerel varsayılan olmalıdır.")
+    elif payload.get("status") != "accepted":
         raise ValueError("Dublaj ses profili kullanıcı tarafından kabul edilmemiş.")
     voice = payload.get("voice")
     model = payload.get("model")
