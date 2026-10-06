@@ -58,6 +58,7 @@ PUBLIC_SCRIPTS = (
     "scripts/install_macos_app.sh",
     "scripts/notarize_release.sh",
     "scripts/seal_offline_payload.py",
+    "scripts/build_offline_dmg.py",
 )
 ALLOWED_BINARY_SUFFIXES = {".png", ".gif", ".icns"}
 BLOCKED_PARTS = {

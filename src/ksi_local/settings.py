@@ -24,7 +24,15 @@ IDENTITY_FILE = PROJECT_ROOT / ".phase1" / "workspace-id.json"
 
 def identity_file() -> Path:
     override = os.environ.get("KSI_IDENTITY_FILE")
-    return Path(override).expanduser() if override else IDENTITY_FILE
+    if override:
+        return Path(override).expanduser()
+    if bundle_root() is not None:
+        # Read identity only, never copy the old personal runtime into a build.
+        # A missing previously selected SSD must not initialize a new fallback.
+        legacy = Path.home() / "Library/Application Support/KSI Local Studio/runtime/workspace-id.json"
+        if legacy.is_file() and not legacy.is_symlink():
+            return legacy
+    return IDENTITY_FILE
 
 
 @dataclass(frozen=True)
@@ -90,6 +98,8 @@ def resolve_workspace(*, initialize: bool = False) -> WorkspacePaths:
         (candidate for candidate in workspace_directory_candidates(Path(selected.mount_point)) if candidate.is_dir()),
         Path(selected.mount_point) / WORKSPACE_DIRECTORY,
     )
+    if bundle_root() is not None:
+        return _selected_paths(root, expected_workspace_id)
     yt_dlp = root / "tools" / "yt-dlp" / pinned_tool_version("yt-dlp") / "yt-dlp"
     deno = root / "tools" / "deno" / pinned_tool_version("deno") / "deno"
     if not yt_dlp.is_file() or not deno.is_file():

@@ -1,0 +1,37 @@
+#!/bin/zsh
+
+# Public bundle launcher: dependencies belong to this app, never to a personal runtime.
+set -euo pipefail
+umask 077
+
+KSI_APP_ROOT="${0:A:h:h:h}"
+KSI_RESOURCES="$KSI_APP_ROOT/Contents/Resources"
+KSI_RUNTIME="$KSI_RESOURCES/runtime"
+KSI_PYTHON="$KSI_RUNTIME/python/bin/python3.12"
+
+ksi_launch_error() {
+  /usr/bin/osascript -e 'on run argv' \
+    -e 'display alert "KSI Local Studio" message (item 1 of argv) as critical' \
+    -e 'end run' "$1" >/dev/null
+  exit 1
+}
+
+KSI_PACKAGE_ARCH="$(/usr/bin/plutil -extract KSIArchitecture raw -o - "$KSI_APP_ROOT/Contents/Info.plist")"
+[[ "$KSI_PACKAGE_ARCH" == "$(/usr/bin/uname -m)" ]] || \
+  ksi_launch_error "Bu paket Mac’in işlemcisiyle eşleşmiyor. Apple Silicon için arm64, Intel için x86_64 paketini kullanın."
+[[ -x "$KSI_PYTHON" && -d "$KSI_RUNTIME/src/ksi_local" && -f "$KSI_RESOURCES/offline-manifest.json" ]] || \
+  ksi_launch_error "Çevrimdışı kurulum paketi eksik. Uygulamayı DMG’den yeniden kopyalayın."
+
+unset PYTHONHOME VIRTUAL_ENV QT_PLUGIN_PATH QT_QPA_PLATFORM_PLUGIN_PATH
+unset DYLD_LIBRARY_PATH DYLD_INSERT_LIBRARIES
+unset KSI_IDENTITY_FILE KSI_WORKSPACE_SELECTION_FILE KSI_MODEL_LOCK_FD
+export KSI_BUNDLE_ROOT="$KSI_RESOURCES"
+export PYTHONPATH="$KSI_RUNTIME/src"
+export PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1
+export PATH="$KSI_RESOURCES/tools:/usr/bin:/bin:/usr/sbin:/sbin"
+export QT_PLUGIN_PATH="$KSI_RUNTIME/python/lib/python3.12/site-packages/PySide6/Qt/plugins"
+export OLLAMA_NO_CLOUD=true HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+export NO_PROXY="127.0.0.1,localhost,::1"
+
+cd "$KSI_RUNTIME"
+exec "$KSI_PYTHON" -s -m ksi_local.gui

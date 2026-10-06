@@ -46,9 +46,12 @@ class ToolPage(QWidget):
         choices = (("Biçim dönüştür", "convert_image"), ("PNG kayıpsız optimize et", "optimize_png"), ("AI arka planı kaldır", "remove_background")) if images else (("Dönüştür / sıkıştır", "convert"), ("Kes", "trim"), ("Parçaları birleştir", "join"), ("Kayıpsız kap değiştir", "remux"), ("Kalıcı altyazı ekle", "burn_subtitle"))
         for title, data in choices:
             self.operation.addItem(title, data)
+        if not images:
+            self.operation.addItem("AI video", "remove_background_video")
         self.operation.currentIndexChanged.connect(self._operation_changed)
         self.format = QComboBox()
         self.format.addItems(("png", "jpg", "webp", "avif", "gif") if images else ("mp4", "mkv", "mov", "webm", "mp3", "wav", "flac", "aac", "gif"))
+        self.all_formats = tuple(self.format.itemText(index) for index in range(self.format.count()))
         self.profile = QComboBox()
         for title, data in (("Paylaşım · 1080p", "share"), ("Küçük dosya · 720p", "small"), ("Yüksek kalite", "archive")):
             self.profile.addItem(title, data)
@@ -152,6 +155,15 @@ class ToolPage(QWidget):
 
     def _operation_changed(self):
         operation = self.operation.currentData()
+        if not self.images:
+            choices = ("mov", "mp4") if operation == "remove_background_video" else self.all_formats
+            if tuple(self.format.itemText(index) for index in range(self.format.count())) != choices:
+                previous = self.format.currentText()
+                self.format.clear()
+                self.format.addItems(choices)
+                if previous in choices:
+                    self.format.setCurrentText(previous)
+            self.profile.setEnabled(operation != "remove_background_video")
         for widget in (self.start_time, self.end_time):
             widget.setEnabled(operation == "trim")
         self.lossless.setEnabled(operation in {"trim", "join", "remux"})
@@ -163,7 +175,7 @@ class ToolPage(QWidget):
             self.format.setEnabled(False)
         else:
             self.format.setEnabled(True)
-        self.precision.setText(self._text("precision" if operation == "trim" else "output_hint"))
+        self.precision.setText(self._text("video_mask_hint" if operation == "remove_background_video" else "precision" if operation == "trim" else "output_hint"))
 
     def _choose_subtitle(self):
         path, _ = QFileDialog.getOpenFileName(self, self._text("subtitle"), "", "SRT (*.srt)")

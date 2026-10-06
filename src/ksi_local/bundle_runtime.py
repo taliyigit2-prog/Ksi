@@ -15,9 +15,11 @@ import re
 import shutil
 import sys
 import threading
+import uuid
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Callable
+from ksi_local.copy_on_write import clone_file
 
 
 MAX_MANIFEST_BYTES = 2 * 1024 * 1024
@@ -211,25 +213,33 @@ class OfflinePayload:
             else:
                 pending.append((entry, target))
         required = sum(entry.size for entry, _ in pending)
-        if shutil.disk_usage(destination).free < required + 256 * 1024**2:
+        if shutil.disk_usage(destination).free < 256 * 1024**2:
             raise OSError("Çevrimdışı modellerin kurulumu için yeterli boş alan yok.")
         completed = 0
         for entry, target in pending:
             source = self.verify(entry)
             target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-            temporary = target.with_name(f".{target.name}.install-{os.getpid()}.part")
+            temporary = target.with_name(f".{target.name}.install-{uuid.uuid4().hex}.part")
             created = False
             try:
-                # Exclusive creation prevents following a planted symlink.
-                with temporary.open("xb") as output, source.open("rb") as input_stream:
+                if clone_file(source, temporary):
                     created = True
-                    for block in iter(lambda: input_stream.read(1024 * 1024), b""):
-                        output.write(block)
-                        completed += len(block)
-                        if on_progress:
-                            on_progress(completed, required)
-                    output.flush()
-                    os.fsync(output.fileno())
+                    completed += entry.size
+                    if on_progress:
+                        on_progress(completed, required)
+                else:
+                    if shutil.disk_usage(destination).free < entry.size + 256 * 1024**2:
+                        raise OSError("Model kopyasının kurulumu için yeterli boş alan yok.")
+                    # Exclusive creation prevents following a planted symlink.
+                    with temporary.open("xb") as output, source.open("rb") as input_stream:
+                        created = True
+                        for block in iter(lambda: input_stream.read(1024 * 1024), b""):
+                            output.write(block)
+                            completed += len(block)
+                            if on_progress:
+                                on_progress(completed, required)
+                        output.flush()
+                        os.fsync(output.fileno())
                 if digest_file(temporary) != entry.sha256:
                     raise OSError("Kopyalanan model bütünlük denetiminden geçmedi.")
                 # A competing installer cannot cause an overwrite.

@@ -66,7 +66,7 @@ def _source(value: str) -> Path:
 
 
 def _validate(request: MediaRequest):
-    if request.operation not in {"convert", "trim", "join", "remux", "burn_subtitle"}:
+    if request.operation not in {"convert", "trim", "join", "remux", "burn_subtitle", "remove_background_video"}:
         raise ValueError("Medya işlemi desteklenmiyor.")
     if request.profile not in PROFILES:
         raise ValueError("Medya profili desteklenmiyor.")
@@ -98,6 +98,10 @@ def _validate(request: MediaRequest):
         raise ValueError("Kayıpsız medya işlemi bu çıktı kabında desteklenmiyor.")
     if request.operation == "remux" and not request.lossless:
         raise ValueError("Remux yeniden kodlamaz; kayıpsız mod seçilmelidir.")
+    if request.operation == "remove_background_video" and (fmt not in {"mov", "mp4"} or request.hardware or request.start != 0 or request.end is not None):
+        raise ValueError("Video arka plan işlemi tam kısa klip, CPU ve MOV/MP4 çıktı gerektirir.")
+    if request.operation != "burn_subtitle" and request.subtitle is not None:
+        raise ValueError("Altyazı seçeneği yalnız kalıcı altyazı işleminde kullanılır.")
     return sources, output, fmt
 
 
@@ -155,6 +159,9 @@ def process_media(
     request: MediaRequest, *, cancel: threading.Event | None = None,
     on_progress: Callable[[float], None] | None = None,
 ) -> MediaResult:
+    if request.operation == "remove_background_video":
+        from ksi_local.background_video import process_background_video
+        return process_background_video(request, cancel=cancel, on_progress=on_progress)
     sources, output, fmt = _validate(request)
     ffmpeg = str(tool_path("ffmpeg"))
     ffprobe = str(tool_path("ffprobe"))

@@ -1791,7 +1791,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     local_media = subparsers.add_parser("media-tools", help="Yerel dönüştürme, kesme ve altyazı araçları")
     local_media.add_argument("sources", nargs="+")
-    local_media.add_argument("--operation", choices=("convert", "trim", "join", "remux", "burn_subtitle"), default="convert")
+    local_media.add_argument("--operation", choices=("convert", "trim", "join", "remux", "burn_subtitle", "remove_background_video"), default="convert")
     local_media.add_argument("--format", choices=("mp4", "mkv", "mov", "webm", "mp3", "wav", "flac", "aac", "gif"), default="mp4")
     local_media.add_argument("--profile", choices=("share", "small", "archive"), default="share")
     local_media.add_argument("--start", type=float, default=0)

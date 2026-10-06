@@ -25,17 +25,11 @@ def _verified_model(value: str, expected: str) -> Path:
     return path.resolve()
 
 
-def remove_background(request: dict) -> dict:
-    from PIL import Image, ImageOps
+def _background_session(request: dict):
     import onnxruntime as ort
     from rembg import remove
     from rembg.sessions.u2netp import U2netpSession
-    from ksi_local.image_tools import inspect_image
-
     model = _verified_model(request["model"], request["model_sha256"])
-    inspection = inspect_image(request["source"])
-    if not inspection.fits_memory or inspection.width * inspection.height > 25_000_000:
-        raise ValueError("AI arka plan işlemi güvenli görsel/bellek sınırını aşıyor.")
     # A local-only session override has no code path to download weights or
     # select rembg's commercial/default/cloud model.
     class BundledSession(U2netpSession):
@@ -47,6 +41,17 @@ def remove_background(request: dict) -> dict:
     options.inter_op_num_threads = 1
     options.intra_op_num_threads = 2
     session = BundledSession("u2netp", options, providers=["CPUExecutionProvider"])
+    return session, remove
+
+
+def remove_background(request: dict) -> dict:
+    from PIL import Image, ImageOps
+    from ksi_local.image_tools import inspect_image
+
+    inspection = inspect_image(request["source"])
+    if not inspection.fits_memory or inspection.width * inspection.height > 25_000_000:
+        raise ValueError("AI arka plan işlemi güvenli görsel/bellek sınırını aşıyor.")
+    session, remove = _background_session(request)
     output = Path(request["destination"]).resolve()
     if output.exists() or output.suffix.lower() != ".png":
         raise ValueError("AI arka plan çıktısı yeni bir PNG dosyası olmalıdır.")
@@ -65,6 +70,44 @@ def remove_background(request: dict) -> dict:
     return {"output": str(output), "width": inspection.width, "height": inspection.height, "engine": "rembg-u2netp-cpu"}
 
 
+def remove_background_frames(request: dict) -> dict:
+    from PIL import Image
+
+    source, destination = Path(request["source"]), Path(request["destination"])
+    if source.is_symlink() or not source.is_dir() or destination.is_symlink() or destination.exists():
+        raise ValueError("Video kare çalışma alanı geçersiz.")
+    frames = sorted(source.glob("frame-*.png"))
+    if not 1 <= len(frames) <= 600:
+        raise ValueError("Kısa video en fazla 600 kare olabilir.")
+    if any(path.is_symlink() or not re.fullmatch(r"frame-[0-9]{6}\.png", path.name) for path in frames):
+        raise ValueError("Video kare listesi geçersiz.")
+    if any(path.name != f"frame-{index:06d}.png" for index, path in enumerate(frames, start=1)):
+        raise ValueError("Video kare sırası eksik veya tutarsız.")
+    session, remove = _background_session(request)
+    destination.mkdir(mode=0o700)
+    masks = 0
+    dimensions = None
+    for index, frame in enumerate(frames):
+        with Image.open(frame) as image:
+            if image.width > 1280 or image.height > 720 or getattr(image, "n_frames", 1) != 1:
+                raise ValueError("Video kare boyutu sınırı aşıyor.")
+            if dimensions is not None and image.size != dimensions:
+                raise ValueError("Video kare boyutları tutarsız.")
+            dimensions = image.size
+            result = remove(image.convert("RGBA"), session=session)
+            if not isinstance(result, Image.Image) or result.size != dimensions:
+                raise RuntimeError("Video arka plan motoru beklenen kareyi üretmedi.")
+            result = result.convert("RGBA")
+            masks += int(result.getchannel("A").getextrema()[0] < 255)
+            with (destination / frame.name).open("xb") as stream:
+                result.save(stream, format="PNG")
+        print(f"KSI_FRAME_PROGRESS={index + 1}/{len(frames)}", flush=True)
+    if not masks:
+        raise RuntimeError("Videoda ayrıştırılabilir arka plan maskesi üretilemedi.")
+    return {"frames": len(frames), "width": dimensions[0], "height": dimensions[1],
+            "engine": "rembg-u2netp-cpu", "masked_frames": masks}
+
+
 def translate_local(request: dict) -> dict:
     package_root = Path(request["packages"]).resolve()
     cache = Path(request["cache"]).resolve()
@@ -78,7 +121,7 @@ def translate_local(request: dict) -> dict:
         "XDG_CACHE_HOME": str(cache / "cache"),
     })
     from argostranslate.package import get_installed_packages
-    from argostranslate.translate import Language, PackageTranslation
+    import ctranslate2
 
     source, target = request["source_language"], request["target_language"]
     if not isinstance(source, str) or not isinstance(target, str):
@@ -113,16 +156,39 @@ def translate_local(request: dict) -> dict:
                     pieces.append(sentence)
             return pieces or [text]
 
-    class OfflinePackageTranslation(PackageTranslation):
-        def __init__(self, package):
-            self.from_lang = Language(source, source)
-            self.to_lang = Language(target, target)
-            self.pkg = package
-            self.translator = None
-            self.sentencizer = BoundedSentencizer()
-
-    translator = OfflinePackageTranslation(selected)
-    results = [translator.translate(text) if text.strip() else text for text in texts]
+    # Use Argos' package/tokenizer API without importing its sentence-model
+    # providers. This avoids implicit SBD downloads and unnecessary Torch on Intel.
+    translator = ctranslate2.Translator(str(selected.package_path / "model"),
+        device="cpu", compute_type="int8", inter_threads=1, intra_threads=2)
+    sentencizer = BoundedSentencizer()
+    results = []
+    try:
+        for text in texts:
+            paragraphs = []
+            for paragraph in text.split("\n"):
+                if not paragraph.strip():
+                    paragraphs.append(paragraph)
+                    continue
+                tokens = [selected.tokenizer.encode(sentence) for sentence in sentencizer.split_sentences(paragraph)]
+                if any(len(value) > 2048 for value in tokens):
+                    raise ValueError("Argos cümle belirteci sayısı güvenli sınırı aşıyor.")
+                prefix = [[selected.target_prefix]] * len(tokens) if selected.target_prefix else None
+                batch = translator.translate_batch(tokens, target_prefix=prefix,
+                    replace_unknowns=True, max_batch_size=2048, batch_type="tokens",
+                    beam_size=4, num_hypotheses=1, length_penalty=0.2,
+                    max_input_length=0, max_decoding_length=2048)
+                translated = []
+                for result in batch:
+                    if not result.hypotheses or len(result.hypotheses[0]) >= 2048:
+                        raise RuntimeError("Argos cümle çıktısı kesilmiş veya eksik.")
+                    value = selected.tokenizer.decode(result.hypotheses[0])
+                    if selected.target_prefix and value.startswith(selected.target_prefix):
+                        value = value[len(selected.target_prefix):]
+                    translated.append(value.strip())
+                paragraphs.append(" ".join(translated))
+            results.append("\n".join(paragraphs))
+    finally:
+        translator.unload_model()
     if len(results) != len(texts) or any(text.strip() and not translated.strip() for text, translated in zip(texts, results)):
         raise RuntimeError("Çeviri motoru eksik veya boş çıktı üretti.")
     return {"texts": results, "engine": "argos-direct-cpu", "source_language": source, "target_language": target}
@@ -143,6 +209,8 @@ def main() -> int:
         with single_model_lock(), local_only_socket_guard():
             if request.get("operation") == "remove_background":
                 result = remove_background(request)
+            elif request.get("operation") == "remove_background_frames":
+                result = remove_background_frames(request)
             elif request.get("operation") == "translate":
                 result = translate_local(request)
             else:
