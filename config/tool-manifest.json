@@ -4,6 +4,7 @@
       "integrity_verified": false,
       "purpose": "Default synthetic Turkish dubbing voice; autonomous acceptance pending",
       "repository_revision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
+      "repository": "ResembleAI/chatterbox",
       "s3gen_sha256": "9b9ff07e60b20c136e2b1b3d7563a24604e8d2c4c267888d1ee929dd0151d2a3",
       "s3gen_size_bytes": 1057165844,
       "t3_v3_sha256": "5abca8321ede76f8e61f1cc0d19aea6c946b28871017ce8726f8a69203f05953",
@@ -23,8 +24,12 @@
     "qwen3.5:4b": {
       "integrity_verified": false,
       "purpose": "Turkish summary",
-      "sha256": "81fb60c7daa80fc1123380b98970b320ae233409f0f71a72ed7b9b0d62f40490",
-      "size_bytes": 3389971840
+      "sha256": "a9d0a3e1d8c91732a3812becd31f8d4a8ff57414903f226306069f0437e2ac50",
+      "size_bytes": 2648593216,
+      "projector_sha256": "e56a899b1540860385465756dd308c84417410b94dbc1c380adffd20a921ca60",
+      "projector_size_bytes": 675569120,
+      "manifest_sha256": "d8b0f5e9760cd1682034f292d7ef72ec46f432149be0df7574bf2d6e92e38c04",
+      "compatibility_note": "Complete current official model plus projector; new autonomous acceptance pending"
     },
     "translategemma:4b-it-q8_0": {
       "integrity_verified": false,

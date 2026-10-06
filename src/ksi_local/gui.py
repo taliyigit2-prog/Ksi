@@ -863,7 +863,7 @@ class FirstRunWizard(QDialog):
         package_ready = bool(
             report.app_bundle.exists
             and report.app_bundle.signed
-            and report.app_bundle.native_arm64_only
+            and report.app_bundle.native_architecture_matches_host
         )
         checks = (
             (

@@ -146,3 +146,40 @@ owned engine children inherit the reader descriptor so an orphan cannot release
 the protection early. Active processing blocks explicit location changes. The
 physical-copy relocation helper still preserves its source; settings do not
 expose it as a completed job-database/path migration feature.
+
+The primary GUI lock now includes only PySide6-Essentials and Shiboken, matching
+the app's Core/Gui/Widgets/PrintSupport imports. Unused Addons/demo/web modules
+are not copied into the app. This reduces payload scope without adding a new
+UI framework or losing the existing PDF printer path. Qt license notices and
+matching LGPL source remain required; smaller scope is not a license exemption.
+
+Ollama packages are pinned as complete manifests, config and all layers, not
+one guessed GGUF. The current Qwen3.5:4b manifest differs from the historical
+baseline and requires its projector in addition to its new model layer.
+Acceptance must be rerun; the change is not inherited quality evidence.
+Native model/readiness inventory comes from the sealed architecture catalog.
+Intel preflight recognizes the GGML file/Piper layout, and signed-package UI
+checks use the current processor, retaining the old ARM/manual gate separately.
+
+Model HTTP requests explicitly bypass inherited proxies and refuse redirects;
+responses are bounded. Turkish Chatterbox workers enforce the local-only socket
+policy and skip only the unused upstream Chinese-converter initialization.
+Turkish tokenization/weights are unchanged. Demo/training/other-language extras
+are outside the selected isolated inference scope. Public weights come from
+the actual ResembleAI/chatterbox repository, not the logical family label.
+No user reference voice, old environment or personal cache is bundled.
+
+All isolated runtime scripts have their build-prefix shebangs normalized before
+signing and hashing. Piper's isolated interpreter receives explicit `-B`, since
+`-I` ignores the bytecode environment flag; first use must not mutate a signed
+runtime. Large DMGs are created as native segments directly to avoid retaining
+both a full compressed image and duplicate segments. Actual mount/copy/launch
+verification of this transport remains mandatory.
+
+Packaged Chatterbox weights are checked before any PyTorch deserialization,
+including checkpoint-only resumes. All five required upstream files must match
+the sealed payload; checkpoint identity includes their combined hashes so a
+model revision cannot reuse audio from another revision. The isolated ARM speech
+runtime has its own official PyPI lock, independent of the GUI's NumPy/Torch.
+The Intel Whisper GGML input is pinned to the official LFS SHA-256 and revision;
+neither this pin nor successful input downloads constitute inference acceptance.

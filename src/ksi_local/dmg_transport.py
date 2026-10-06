@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 import plistlib
 import subprocess
 import tempfile
@@ -65,15 +64,15 @@ def build_dmg_transport(app: Path, destination: Path) -> dict:
             "Modeller paket içindedir; ilk kurulumda internet gerekmez.\n"
             "Apple tarafından noterlenmemiş ad-hoc imzalı pakettir.\n"
             "macOS ilk açılış uyarısında Sistem Ayarları > Gizlilik ve Güvenlik yolunu kullanabilirsiniz.\n")
-        image = stage / "full.dmg"
-        _command(["/usr/bin/hdiutil", "create", "-quiet", "-volname", "KSI Local Studio",
-                  "-srcfolder", str(media), "-format", "UDZO", "-imagekey", "zlib-level=6", str(image)])
+        image = destination / (name + ".dmg")
+        command = ["/usr/bin/hdiutil", "create", "-quiet", "-volname", "KSI Local Studio",
+                   "-srcfolder", str(media), "-format", "UDZO", "-imagekey", "zlib-level=6"]
+        if sum(entry.size for entry in payload.files) >= GITHUB_ASSET_LIMIT:
+            # Create native UDIF segments directly, avoiding a second complete
+            # compressed copy while a multi-gigabyte monolithic image exists.
+            command.extend(["-segmentSize", "1800m"])
+        _command([*command, str(image)])
         _command(["/usr/bin/hdiutil", "verify", str(image)])
-        if image.stat().st_size < GITHUB_ASSET_LIMIT:
-            os.rename(image, destination / (name + ".dmg"))
-        else:
-            _command(["/usr/bin/hdiutil", "segment", "-quiet", "-segmentSize", "1800m",
-                      "-o", str(destination / name), str(image)])
     parts = sorted(path for path in destination.iterdir() if path.suffix in {".dmg", ".dmgpart"})
     if not parts or sum(path.suffix == ".dmg" for path in parts) != 1:
         raise RuntimeError("Yerel DMG taşıma bölümleri doğrulanamadı.")

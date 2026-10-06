@@ -12,6 +12,7 @@ import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Iterable
+from ksi_local.bundle_runtime import bundle_root, tool_path
 
 
 @dataclass(frozen=True)
@@ -64,6 +65,11 @@ def _tool(
     configured_path: str | Path | None = None,
     timeout_seconds: int = 15,
 ) -> ToolStatus:
+    if bundle_root() is not None:
+        try:
+            configured_path = tool_path(name)
+        except (OSError, RuntimeError, ValueError) as error:
+            return ToolStatus(name, None, None, False, note=str(error))
     path = (
         str(configured_path)
         if configured_path and Path(configured_path).is_file()
@@ -71,8 +77,8 @@ def _tool(
     )
     if path is None:
         return ToolStatus(name, None, None, False)
-    _, output = _command_output([path, *version_args], timeout=timeout_seconds)
-    return ToolStatus(name, path, _first_nonempty_line(output), True)
+    return_code, output = _command_output([path, *version_args], timeout=timeout_seconds)
+    return ToolStatus(name, path, _first_nonempty_line(output), return_code == 0)
 
 
 def _manifest_tool_path(name: str) -> Path | None:
@@ -105,9 +111,15 @@ def _ollama_status() -> ToolStatus:
 
 
 def _vision_ocr_status() -> ToolStatus:
-    root = Path(__file__).resolve().parents[2]
-    candidates = (root / "bin/KSIOCR", root / "build/KSIOCR")
-    helper = next((item for item in candidates if item.is_file()), None)
+    if bundle_root() is not None:
+        try:
+            helper = Path(tool_path("ocr-helper"))
+        except (OSError, RuntimeError, ValueError) as error:
+            return ToolStatus("Apple Vision OCR", None, None, False, note=str(error))
+    else:
+        root = Path(__file__).resolve().parents[2]
+        candidates = (root / "bin/KSIOCR", root / "build/KSIOCR")
+        helper = next((item for item in candidates if item.is_file()), None)
     if helper is None or helper.is_symlink():
         return ToolStatus("Apple Vision OCR", None, None, False)
     return_code, output = _command_output([str(helper), "capabilities"], timeout=30)

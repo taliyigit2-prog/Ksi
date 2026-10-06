@@ -47,7 +47,7 @@ def generate_segments(cues, directory: Path, models: Path) -> dict[int, Path]:
         source = stage / "input.txt"
         atomic_write_text(source, "\n".join(clean_spoken_text(cue.text) for cue in cues) + "\n")
         output = stage / "audio"
-        run_engine([str(tool_path("piper-python")), "-I", "-m", "piper", "--model", str(models / "tr_TR-fettah-medium.onnx"),
+        run_engine([str(tool_path("piper-python")), "-I", "-B", "-m", "piper", "--model", str(models / "tr_TR-fettah-medium.onnx"),
             "--input-file", str(source), "--output-dir", str(output),
             "--output-dir-naming", "timestamp"], cwd=stage, timeout=10800)
         files = list(output.glob("*.wav"))

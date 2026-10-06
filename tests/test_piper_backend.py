@@ -14,7 +14,7 @@ class PiperBackendTests(unittest.TestCase):
             root = Path(temporary)
             cues = [SimpleNamespace(index=3, text="Bir"), SimpleNamespace(index=4, text="İki")]
             def engine(argv, **kwargs):
-                self.assertEqual(argv[:4], ["/verified/python", "-I", "-m", "piper"])
+                self.assertEqual(argv[:5], ["/verified/python", "-I", "-B", "-m", "piper"])
                 output = Path(argv[argv.index("--output-dir") + 1])
                 output.mkdir()
                 for name, value in (("9.wav", 1), ("10.wav", 2)):

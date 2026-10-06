@@ -5,9 +5,10 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
 from ksi_local.network_policy import require_loopback_http_url
+from ksi_local.network_policy import open_loopback as urlopen
 
 
 @dataclass(frozen=True)
@@ -29,7 +30,10 @@ class OllamaClient:
         )
         try:
             with urlopen(request, timeout=self.timeout_seconds) as response:
-                result = json.loads(response.read().decode("utf-8"))
+                content = response.read(4 * 1024**2 + 1)
+                if len(content) > 4 * 1024**2:
+                    raise RuntimeError("Yerel model API yanıtı boyut sınırını aşıyor.")
+                result = json.loads(content.decode("utf-8"))
         except (HTTPError, URLError, TimeoutError) as error:
             raise RuntimeError(f"Ollama isteği başarısız: {error}") from error
         if not isinstance(result, dict):

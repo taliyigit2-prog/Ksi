@@ -4,10 +4,25 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from ksi_local.app_assembly import bind_signed_tool_manifest, copy_clean_tree
+from ksi_local.app_assembly import bind_signed_tool_manifest, copy_clean_tree, normalize_build_shebangs
 
 
 class CleanTreeTests(unittest.TestCase):
+    def test_all_isolated_interpreter_scripts_lose_private_build_prefix(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            resources = root / "resources"
+            engine = resources / "engines/piper/python/bin"
+            engine.mkdir(parents=True)
+            build = root / "generated-input"
+            script = engine / "piper"
+            script.write_text(f"#!{build}/python\nprint('public engine')\n")
+            original = engine / "normal"
+            original.write_text("#!/usr/bin/env python3\npass\n")
+            normalize_build_shebangs(resources, (build,))
+            self.assertEqual(script.read_text(), "#!/usr/bin/env python3.12\nprint('public engine')\n")
+            self.assertEqual(original.read_text(), "#!/usr/bin/env python3\npass\n")
+
     def test_signed_tools_replace_only_binary_digests(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

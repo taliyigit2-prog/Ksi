@@ -202,10 +202,14 @@ def _missing_model_budget(
 ) -> int:
     if not processing_requested:
         return 0
-    tts_ready = (workspace.root / "models/tts/chatterbox-multilingual-v3").is_dir()
+    from ksi_local.bundle_runtime import bundle_root, host_architecture
+    cpu = bundle_root() is not None and host_architecture() == "x86_64"
+    tts_ready = ((workspace.root / "models/tts/piper/tr_TR-fettah-medium.onnx").is_file()
+                 and (workspace.root / "models/tts/piper/tr_TR-fettah-medium.onnx.json").is_file()) if cpu else (workspace.root / "models/tts/chatterbox-multilingual-v3").is_dir()
+    whisper_ready = workspace.models_whisper.is_file() if cpu else workspace.models_whisper.is_dir()
     if (
         workspace.models_ollama.is_dir()
-        and workspace.models_whisper.is_dir()
+        and whisper_ready
         and (not want_dub or tts_ready)
     ):
         return 0

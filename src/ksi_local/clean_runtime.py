@@ -45,7 +45,7 @@ def assemble_python_runtime(archive: Path, python_input: dict, wheel_lock: dict,
         environment.update(HOME=str(private), TMPDIR=str(private))
         requirement_file = private / "requirements.txt"
         atomic_write_text(requirement_file, requirements_text(wheel_lock))
-        subprocess.run([str(python), "-I", "-m", "pip", "--isolated", "install",
+        subprocess.run([str(python), "-I", "-m", "pip", "--isolated", "install", "--quiet",
                         "--no-index", "--no-deps", "--only-binary=:all:", "--require-hashes",
                         "--no-cache-dir", "--no-compile", "--find-links", str(wheelhouse.absolute()),
                         "-r", str(requirement_file)], env=environment, check=True, timeout=1200)

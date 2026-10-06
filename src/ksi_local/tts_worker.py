@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import hashlib
 import json
 import math
 import os
@@ -34,6 +35,7 @@ from ksi_local.privacy import redact_sensitive_text
 from ksi_local.resource_governor import serialized_model
 from ksi_local.subtitles import Cue, read_srt
 from ksi_local.worker_protocol import WorkerEvent, encode_worker_event
+from ksi_local.network_policy import local_only_socket_guard, local_worker_environment
 
 
 CHECKPOINT_SCHEMA = 1
@@ -173,6 +175,14 @@ def synthesize(args: argparse.Namespace) -> dict[str, object]:
         raise ValueError("Kabul edilen Chatterbox Multilingual V3 profili gerekli.")
     if not source.is_file() or not model_directory.is_dir():
         raise FileNotFoundError("Dublaj altyazısı veya Chatterbox modeli bulunamadı.")
+    checkpoint_identity = profile.profile_sha256
+    resources = bundle_root()
+    if not cpu and resources is not None:
+        from ksi_local.speech_model_integrity import verify_chatterbox
+        model_identity = verify_chatterbox(model_directory, resources)
+        checkpoint_identity = hashlib.sha256(
+            f"{profile.profile_sha256}:{model_identity}".encode("ascii")
+        ).hexdigest()
     if args.max_segments is not None and args.max_segments < 1:
         raise ValueError("Pilot segment sayısı en az bir olmalıdır.")
 
@@ -188,7 +198,7 @@ def synthesize(args: argparse.Namespace) -> dict[str, object]:
     checkpoint = _load_checkpoint(
         checkpoint_path,
         input_sha256=sha256_file(source),
-        profile_sha256=profile.profile_sha256,
+        profile_sha256=checkpoint_identity,
         model_directory=model_directory,
     )
 
@@ -223,20 +233,23 @@ def synthesize(args: argparse.Namespace) -> dict[str, object]:
         _prepare_numba_cache()
         import torch as torch_module
         from chatterbox.mtl_tts import ChatterboxMultilingualTTS
+        from chatterbox.models.tokenizers import tokenizer as tokenizer_module
+        from ksi_local.turkish_tts_adapter import turkish_tokenizer_scope
 
         torch = torch_module
         _emit(
             WorkerEvent(
                 "started",
                 "tts",
-                message="Kabul edilen düşük tonlu erkek ses modeli yükleniyor…",
+                message="Yerel Türkçe ses modeli yükleniyor…",
             )
         )
-        model = ChatterboxMultilingualTTS.from_local(
-            model_directory,
-            device=profile.device,
-            t3_model="v3",
-        )
+        with turkish_tokenizer_scope(tokenizer_module):
+            model = ChatterboxMultilingualTTS.from_local(
+                model_directory,
+                device=profile.device,
+                t3_model="v3",
+            )
 
     completed = len(restored)
     _emit(WorkerEvent("progress", "tts", completed=completed, total=len(cues) + 1))
@@ -367,7 +380,11 @@ def main(argv: list[str] | None = None) -> int:
     signal.signal(signal.SIGTERM, _handle_termination)
     args = build_parser().parse_args(argv)
     try:
-        synthesize(args)
+        environment = local_worker_environment()
+        os.environ.clear()
+        os.environ.update(environment)
+        with local_only_socket_guard():
+            synthesize(args)
         return 0
     except (OSError, RuntimeError, ValueError) as error:
         _emit(WorkerEvent("error", "tts", message=redact_sensitive_text(str(error))))

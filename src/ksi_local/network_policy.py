@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import os
 import socket
+import urllib.request
 from collections.abc import Iterator, Mapping
 from typing import Any
 from urllib.parse import urlsplit
@@ -43,6 +44,21 @@ _PROXY_NAMES = frozenset(
 
 class NetworkPolicyError(RuntimeError):
     """Raised when a local-only worker attempts remote network access."""
+
+
+class LocalModelRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, request, response, code, message, headers, new_url):
+        raise NetworkPolicyError("Yerel model API'sinde yönlendirmeye izin verilmez.")
+
+
+def open_loopback(request, *, timeout):
+    """Do not send model text through an inherited proxy or HTTP redirect."""
+    url = request.full_url if isinstance(request, urllib.request.Request) else request
+    parsed = urlsplit(url)
+    if parsed.scheme != "http" or not parsed.hostname or not is_loopback_host(parsed.hostname) or parsed.username or parsed.password or parsed.query or parsed.fragment:
+        raise NetworkPolicyError("Model API isteği yalnız doğrulanmış yerel HTTP uç noktasına yapılabilir.")
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), LocalModelRedirect())
+    return opener.open(request, timeout=timeout)
 
 
 def is_loopback_host(host: str) -> bool:

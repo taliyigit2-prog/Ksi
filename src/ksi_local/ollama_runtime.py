@@ -9,9 +9,9 @@ import time
 from collections.abc import Iterator
 from pathlib import Path
 from urllib.error import URLError
-from urllib.request import urlopen
 
-from ksi_local.network_policy import local_worker_environment, require_loopback_http_url
+from ksi_local.network_policy import NetworkPolicyError, local_worker_environment, require_loopback_http_url
+from ksi_local.network_policy import open_loopback as urlopen
 
 
 def _is_ready(base_url: str, *, timeout: float = 0.5) -> bool:
@@ -19,7 +19,7 @@ def _is_ready(base_url: str, *, timeout: float = 0.5) -> bool:
     try:
         with urlopen(f"{base_url.rstrip('/')}/api/tags", timeout=timeout) as response:
             return response.status == 200
-    except (OSError, URLError, TimeoutError):
+    except (OSError, URLError, TimeoutError, NetworkPolicyError):
         return False
 
 

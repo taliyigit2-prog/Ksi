@@ -1,6 +1,14 @@
 {
   "schema_version": 1,
   "inputs": {
+    "chatterbox-source": {
+      "type": "git",
+      "version": "0.1.7",
+      "revision": "5de7a54aa4e5e2baadb0182dde554908b48b85c2",
+      "commit": "5de7a54aa4e5e2baadb0182dde554908b48b85c2",
+      "url": "https://github.com/resemble-ai/chatterbox.git",
+      "license": "MIT"
+    },
     "piper-espeak-source": {
       "type": "git",
       "revision": "724808c5a83f9ef95fdd0db886ba7ba537ff224a",

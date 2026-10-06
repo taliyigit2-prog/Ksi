@@ -69,6 +69,23 @@ def bind_signed_tool_manifest(resources: Path, specification: dict) -> None:
     atomic_write_json(target, manifest, mode=0o644)
 
 
+def normalize_build_shebangs(resources: Path, build_roots: tuple[Path, ...]) -> None:
+    """Remove build-only interpreter locations from all isolated Python prefixes."""
+    prefixes = tuple(str(root.absolute()).encode() for root in build_roots)
+    for path in resources.rglob("*"):
+        if path.is_symlink() or not path.is_file() or path.is_relative_to(resources / "models"):
+            continue
+        with path.open("rb") as stream:
+            first_line = stream.readline(4096)
+        if first_line.startswith(b"#!") and (b"/Users/" in first_line or any(prefix in first_line for prefix in prefixes)):
+            if path.stat().st_size > 16 * 1024**2:
+                raise ValueError("Generated interpreter script exceeds its size bound.")
+            content = path.read_bytes()
+            if len(content) > 16 * 1024**2 or b"\n" not in content:
+                raise ValueError("Generated interpreter script is oversized or malformed.")
+            atomic_write_bytes(path, b"#!/usr/bin/env python3.12\n" + content.split(b"\n", 1)[1], mode=0o755)
+
+
 def assemble_app(repository: Path, runtime: Path, components: Path, specification: dict,
                  destination: Path, *, wheel_lock: dict) -> dict:
     architecture = specification.get("architecture")
@@ -134,6 +151,7 @@ def assemble_app(repository: Path, runtime: Path, components: Path, specificatio
         if not clone_file(origin, target):
             shutil.copy2(origin, target)
         target.chmod(0o755 if row["role"] == "tool" else 0o644)
+    normalize_build_shebangs(resources, (runtime, components, repository.parent))
     launcher = contents / "MacOS/KSI-Local-Studio"
     shutil.copy2(repository / "packaging/KSI-Local-Studio-portable-launcher", launcher)
     launcher.chmod(0o755)

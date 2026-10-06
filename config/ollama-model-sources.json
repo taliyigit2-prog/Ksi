@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "redistribution_review_complete": false,
+  "models": [
+    {
+      "name": "translategemma",
+      "tag": "4b-it-q8_0",
+      "license": "Gemma",
+      "manifest": {
+        "url": "https://registry.ollama.ai/v2/library/translategemma/manifests/4b-it-q8_0",
+        "size": 856,
+        "sha256": "69729cbbfd3587b37aa4cc2b14cb0cca36b1edcc12add30fc43a3f9bc4be18ec"
+      },
+      "layers": [
+        {"role": "config", "sha256": "bda768be5b008470e4cd13a5f9a1f866d0efae0ad0d9725ea98de756501ba3a5", "size": 487},
+        {"role": "model", "sha256": "10783b7790a1939947fec3c9503a90b241d8d6248625b5396efa30bb87bbcca8", "size": 4946520000},
+        {"role": "template", "sha256": "e0a42594d802e5d31cdc786deb4823edb8adff66094d49de8fffe976d753e348", "size": 358},
+        {"role": "license", "sha256": "3e2c24001f9ef57bf7ec959a3658fbb49cdad113cdf394c264da9d16f9bdd132", "size": 8431},
+        {"role": "params", "sha256": "339e884a40f6708bc761d367f0c08e448d5bb6f16b3961c340e44e0e4835a004", "size": 61}
+      ]
+    },
+    {
+      "name": "qwen3.5",
+      "tag": "4b",
+      "license": "Apache-2.0",
+      "compatibility_note": "Current official manifest differs from the historical single-GGUF baseline; complete model plus projector are required. New acceptance is pending.",
+      "manifest": {
+        "url": "https://registry.ollama.ai/v2/library/qwen3.5/manifests/4b",
+        "size": 1088,
+        "sha256": "d8b0f5e9760cd1682034f292d7ef72ec46f432149be0df7574bf2d6e92e38c04"
+      },
+      "layers": [
+        {"role": "config", "sha256": "788a4d94bc3f431ac0cd067005be4b838a09330427962952420b05d10ecf84db", "size": 177},
+        {"role": "projector", "sha256": "e56a899b1540860385465756dd308c84417410b94dbc1c380adffd20a921ca60", "size": 675569120},
+        {"role": "model", "sha256": "a9d0a3e1d8c91732a3812becd31f8d4a8ff57414903f226306069f0437e2ac50", "size": 2648593216},
+        {"role": "template", "sha256": "b507b9c2f6ca642bffcd06665ea7c91f235fd32daeefdf875a0f938db05fb315", "size": 13},
+        {"role": "license", "sha256": "50cbab8a892c5f2993b8c7351a99182507472def3b1374558308605d99b86b32", "size": 11343},
+        {"role": "params", "sha256": "9371364b27a52acac9d87f88bd93c9db1174d8d6ec57f6888925cdc1788871ff", "size": 65}
+      ]
+    }
+  ]
+}

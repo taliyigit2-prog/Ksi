@@ -18,6 +18,7 @@ from ksi_local.settings import WorkspacePaths
 from ksi_local.storage import MIN_FREE_RESERVE_BYTES
 from ksi_local.system_health import HealthReport, build_health_report
 from ksi_local.tool_integrity import load_tool_manifest, verify_download_tools
+from ksi_local.bundle_runtime import bundle_root, host_architecture
 
 
 @dataclass(frozen=True)
@@ -50,6 +51,8 @@ class AppBundleStatus:
     identifier: str | None
     native_arm64_only: bool
     note: str
+    native_architecture: str | None = None
+    native_architecture_matches_host: bool = False
 
 
 @dataclass(frozen=True)
@@ -130,7 +133,15 @@ def inspect_models(
     verify_hashes: bool = False,
     manifest: dict[str, Any] | None = None,
 ) -> tuple[ModelStatus, ...]:
-    """Inspect only the four models required by the accepted local pipeline."""
+    """Use the sealed architecture catalog; preserve legacy development checks."""
+    resources = bundle_root()
+    if resources is not None and manifest is None:
+        from ksi_local.model_manager import ModelManager
+        inventory = ModelManager(resources, workspace.root / "models").inventory(verify=verify_hashes)
+        return tuple(ModelStatus(item.identifier, item.title, item.description,
+            item.total_bytes, item.installed_bytes, item.state in {"installed", "verified"},
+            (item.state == "verified") if verify_hashes else None,
+            "" if item.state in {"installed", "verified"} else item.state) for item in inventory)
     payload = manifest or load_tool_manifest()
     models = payload.get("models")
     if not isinstance(models, dict):
@@ -142,16 +153,15 @@ def inspect_models(
     chatterbox = models["ResembleAI/chatterbox-multilingual-v3"]
     ollama_blobs = workspace.models_ollama / "blobs"
     tts = workspace.root / "models/tts/chatterbox-multilingual-v3"
+    qwen_artifacts = [(ollama_blobs / f"sha256-{qwen['sha256']}", int(qwen["size_bytes"]), str(qwen["sha256"]))]
+    if qwen.get("projector_sha256"):
+        qwen_artifacts.append((ollama_blobs / f"sha256-{qwen['projector_sha256']}", int(qwen["projector_size_bytes"]), str(qwen["projector_sha256"])))
     return (
         _artifact_status(
             key="qwen3.5:4b",
             label="Qwen3.5 4B",
             purpose="Türkçe özet",
-            artifacts=((
-                ollama_blobs / f"sha256-{qwen['sha256']}",
-                int(qwen["size_bytes"]),
-                str(qwen["sha256"]),
-            ),),
+            artifacts=tuple(qwen_artifacts),
             verify_hashes=verify_hashes,
         ),
         _artifact_status(
@@ -251,7 +261,9 @@ def inspect_job_cache(workspace: WorkspacePaths) -> CacheStatus:
 
 
 def inspect_app_bundle(path: str | Path | None = None) -> AppBundleStatus:
-    target = Path(path or (Path.home() / "Desktop" / APP_BUNDLE_NAME)).expanduser().resolve()
+    resources = bundle_root()
+    packaged = resources.parent.parent if resources is not None else None
+    target = Path(path or packaged or (Path.home() / "Desktop" / APP_BUNDLE_NAME)).expanduser().resolve()
     plist_path = target / "Contents/Info.plist"
     launcher = target / "Contents/MacOS" / APP_EXECUTABLE_NAME
     if not target.is_dir() or not plist_path.is_file() or not launcher.is_file():
@@ -282,9 +294,9 @@ def inspect_app_bundle(path: str | Path | None = None) -> AppBundleStatus:
         and isinstance(priorities, list)
         and priorities == ["arm64"]
     )
-    note = "Ad-hoc imza ve ARM64 çalışma zorunluluğu doğrulandı." if signed and native_only else (
-        "Paket imzası veya ARM64 çalışma ayarı doğrulanamadı."
-    )
+    declared = plist.get("KSIArchitecture") or (priorities[0] if isinstance(priorities, list) and len(priorities) == 1 else None)
+    matches = bool(plist.get("LSRequiresNativeExecution") is True and declared in {"arm64", "x86_64"} and priorities == [declared] and declared == host_architecture())
+    note = "İmza ve native işlemci çalışma ayarı doğrulandı." if signed and matches else "Paket imzası veya native işlemci ayarı doğrulanamadı."
     return AppBundleStatus(
         path=str(target),
         exists=True,
@@ -294,6 +306,8 @@ def inspect_app_bundle(path: str | Path | None = None) -> AppBundleStatus:
         identifier=str(plist.get("CFBundleIdentifier") or "") or None,
         native_arm64_only=native_only,
         note=note,
+        native_architecture=declared,
+        native_architecture_matches_host=matches,
     )
 
 
@@ -372,7 +386,7 @@ def format_acceptance_report(report: AcceptanceReport, *, language: str = "tr") 
         f"{t('report.storage')}: {report.workspace}",
         f"{t('report.free')}: {report.workspace_free_bytes / 1024**3:.1f} GiB",
         f"{t('report.tools')}: {t('report.verified') if report.tool_integrity_ok else t('report.problem')}",
-        f"{t('report.package')}: {t('report.package_ready') if report.app_bundle.signed and report.app_bundle.native_arm64_only else t('report.package_check')}",
+        f"{t('report.package')}: {t('report.package_ready') if report.app_bundle.signed and report.app_bundle.native_architecture_matches_host else t('report.package_check')}",
         "",
         t("report.models"),
     ]

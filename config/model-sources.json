@@ -2,6 +2,100 @@
   "schema_version": 1,
   "redistribution_review_complete": false,
   "inputs": {
+    "whisper-cpp-turbo": {
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo.bin",
+      "revision": "5359861c739e955e79d9a303bcbc70fb988958b1",
+      "size": 1624555275,
+      "sha256": "1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69",
+      "digest_source": "Official Hugging Face LFS object digest",
+      "license": "MIT"
+    },
+    "u2netp-license": {
+      "url": "https://raw.githubusercontent.com/xuebinqin/U-2-Net/ac7e1c817ecab7c7dff5ce6b1abba61cd213ff29/LICENSE",
+      "revision": "ac7e1c817ecab7c7dff5ce6b1abba61cd213ff29",
+      "size": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "git_blob": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64",
+      "license": "Apache-2.0"
+    },
+    "mlx-whisper-model": {
+      "url": "https://huggingface.co/mlx-community/whisper-large-v3-turbo-8bit/resolve/62103fc276a35fdc76e318f314d8ff47987fba89/model.safetensors",
+      "revision": "62103fc276a35fdc76e318f314d8ff47987fba89",
+      "size": 863659156,
+      "sha256": "1dffa280543756dcdd5324250c811c2a1ba8654c363d7d0b1a5da2b1563629df",
+      "license": "Apache-2.0",
+      "staged_filename": "weights.safetensors",
+      "upstream_whisper_license": "MIT"
+    },
+    "mlx-whisper-config": {
+      "url": "https://huggingface.co/mlx-community/whisper-large-v3-turbo-8bit/resolve/62103fc276a35fdc76e318f314d8ff47987fba89/config.json",
+      "revision": "62103fc276a35fdc76e318f314d8ff47987fba89",
+      "size": 341,
+      "sha256": "f79a081378ac52606707abdfdae4a9cc41410f47ffc2ad2cd582dc8cc8e29e6f",
+      "git_blob": "c77a33ca8659cb18e5eb80ac9f68b190093ffe5e",
+      "license": "Apache-2.0"
+    },
+    "mlx-whisper-card": {
+      "url": "https://huggingface.co/mlx-community/whisper-large-v3-turbo-8bit/resolve/62103fc276a35fdc76e318f314d8ff47987fba89/README.md",
+      "revision": "62103fc276a35fdc76e318f314d8ff47987fba89",
+      "size": 849,
+      "sha256": "011c6fd21d6c446a911b27bb4f7195117f55de9bb2c6471fcad086b7797bff7b",
+      "git_blob": "a6ccdec8acc238be787c398d8cdacc048ada8dce",
+      "license": "Apache-2.0"
+    },
+    "mlx-whisper-tokenizer": {
+      "url": "https://huggingface.co/mlx-community/whisper-large-v3-turbo-8bit/resolve/62103fc276a35fdc76e318f314d8ff47987fba89/multilingual.tiktoken",
+      "revision": "62103fc276a35fdc76e318f314d8ff47987fba89",
+      "size": 816730,
+      "sha256": "b34b360dbb493e781e479794586d661700670d65564001f23024971d1f2fa126",
+      "git_blob": "a4edf0b719c10d28cd83f8c294449f99ff5d5dc0",
+      "license": "MIT"
+    },
+    "chatterbox-s3gen": {
+      "url": "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/s3gen.pt",
+      "revision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
+      "size": 1057165844,
+      "sha256": "9b9ff07e60b20c136e2b1b3d7563a24604e8d2c4c267888d1ee929dd0151d2a3",
+      "license": "MIT"
+    },
+    "chatterbox-t3-v3": {
+      "url": "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/t3_mtl23ls_v3.safetensors",
+      "revision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
+      "size": 2143989928,
+      "sha256": "5abca8321ede76f8e61f1cc0d19aea6c946b28871017ce8726f8a69203f05953",
+      "license": "MIT"
+    },
+    "chatterbox-voice-encoder": {
+      "url": "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/ve.pt",
+      "revision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
+      "size": 5698626,
+      "sha256": "4b16d836bc598509860f6fa068165a8bb5e9ac84f05582dfcf278a5a372879f1",
+      "license": "MIT"
+    },
+    "chatterbox-default-conditions": {
+      "url": "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/conds.pt",
+      "revision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
+      "size": 107374,
+      "sha256": "6552d70568833628ba019c6b03459e77fe71ca197d5c560cef9411bee9d87f4e",
+      "license": "MIT",
+      "purpose": "Upstream public preset; never a user's reference voice or sample"
+    },
+    "chatterbox-tokenizer": {
+      "url": "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/mtl_tokenizer.json",
+      "revision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
+      "size": 68125,
+      "sha256": "e7f9364e2c279b2de19f417a83624d9887532a56daec2ddddac470cc71693253",
+      "git_blob": "54c8910a05341d2131a30256705f4fdb703f8ffa",
+      "license": "MIT"
+    },
+    "chatterbox-model-card": {
+      "url": "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/README.md",
+      "revision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
+      "size": 10081,
+      "sha256": "6ac86d5ec7e85a9cf6566a34c6aae60ac1d50a6fceccade4c2aa57cfa6f590b4",
+      "git_blob": "8e0091740326a09c226c43cc9294993c68cbd9d5",
+      "license": "MIT"
+    },
     "u2netp-model": {
       "url": "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx",
       "revision": "v0.0.0",
