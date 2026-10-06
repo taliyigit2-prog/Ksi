@@ -111,27 +111,40 @@ def build_raster_media_engine(engine: str, source: Path, libraries: Path,
     public_prefix = "/KSI-native"
     maps = f"-ffile-prefix-map={staged}=upstream/{engine} -fdebug-prefix-map={staged}=upstream/{engine} -ffile-prefix-map={prefix}=upstream/native-libraries"
     with tempfile.TemporaryDirectory(prefix=".ksi-engine-home-", dir=destination.parent) as temporary:
-        environment = {"HOME": temporary, "TMPDIR": temporary, "PATH": str(prefix / "bin") + ":/usr/bin:/bin", "MACOSX_DEPLOYMENT_TARGET": "14.0", "LC_ALL": "C", "GIT_CEILING_DIRECTORIES": str(destination), "PKG_CONFIG_PATH": str(prefix / "lib/pkgconfig"), "PKG_CONFIG_LIBDIR": str(prefix / "lib/pkgconfig"), "CFLAGS": "-O2 -mmacosx-version-min=14.0 " + maps, "CXXFLAGS": "-O2 -mmacosx-version-min=14.0 " + maps, "CPPFLAGS": "-I" + str(prefix / "include"), "LDFLAGS": "-L" + str(prefix / "lib") + " -mmacosx-version-min=14.0"}
+        environment = {"HOME": temporary, "TMPDIR": temporary, "PATH": str(prefix / "bin") + ":/usr/bin:/bin", "MACOSX_DEPLOYMENT_TARGET": "14.0", "LC_ALL": "C", "GIT_CEILING_DIRECTORIES": str(destination), "PKG_CONFIG_PATH": str(prefix / "lib/pkgconfig"), "PKG_CONFIG_LIBDIR": str(prefix / "lib/pkgconfig"), "CFLAGS": "-O2 -mmacosx-version-min=14.0 " + maps, "CXXFLAGS": "-O2 -mmacosx-version-min=14.0 " + maps, "CPPFLAGS": "-I" + str(prefix / "include"), "LDFLAGS": "-L" + str(prefix / "lib") + " -mmacosx-version-min=14.0 -Wl,-headerpad_max_install_names"}
         if engine == "ffmpeg":
             options = ["--prefix=" + public_prefix, "--cc=clang", "--cxx=clang++", "--disable-autodetect", "--disable-debug", "--disable-doc", "--disable-ffplay", "--disable-shared", "--enable-static", "--disable-x86asm", "--enable-gpl", "--enable-libx264", "--enable-libvpx", "--enable-libopus", "--enable-libass", "--enable-libmp3lame", "--enable-videotoolbox", "--enable-audiotoolbox", "--enable-securetransport"]
             targets = ["ffmpeg", "ffprobe"]
         else:
             options = ["--prefix=" + public_prefix, "--disable-shared", "--enable-static", "--disable-openmp", "--with-modules=no", "--without-magick-plus-plus", "--without-perl", "--without-x", "--without-gslib", "--without-gs-font-dir", "--without-rsvg", "--without-pango", "--without-xml", "--without-fftw", "--without-gvc", "--without-jxl", "--without-openexr", "--without-raw", "--without-djvu", "--without-lqr", "--without-raqm", "--without-fontconfig", "--without-freetype", "--with-heic=yes", "--with-webp=yes", "--with-jpeg=yes", "--with-png=yes", "--with-tiff=yes", "--with-zlib=yes"]
             targets = []
-        subprocess.run([str(staged / "configure"), *options], cwd=build, env=environment, check=True, timeout=600)
+        log = destination / "native-build.log"
+        print(f"Configuring pinned {engine}; detailed diagnostics stay in the private build log.", flush=True)
+        _run_build_command([str(staged / "configure"), *options], cwd=build, environment=environment, log=log, timeout=600)
         if engine == "imagemagick":
             from xml.etree import ElementTree
             config = ElementTree.parse(build / "config/configure.xml")
             delegates = next((row.get("value", "").split() for row in config.iter("configure") if row.get("name") == "DELEGATES"), [])
             if not {"heic", "jpeg", "png", "tiff", "webp"} <= set(delegates):
                 raise RuntimeError("Raster build is missing required delegates; no incomplete engine is staged.")
-        subprocess.run(["/usr/bin/make", "-j4", *targets], cwd=build, env=environment, check=True, timeout=3600)
+        print(f"Compiling pinned {engine} with four workers.", flush=True)
+        _run_build_command(["/usr/bin/make", "-j4", *targets], cwd=build, environment=environment, log=log, timeout=3600)
     binaries = [build / "ffmpeg", build / "ffprobe"] if engine == "ffmpeg" else [build / "utilities/magick"]
     if any(not path.is_file() or not os.access(path, os.X_OK) for path in binaries):
         raise RuntimeError("Selected native engine did not produce its expected executables.")
     result = {"schema_version": 1, "engine": engine, "architecture": host_architecture(), "source_commit": commit, "configure_options": options, "acceptance_tested": False, "binaries": [{"filename": path.name, "sha256": digest_file(path), "size": path.stat().st_size} for path in binaries]}
     atomic_write_json(destination / "native-build-provenance.json", result)
     return result
+
+
+def _run_build_command(command, *, cwd, environment, log, timeout):
+    with log.open("ab") as output:
+        result = subprocess.run(command, cwd=cwd, env=environment, stdout=output, stderr=subprocess.STDOUT, check=False, timeout=timeout)
+    if result.returncode:
+        with log.open("rb") as source:
+            source.seek(max(0, log.stat().st_size - 4096))
+            details = source.read().decode("utf-8", errors="replace")
+        raise RuntimeError("Native build failed; private diagnostic tail:\n" + details)
 
 
 def extract_oxipng(archive: Path, *, sha256: str, destination: Path) -> Path:

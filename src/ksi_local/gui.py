@@ -277,6 +277,8 @@ def _chatterbox_python_path() -> Path:
 
 
 def _ocr_helper_path() -> Path:
+    if bundle_root() is not None:
+        return Path(tool_path("ocr-helper"))
     root = Path(__file__).resolve().parents[2]
     candidates = (root / "bin/KSIOCR", root / "build/KSIOCR")
     return next((item for item in candidates if item.is_file()), candidates[0])

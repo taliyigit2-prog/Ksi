@@ -73,6 +73,30 @@ must retain those materials and pass the binary license/privacy gate. The
 build-only resolver, package metadata and development prefix are not copied
 wholesale into the shipped app.
 
+`scripts/stage_native_engines.py` copies only the selected engine dependency
+graph. Recorded vendor build-prefix references are rebound to explicit clean
+prefix members, never read from Homebrew or a user installation. Internal
+library aliases are materialized into independent files. Load paths become
+app-local `@loader_path` references, stale search paths are removed, and the
+relocated binaries are ad-hoc signed before final hashes are recorded. Missing
+libraries, escaping links and name collisions close this build boundary.
+Every final load command is resolved inside the staged graph and every member's
+ad-hoc signature is verified. Native library prefixes should be created in a
+neutral build directory: prefix replacement may also affect embedded default
+configuration strings, not just load commands.
+
+`scripts/collect_native_notices.py` independently verifies the locked archives
+and extracts only bounded license/recipe metadata. It preserves source archive
+digests and recipe patches for the subsequent corresponding-source review.
+Missing notice texts are explicitly reported; collection does not approve
+redistribution. The selected fonts and portable fontconfig configuration must
+also be staged explicitly rather than relying on a developer's font directory.
+
+The app assembler binds download-tool binary digests to their actual
+post-signing files while retaining the pinned versions and original archive
+digests. The launcher clears inherited manifest overrides, and packaged OCR
+uses a verified component instead of searching a development directory.
+
 Successful assembly records `acceptance_tested: false`. It is not native
 functional/quality evidence, a successful clean installation, notarization,
 or release approval. Each final architecture still needs automated acceptance

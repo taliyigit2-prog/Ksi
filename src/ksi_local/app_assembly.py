@@ -55,6 +55,20 @@ def copy_clean_tree(source: Path, destination: Path) -> None:
     visit(root, destination, frozenset())
 
 
+def bind_signed_tool_manifest(resources: Path, specification: dict) -> None:
+    """Bind pinned tool versions to actual post-signing files, never cache hashes."""
+    target = resources / "runtime/config/tool-manifest.json"
+    manifest = json.loads(target.read_text(encoding="utf-8"))
+    records = manifest.get("tools", {})
+    for name, digest_key in (("yt-dlp", "sha256"), ("deno", "binary_sha256")):
+        matches = [row for row in specification["files"] if row.get("role") == "tool" and row.get("identifier") == name]
+        if len(matches) != 1 or not isinstance(records.get(name), dict):
+            raise ValueError("Signed download tool has no unique pinned manifest record.")
+        records[name][digest_key] = digest_file(safe_member(resources, matches[0]["path"]))
+    manifest["platform"] = "macos-" + specification["architecture"]
+    atomic_write_json(target, manifest, mode=0o644)
+
+
 def assemble_app(repository: Path, runtime: Path, components: Path, specification: dict,
                  destination: Path, *, wheel_lock: dict) -> dict:
     architecture = specification.get("architecture")
@@ -140,6 +154,7 @@ def assemble_app(repository: Path, runtime: Path, components: Path, specificatio
             magic = stream.read(4)
         if magic in {b"\xcf\xfa\xed\xfe", b"\xfe\xed\xfa\xcf", b"\xce\xfa\xed\xfe", b"\xfe\xed\xfa\xce", b"\xca\xfe\xba\xbe", b"\xbe\xba\xfe\xca", b"\xca\xfe\xba\xbf", b"\xbf\xba\xfe\xca"}:
             subprocess.run(["/usr/bin/codesign", "--force", "--sign", "-", "--timestamp=none", str(path)], check=True, capture_output=True, timeout=120)
+    bind_signed_tool_manifest(resources, spec)
     represented = {row["path"] for row in spec["files"]}
     for row in spec["files"]:
         path = safe_member(resources, row["path"])

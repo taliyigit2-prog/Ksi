@@ -1,11 +1,34 @@
+import hashlib
+import json
 import tempfile
 import unittest
 from pathlib import Path
 
-from ksi_local.app_assembly import copy_clean_tree
+from ksi_local.app_assembly import bind_signed_tool_manifest, copy_clean_tree
 
 
 class CleanTreeTests(unittest.TestCase):
+    def test_signed_tools_replace_only_binary_digests(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config = root / "runtime/config"
+            config.mkdir(parents=True)
+            (root / "tools").mkdir()
+            manifest = {"schema_version": 1, "tools": {"yt-dlp": {"version": "pinned", "sha256": "old"}, "deno": {"version": "pinned", "binary_sha256": "old", "archive_sha256": "original"}}}
+            (config / "tool-manifest.json").write_text(json.dumps(manifest))
+            rows = []
+            for name in ("yt-dlp", "deno"):
+                (root / "tools" / name).write_bytes(name.encode())
+                rows.append({"role": "tool", "identifier": name, "path": "tools/" + name})
+            bind_signed_tool_manifest(root, {"architecture": "arm64", "files": rows})
+            result = json.loads((config / "tool-manifest.json").read_text())
+            self.assertEqual(result["tools"]["yt-dlp"]["sha256"], hashlib.sha256(b"yt-dlp").hexdigest())
+            self.assertEqual(result["tools"]["deno"]["binary_sha256"], hashlib.sha256(b"deno").hexdigest())
+            self.assertEqual(result["tools"]["deno"]["archive_sha256"], "original")
+            self.assertEqual(result["tools"]["deno"]["version"], "pinned")
+            with self.assertRaises(ValueError):
+                bind_signed_tool_manifest(root, {"architecture": "arm64", "files": rows + [rows[0]]})
+
     def test_internal_link_is_independent_regular_file(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

@@ -2,7 +2,7 @@
   "models": {
     "ResembleAI/chatterbox-multilingual-v3": {
       "integrity_verified": false,
-      "purpose": "Accepted default low-pitched Turkish male dubbing voice",
+      "purpose": "Default synthetic Turkish dubbing voice; autonomous acceptance pending",
       "repository_revision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
       "s3gen_sha256": "9b9ff07e60b20c136e2b1b3d7563a24604e8d2c4c267888d1ee929dd0151d2a3",
       "s3gen_size_bytes": 1057165844,
@@ -33,7 +33,7 @@
       "size_bytes": 4946520000
     }
   },
-  "platform": "macos-arm64",
+  "platform": "macos-arm64-and-x86_64",
   "public_template": true,
   "recorded_at": null,
   "schema_version": 1,
@@ -62,18 +62,17 @@
     },
     "ffmpeg": {
       "managed_by_app": false,
-      "version": "9.0.1"
+      "version": "8.1.2"
     },
     "ffprobe": {
       "managed_by_app": false,
-      "version": "9.0.1"
+      "version": "8.1.2"
     },
     "freyatts": {
       "audiovae_sha256": "94b5d51e107e0507d4acc976cfdadb64edd6fd06d1f751dadbf2fd1594274bf1",
       "commit": "146d36c1cb6660646be57d31339db4eed9315de3",
       "installed": false,
-      "installed_on_external_ssd": true,
-      "integrity_verified": true,
+      "integrity_verified": false,
       "license": "Apache-2.0",
       "model_sha256": "9e5828ce9eb6aaf197adc5cb098e2e80e8ff301d238add631418c5557fa08b22",
       "repository": "https://github.com/freyavoiceai/FreyaTTS"

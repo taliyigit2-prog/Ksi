@@ -209,6 +209,9 @@ def _sanitized_configuration(source: Path, destination: Path) -> None:
             tool.pop("environment", None)
             if "installed" in tool:
                 tool["installed"] = False
+            tool.pop("installed_on_external_ssd", None)
+            if "integrity_verified" in tool:
+                tool["integrity_verified"] = False
             tool.pop("server_running_during_inventory", None)
     for model in tool_manifest.get("models", {}).values():
         if isinstance(model, dict):
@@ -223,6 +226,8 @@ def _sanitized_configuration(source: Path, destination: Path) -> None:
     voice["accepted_at"] = None
     voice["runtime"].pop("environment", None)
     voice.pop("user_evaluation", None)
+    voice["voice"]["reference_audio"] = None
+    voice["voice"]["type"] = "builtin_synthetic"
     atomic_write_json(destination / "config/voice-profile.json", voice, mode=0o644)
 
 

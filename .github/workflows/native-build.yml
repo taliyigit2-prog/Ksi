@@ -40,12 +40,24 @@ jobs:
         run: |
           "$KSI_BUILD_PYTHON" scripts/prepare_native_component.py fetch-whisper-source build/whisper-source
           "$KSI_BUILD_PYTHON" scripts/prepare_native_component.py build-whisper build/whisper-source build/runtime-tools/python/lib/python3.12/site-packages/cmake/data/bin/cmake build/whisper-compiled
+      - name: Build pinned raster and media engines against only selected native libraries
+        run: |
+          "$KSI_BUILD_PYTHON" scripts/fetch_build_input.py "micromamba-${{ matrix.architecture }}" build/micromamba --catalog native
+          chmod 755 build/micromamba
+          "$KSI_BUILD_PYTHON" scripts/lock_native_libraries.py fetch "config/native-libraries-${{ matrix.architecture }}.json" build/native-cache
+          "$KSI_BUILD_PYTHON" scripts/lock_native_libraries.py install "config/native-libraries-${{ matrix.architecture }}.json" build/native-cache build/micromamba build/native-libraries
+          "$KSI_BUILD_PYTHON" scripts/prepare_native_component.py fetch-source ffmpeg-source build/ffmpeg-source
+          "$KSI_BUILD_PYTHON" scripts/prepare_native_component.py fetch-source imagemagick-source build/imagemagick-source
+          "$KSI_BUILD_PYTHON" scripts/prepare_native_component.py build-engine ffmpeg build/ffmpeg-source build/native-libraries build/ffmpeg-compiled
+          "$KSI_BUILD_PYTHON" scripts/prepare_native_component.py build-engine imagemagick build/imagemagick-source build/native-libraries build/imagemagick-compiled
+          "$KSI_BUILD_PYTHON" scripts/stage_native_engines.py build/native-libraries build/native-relocated --ffmpeg-build build/ffmpeg-compiled --imagemagick-build build/imagemagick-compiled
+          "$KSI_BUILD_PYTHON" scripts/collect_native_notices.py "config/native-libraries-${{ matrix.architecture }}.json" build/native-cache build/native-libraries/bin/zstd build/native-notices
       - name: Archive only the engine and pinned public upstream source notices
         run: |
           mkdir -p build/native-artifact
           install -m 755 build/whisper-compiled/build/bin/whisper-cli build/native-artifact/whisper-cli
           install -m 644 build/whisper-source/LICENSE build/native-artifact/LICENSE.whisper
-          tar -czf "build/native-engine-${{ matrix.architecture }}.tar.gz" -C build native-artifact whisper-source
+          tar -czf "build/native-engine-${{ matrix.architecture }}.tar.gz" -C build native-artifact whisper-source native-relocated native-notices ffmpeg-source imagemagick-source
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: native-engine-${{ matrix.architecture }}

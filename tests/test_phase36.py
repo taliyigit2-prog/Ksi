@@ -66,6 +66,12 @@ class Phase36Tests(unittest.TestCase):
             self.assertNotIn("/Users/", serialized)
             self.assertNotIn("user_evaluation", voice)
             self.assertNotIn("environment", voice["runtime"])
+            self.assertIsNone(voice["voice"]["reference_audio"])
+            self.assertEqual(voice["voice"]["type"], "builtin_synthetic")
+            for record in tools["tools"].values():
+                self.assertNotIn("installed_on_external_ssd", record)
+                if "integrity_verified" in record:
+                    self.assertFalse(record["integrity_verified"])
             self.assertFalse((target / "private-catalog.local.json").exists())
             self.assertFalse((target / "workspace-id.json").exists())
 
