@@ -236,3 +236,10 @@ The separate source collector keeps archives intact and bounded, including
 modules physically present in Essentials beyond KSI's direct Widgets imports.
 Final license attribution must use actual wheel contents and preserve the full
 applicable source/build notices, not just a generic PySide license label.
+
+The wheel notice collector verifies every original wheel against its official
+lock and extracts only bounded inert license/notice/metadata files. A license
+label without a text file is reported as missing, not approved. This preserves
+transitive upstream notices without importing packages or copying a user's
+installed environment. Final review must resolve every missing text from the
+matching public source and build a final package-level license inventory.

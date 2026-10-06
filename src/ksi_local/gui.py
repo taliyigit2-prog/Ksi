@@ -5073,7 +5073,7 @@ class MainWindow(QMainWindow):
                     raise RuntimeError("Chatterbox ARM64 çalışma ortamı bulunamadı.")
                 if not voice_profile.is_file() or not tts_model.is_dir():
                     raise RuntimeError(
-                        "Kabul edilen dublaj ses profili veya modeli bulunamadı."
+                        "Yerel dublaj ses profili veya modeli bulunamadı."
                     )
                 if not self._stage_output_is_complete("tts", dubbed_audio):
                     self._queue_command(

@@ -161,6 +161,7 @@ def assemble_app(repository: Path, runtime: Path, components: Path, specificatio
     voice = json.loads(profile.read_text(encoding="utf-8"))
     voice.update(status="local-default", accepted_at=None)
     voice.pop("user_evaluation", None)
+    voice["voice"]["description"] = "Local Turkish narrator · upstream built-in preset"
     atomic_write_json(profile, voice, mode=0o644)
     for row in spec["files"]:
         origin = safe_member(components, row["path"])

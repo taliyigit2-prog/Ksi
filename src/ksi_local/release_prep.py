@@ -64,6 +64,7 @@ PUBLIC_SCRIPTS = (
     "scripts/assemble_offline_app.py",
     "scripts/bootstrap_build_environment.py",
     "scripts/collect_native_notices.py",
+    "scripts/collect_wheel_notices.py",
     "scripts/fetch_corresponding_source.py",
     "scripts/fetch_ollama_models.py",
     "scripts/import_native_artifact.py",
