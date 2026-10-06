@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import posixpath
 import re
 import shutil
 import subprocess
@@ -15,7 +16,7 @@ from ksi_local.atomic_files import atomic_write_json
 from ksi_local.bundle_runtime import digest_file, host_architecture
 
 
-def fetch_git_source(url: str, *, tag: str, commit: str, destination: Path) -> dict:
+def fetch_git_source(url: str, *, tag: str, commit: str, destination: Path, notice_source_only: bool = False) -> dict:
     parsed = urlsplit(url)
     if parsed.scheme != "https" or parsed.hostname != "github.com" or parsed.username or parsed.password or parsed.query or parsed.fragment or not re.fullmatch(r"/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\.git)?", parsed.path):
         raise ValueError("Native source must be an explicit public GitHub repository.")
@@ -28,8 +29,14 @@ def fetch_git_source(url: str, *, tag: str, commit: str, destination: Path) -> d
         private = Path(temporary)
         checkout = private / "checkout"
         environment = {"HOME": str(private), "PATH": "/usr/bin:/bin", "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_TERMINAL_PROMPT": "0"}
-        subprocess.run(["git", "clone", "--depth", "1", "--branch", tag, "--no-checkout", url, str(checkout)], env=environment, check=True, timeout=600)
-        actual = subprocess.run(["git", "rev-parse", "HEAD"], cwd=checkout, env=environment, check=True, capture_output=True, text=True).stdout.strip()
+        if tag == commit:
+            subprocess.run(["git", "init", "--quiet", str(checkout)], env=environment, check=True, timeout=30)
+            subprocess.run(["git", "fetch", "--depth", "1", url, commit], cwd=checkout, env=environment, check=True, timeout=600)
+            reference = "FETCH_HEAD"
+        else:
+            subprocess.run(["git", "clone", "--depth", "1", "--branch", tag, "--no-checkout", url, str(checkout)], env=environment, check=True, timeout=600)
+            reference = "HEAD"
+        actual = subprocess.run(["git", "rev-parse", reference], cwd=checkout, env=environment, check=True, capture_output=True, text=True).stdout.strip()
         if actual != commit:
             raise ValueError("Native source tag no longer matches the pinned commit.")
         archive = private / "source.tar"
@@ -39,12 +46,23 @@ def fetch_git_source(url: str, *, tag: str, commit: str, destination: Path) -> d
             if len(members) > 50000 or sum(member.size for member in members) > 2 * 1024**3:
                 raise ValueError("Native source archive exceeds safe bounds.")
             for member in members:
-                if not (member.isfile() or member.isdir()) or any(part in {"", ".", ".."} for part in member.name.rstrip("/").split("/")) or member.name.startswith("/") or "\\" in member.name:
+                safe_type = member.isfile() or member.isdir() or (notice_source_only and member.issym())
+                if not safe_type or any(part in {"", ".", ".."} for part in member.name.rstrip("/").split("/")) or member.name.startswith("/") or "\\" in member.name:
                     raise ValueError("Native source contains unsafe archive members.")
+                if member.issym():
+                    linked = posixpath.normpath(posixpath.join(posixpath.dirname(member.name), member.linkname))
+                    if member.linkname.startswith("/") or "\\" in member.linkname or linked == ".." or linked.startswith("../"):
+                        raise ValueError("Notice source archive contains an escaping upstream link.")
             destination.mkdir(mode=0o700)
-            stream.extractall(destination, members=members, filter="data")
+            stream.extractall(destination, members=[member for member in members if not member.issym()], filter="data")
+        if notice_source_only:
+            # Keep the exact complete upstream source, including valid links,
+            # but never materialize links into an app/build dependency tree.
+            shutil.copyfile(archive, destination / "corresponding-source.tar")
         files = [{"path": path.relative_to(destination).as_posix(), "sha256": digest_file(path)} for path in sorted(destination.rglob("*")) if path.is_file()]
         record = {"schema_version": 1, "url": url, "tag": tag, "commit": commit, "source_archive_sha256": digest_file(archive), "files": files}
+        if notice_source_only:
+            record["notice_source_only"] = True
         atomic_write_json(destination / "ksi-source-provenance.json", record)
         return record
 
@@ -54,6 +72,8 @@ def _stage_native_source(source: Path, destination: Path, commit: str) -> Path:
         raise ValueError("Native build requires clean source and a separate new build directory.")
     import json
     provenance = json.loads((source / "ksi-source-provenance.json").read_text(encoding="utf-8"))
+    if provenance.get("notice_source_only"):
+        raise ValueError("Notice-only source archives cannot be used as compiler inputs.")
     if provenance.get("commit") != commit:
         raise ValueError("Native source does not match the pinned commit.")
     from ksi_local.bundle_runtime import safe_member

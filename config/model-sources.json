@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "redistribution_review_complete": false,
+  "inputs": {
+    "piper-fettah-model": {
+      "url": "https://huggingface.co/rhasspy/piper-voices/resolve/375a0fe641dea077c2a47b4e9a056d6da521eed3/tr/tr_TR/fettah/medium/tr_TR-fettah-medium.onnx",
+      "revision": "375a0fe641dea077c2a47b4e9a056d6da521eed3",
+      "size": 63201294,
+      "sha256": "5d14d5222f36aea2b8fc8dba097fcb18dcf8f5b33e5b2aa76b5e0b44602aa8d7",
+      "digest_source": "Official Hugging Face LFS object digest",
+      "license": "MIT",
+      "voice_identity": "Turkish Fettah; independent preset, not Chatterbox voice cloning"
+    },
+    "piper-fettah-config": {
+      "url": "https://huggingface.co/rhasspy/piper-voices/resolve/375a0fe641dea077c2a47b4e9a056d6da521eed3/tr/tr_TR/fettah/medium/tr_TR-fettah-medium.onnx.json",
+      "revision": "375a0fe641dea077c2a47b4e9a056d6da521eed3",
+      "size": 4877,
+      "sha256": "0738ecd770d4102fa967a784ae89f64d846b1b5f104076e410c978fefa70b3e7",
+      "git_blob": "fbf2febeb44d17d72a77a20e8a33bcc0dd5e4fce",
+      "license": "MIT"
+    },
+    "piper-fettah-card": {
+      "url": "https://huggingface.co/rhasspy/piper-voices/resolve/375a0fe641dea077c2a47b4e9a056d6da521eed3/tr/tr_TR/fettah/medium/MODEL_CARD",
+      "revision": "375a0fe641dea077c2a47b4e9a056d6da521eed3",
+      "size": 276,
+      "sha256": "5a52fff2766de44ca36b9bcd0955ce31014cd9b2f333a58fb675715762722ceb",
+      "git_blob": "efac0fb7d6940331d9f9c1eb24d31bfc923bcf1a",
+      "license": "MIT",
+      "dataset_license_declared": "CC0"
+    },
+    "piper-voices-license-declaration": {
+      "url": "https://huggingface.co/rhasspy/piper-voices/resolve/375a0fe641dea077c2a47b4e9a056d6da521eed3/README.md",
+      "revision": "375a0fe641dea077c2a47b4e9a056d6da521eed3",
+      "size": 497,
+      "sha256": "33e93643fce5180886300f9f0070eeeab8af148efb8e84361f8904def80fd9fb",
+      "git_blob": "e3c946b4ce55f9f4a614599d34e1bca4c4657d07",
+      "license": "MIT"
+    }
+  }
+}

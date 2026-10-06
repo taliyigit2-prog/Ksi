@@ -10,6 +10,18 @@ from ksi_local.native_build import build_whisper_cpu, extract_oxipng, fetch_git_
 
 
 class NativeBuildTests(unittest.TestCase):
+    def test_notice_only_source_never_used_as_compiler_input(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "source"
+            source.mkdir()
+            commit = "a" * 40
+            (source / "ksi-source-provenance.json").write_text(json.dumps({"commit": commit, "notice_source_only": True}))
+            (root / "unused").write_text("fixture")
+            with self.assertRaisesRegex(ValueError, "Notice-only"):
+                build_whisper_cpu(source, cmake=root / "unused", destination=root / "output", commit=commit)
+            self.assertFalse((root / "output").exists())
+
     def archive(self, root, names):
         archive = root / "engine.tar.gz"
         with tarfile.open(archive, "w:gz") as stream:

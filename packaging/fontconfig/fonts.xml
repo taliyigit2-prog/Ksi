@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+<fontconfig>
+  <!-- Packaged as fonts.conf; no developer/system font directories or includes. -->
+  <dir prefix="relative">.</dir>
+  <cachedir prefix="xdg">ksi-local-studio/fontconfig</cachedir>
+  <alias><family>sans-serif</family><prefer><family>DejaVu Sans</family></prefer></alias>
+  <alias><family>Arial</family><prefer><family>DejaVu Sans</family></prefer></alias>
+</fontconfig>

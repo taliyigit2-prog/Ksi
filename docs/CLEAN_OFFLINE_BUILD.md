@@ -101,3 +101,19 @@ Successful assembly records `acceptance_tested: false`. It is not native
 functional/quality evidence, a successful clean installation, notarization,
 or release approval. Each final architecture still needs automated acceptance
 and exact-artifact privacy/license checks before publication.
+
+Piper has its own `python-piper-wheels-*.json` locks, resolved from the official
+PyPI metadata and never installed into the primary app interpreter. Assemble
+the isolated prefix with `assemble_clean_runtime.py --lock`, then declare its
+real interpreter as the verified `piper-python` component. The backend runs
+`-I -m piper` in a separate process; there is no installed-app resolver or model
+download. The matching GPL source revision is pinned in `native-sources.json`.
+The exact source of embedded eSpeak and other wheel license notices remains a
+required corresponding-source review item, not a completed gate. See the
+[upstream CLI](https://github.com/OHF-Voice/piper1-gpl/blob/v1.8.0/docs/CLI.md).
+
+`stage_portable_font.py` copies only the digest-checked DejaVu font member and
+its collected notice. Declare `fonts.conf` and the font under the same sealed
+directory with support identifiers `fontconfig-config` and `subtitle-font`.
+FFmpeg/Magick worker environments use those verified paths and do not inherit
+a developer's fontconfig search-root override.

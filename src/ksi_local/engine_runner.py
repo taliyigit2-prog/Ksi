@@ -16,6 +16,7 @@ from ksi_local.network_policy import local_worker_environment
 from ksi_local.privacy import redact_sensitive_text
 from ksi_local.resource_governor import active_model_descriptor
 from ksi_local.job_leases import active_job_descriptor
+from ksi_local.bundle_runtime import OfflinePayload, bundle_root
 
 
 class OperationCancelled(RuntimeError):
@@ -54,6 +55,16 @@ def run_engine(
     descriptor = active_model_descriptor()
     descriptors = tuple(dict.fromkeys(fd for fd in (descriptor, active_job_descriptor()) if fd is not None))
     worker_environment = local_worker_environment(environment)
+    resources = bundle_root()
+    if resources is not None and Path(argv[0]).name in {"ffmpeg", "magick"}:
+        payload = OfflinePayload.load(resources)
+        font_config = payload.component("support", "fontconfig-config")
+        font = payload.component("support", "subtitle-font")
+        if font.parent != font_config.parent:
+            raise ValueError("Portable font configuration does not match the sealed font directory.")
+        worker_environment["FONTCONFIG_PATH"] = str(font_config.parent)
+        worker_environment["FONTCONFIG_FILE"] = str(font_config)
+        worker_environment.pop("FONTCONFIG_SYSROOT", None)
     worker_environment.pop("KSI_MODEL_LOCK_FD", None)
     if descriptor is not None:
         worker_environment["KSI_MODEL_LOCK_FD"] = str(descriptor)

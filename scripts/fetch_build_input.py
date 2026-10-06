@@ -13,7 +13,7 @@ def main():
     parser.add_argument("identifier")
     parser.add_argument("destination", type=Path)
     parser.add_argument("--extract-to", type=Path)
-    parser.add_argument("--catalog", choices=["runtime", "native"], default="runtime")
+    parser.add_argument("--catalog", choices=["runtime", "native", "model"], default="runtime")
     args = parser.parse_args()
     source = Path(__file__).resolve().parents[1] / f"config/{args.catalog}-sources.json"
     data = json.loads(source.read_text(encoding="utf-8"))

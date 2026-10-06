@@ -47,10 +47,13 @@ def generate_segments(cues, directory: Path, models: Path) -> dict[int, Path]:
         source = stage / "input.txt"
         atomic_write_text(source, "\n".join(clean_spoken_text(cue.text) for cue in cues) + "\n")
         output = stage / "audio"
-        run_engine([str(tool_path("piper")), "--model", str(models / "tr_TR-fettah-medium.onnx"),
+        run_engine([str(tool_path("piper-python")), "-I", "-m", "piper", "--model", str(models / "tr_TR-fettah-medium.onnx"),
             "--input-file", str(source), "--output-dir", str(output),
             "--output-dir-naming", "timestamp"], cwd=stage, timeout=10800)
-        files = sorted(output.glob("*.wav"))
+        files = list(output.glob("*.wav"))
+        if any(not candidate.stem.isascii() or not candidate.stem.isdecimal() for candidate in files):
+            raise RuntimeError("CPU ses motoru segment adlandırması eşleşmiyor.")
+        files.sort(key=lambda candidate: int(candidate.stem))
         if len(files) != len(cues):
             raise RuntimeError("CPU ses motoru segment sayısı eşleşmiyor.")
         for cue, candidate in zip(cues, files, strict=True):

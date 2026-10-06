@@ -1,6 +1,24 @@
 {
   "schema_version": 1,
   "inputs": {
+    "piper-espeak-source": {
+      "type": "git",
+      "revision": "724808c5a83f9ef95fdd0db886ba7ba537ff224a",
+      "commit": "724808c5a83f9ef95fdd0db886ba7ba537ff224a",
+      "url": "https://github.com/espeak-ng/espeak-ng.git",
+      "license": "GPL-3.0-or-later",
+      "revision_source": "Piper v1.8.0 Python extension CMakeLists.txt GIT_TAG 724808c",
+      "notice_source_only": true
+    },
+    "piper-source": {
+      "type": "git",
+      "version": "1.8.0",
+      "revision": "v1.8.0",
+      "commit": "639388b6317fc4731e91d53da42aea68fd4166ff",
+      "url": "https://github.com/OHF-Voice/piper1-gpl.git",
+      "license": "GPL-3.0-or-later",
+      "integration": "Isolated CLI Python runtime; no KSI import of Piper code"
+    },
     "ffmpeg-source": {
       "type": "git",
       "version": "8.1.2",
