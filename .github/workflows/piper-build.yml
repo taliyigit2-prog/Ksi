@@ -1,0 +1,46 @@
+name: Isolated offline speech build inputs
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: arm64
+            runner: macos-14
+          - architecture: x86_64
+            runner: macos-15-intel
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    env:
+      PYTHONPATH: src
+      PYTHONDONTWRITEBYTECODE: '1'
+      KSI_BUILD_PYTHON: build/ci-bootstrap/python/bin/python3.12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Bootstrap from locked public build inputs
+        run: python3 scripts/bootstrap_build_environment.py build/ci-bootstrap
+      - name: Fetch isolated speech wheels and assemble the native prefix offline
+        run: |
+          "$KSI_BUILD_PYTHON" scripts/lock_python_wheels.py fetch "config/python-piper-wheels-${{ matrix.architecture }}.json" build/wheelhouse-piper
+          "$KSI_BUILD_PYTHON" scripts/assemble_clean_runtime.py "${{ matrix.architecture }}" "build/cache/python-${{ matrix.architecture }}-3.12.15.tar.gz" build/wheelhouse-piper build/runtime-piper --lock "config/python-piper-wheels-${{ matrix.architecture }}.json"
+      - name: Collect exact engine and embedded eSpeak corresponding sources
+        run: |
+          "$KSI_BUILD_PYTHON" scripts/prepare_native_component.py fetch-source piper-source build/piper-source
+          "$KSI_BUILD_PYTHON" scripts/prepare_native_component.py fetch-source piper-espeak-source build/espeak-source
+      - name: Archive only fresh public-input prefixes and upstream source
+        run: tar -czf "build/isolated-speech-${{ matrix.architecture }}.tar.gz" -C build runtime-piper piper-source espeak-source
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: isolated-speech-${{ matrix.architecture }}
+          path: build/isolated-speech-${{ matrix.architecture }}.tar.gz
+          if-no-files-found: error
+          retention-days: 7

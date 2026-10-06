@@ -117,3 +117,18 @@ its collected notice. Declare `fonts.conf` and the font under the same sealed
 directory with support identifiers `fontconfig-config` and `subtitle-font`.
 FFmpeg/Magick worker environments use those verified paths and do not inherit
 a developer's fontconfig search-root override.
+
+Some official model archives do not publish a SHA-256 digest. The build-only
+`review_model_input.py` is restricted to three explicit upstream artifacts and
+performs a bounded first retrieval into a private review directory. U2NetP is
+also checked against upstream rembg's legacy MD5. The resulting public model
+lock states which SHA-256 values were observed, not independently advertised;
+Argos index IPFS CIDs are not claimed to have been verified. Subsequent fetches
+use only the fixed SHA-256/size lock. This never approves model redistribution.
+
+Argos archives lack standalone license files. The project's
+[model license declaration](https://github.com/argosopentech/argos-translate/issues/76#issuecomment-815704991)
+states its model-training work is covered by MIT/CC0. Preserve the original
+model README and corpus citations together with the chosen MIT notice. Do not
+label this as a new license grant for training corpora or a legal determination
+about training-data rights; corpus data is not included in this package.

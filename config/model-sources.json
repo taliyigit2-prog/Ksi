@@ -2,6 +2,36 @@
   "schema_version": 1,
   "redistribution_review_complete": false,
   "inputs": {
+    "u2netp-model": {
+      "url": "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx",
+      "revision": "v0.0.0",
+      "size": 4574861,
+      "sha256": "309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8",
+      "upstream_md5": "8e83ca70e441ab06c318d82300c84806",
+      "digest_source": "First official HTTPS retrieval cross-checked with rembg U2netpSession upstream MD5",
+      "license": "Apache-2.0",
+      "license_source": "https://github.com/xuebinqin/U-2-Net/blob/master/LICENSE"
+    },
+    "argos-en-tr": {
+      "url": "https://argos-net.com/v1/translate-en_tr-1_5.argosmodel",
+      "revision": "ff90de60728f7c1338ff6b75974e4c89b2442d22",
+      "size": 124742526,
+      "sha256": "2d553a00880a0c21dea5b1c375535659e6bf18c9bf2ce9847c2a2fd2ff50316a",
+      "digest_source": "First HTTPS retrieval from official fixed index URL; IPFS CID not independently verified",
+      "license": "MIT",
+      "license_declaration": "https://github.com/argosopentech/argos-translate/issues/76#issuecomment-815704991",
+      "training_data_notice": "Preserve the package README citations; no training corpora are redistributed"
+    },
+    "argos-tr-en": {
+      "url": "https://argos-net.com/v1/translate-tr_en-1_5.argosmodel",
+      "revision": "ff90de60728f7c1338ff6b75974e4c89b2442d22",
+      "size": 120561223,
+      "sha256": "15217905586561fac843efb5730aabff9a1534d5a9aa3f6ebcc0f9641394ac2d",
+      "digest_source": "First HTTPS retrieval from official fixed index URL; IPFS CID not independently verified",
+      "license": "MIT",
+      "license_declaration": "https://github.com/argosopentech/argos-translate/issues/76#issuecomment-815704991",
+      "training_data_notice": "Preserve the package README citations; no training corpora are redistributed"
+    },
     "piper-fettah-model": {
       "url": "https://huggingface.co/rhasspy/piper-voices/resolve/375a0fe641dea077c2a47b4e9a056d6da521eed3/tr/tr_TR/fettah/medium/tr_TR-fettah-medium.onnx",
       "revision": "375a0fe641dea077c2a47b4e9a056d6da521eed3",
