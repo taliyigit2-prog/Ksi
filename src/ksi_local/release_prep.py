@@ -135,6 +135,7 @@ PREDECESSOR_ALLOWLIST = {
 }
 SYNTHETIC_TEST_ALLOWLIST = {
     ("tests/test_downloader.py", "credential-url"),
+    ("tests/test_wheel_lock.py", "credential-url"),  # Literal user:password rejection fixture.
     ("tests/test_phase25.py", "credential-url"),
     ("tests/test_phase29.py", "credential-url"),
     ("tests/test_phase36.py", "openai-key"),
@@ -194,7 +195,7 @@ def _iter_public_inputs(source: Path) -> Iterable[tuple[Path, Path]]:
             if path.suffix in {".pyc", ".pyo"} or ".egg-info" in relative.parts:
                 continue
             yield path, relative
-    for relative in ("config/glossary.json", "config/public-catalog.json", "config/runtime-sources.json"):
+    for relative in ("config/glossary.json", "config/public-catalog.json", "config/runtime-sources.json", "config/native-sources.json", "config/python-wheels-arm64.json", "config/python-wheels-x86_64.json"):
         path = source / relative
         if path.is_file():
             yield path, Path(relative)

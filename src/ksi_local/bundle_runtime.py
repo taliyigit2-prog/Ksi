@@ -22,7 +22,7 @@ from typing import Callable
 from ksi_local.copy_on_write import clone_file
 
 
-MAX_MANIFEST_BYTES = 2 * 1024 * 1024
+MAX_MANIFEST_BYTES = 16 * 1024 * 1024
 MAX_PAYLOAD_FILES = 50000
 ARCHITECTURES = {"arm64", "x86_64"}
 _MODEL_INSTALL_CACHE: dict[tuple[str, str], tuple] = {}

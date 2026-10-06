@@ -22,6 +22,14 @@ this file and its SPDX SBOM from the exact package contents.
 This table is informational and does not replace the license text supplied by
 each component. Versions, hashes, notices and transitive dependencies are
 validated during release preparation.
+
+Architecture-specific Python wheel versions and official artifact checksums are
+recorded in `config/python-wheels-arm64.json` and
+`config/python-wheels-x86_64.json`. `NOASSERTION` in a lock means the package's
+PyPI license-expression field was absent; it does not grant redistribution
+permission. Actual wheel license texts, native transitive library notices and
+the final binary SBOM remain mandatory before release. See
+[clean build documentation](docs/CLEAN_OFFLINE_BUILD.md).
 # Desktop engine additions (implementation candidates)
 
 The following adapters do not copy complete third-party applications. Exact

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "inputs": {
+    "oxipng-arm64": {
+      "architecture": "arm64",
+      "version": "10.2.1",
+      "revision": "v10.2.1",
+      "url": "https://github.com/oxipng/oxipng/releases/download/v10.2.1/oxipng-10.2.1-aarch64-apple-darwin.tar.gz",
+      "sha256": "7039fcfc78e8aa1ed2b57d848057a0296f082e92b3e1807ac65402d10d926764",
+      "size": 413379,
+      "license": "MIT",
+      "digest_source": "GitHub release asset digest"
+    },
+    "oxipng-x86_64": {
+      "architecture": "x86_64",
+      "version": "10.2.1",
+      "revision": "v10.2.1",
+      "url": "https://github.com/oxipng/oxipng/releases/download/v10.2.1/oxipng-10.2.1-x86_64-apple-darwin.tar.gz",
+      "sha256": "111883bbe42b25e01cb1ca41f39f8094e4830b173f0e42be342ecc4ca48f3131",
+      "size": 465586,
+      "license": "MIT",
+      "digest_source": "GitHub release asset digest"
+    }
+  }
+}
