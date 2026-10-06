@@ -49,24 +49,24 @@ def fetch_git_source(url: str, *, tag: str, commit: str, destination: Path) -> d
         return record
 
 
-def build_whisper_cpu(source: Path, *, cmake: Path, destination: Path, commit: str) -> Path:
-    if source.is_symlink() or not source.is_dir() or not cmake.is_file() or destination.exists() or destination.is_symlink():
-        raise ValueError("Whisper build requires clean explicit inputs and a new build directory.")
+def _stage_native_source(source: Path, destination: Path, commit: str) -> Path:
+    if source.is_symlink() or not source.is_dir() or not destination.is_absolute() or destination.exists() or destination.is_symlink() or destination.is_relative_to(source.absolute()):
+        raise ValueError("Native build requires clean source and a separate new build directory.")
     import json
     provenance = json.loads((source / "ksi-source-provenance.json").read_text(encoding="utf-8"))
     if provenance.get("commit") != commit:
-        raise ValueError("Whisper source does not match the pinned commit.")
+        raise ValueError("Native source does not match the pinned commit.")
     from ksi_local.bundle_runtime import safe_member
     files = provenance.get("files")
     if not isinstance(files, list) or not files or len(files) > 50000:
-        raise ValueError("Whisper source inventory is missing.")
+        raise ValueError("Native source inventory is missing.")
     expected = {row["path"] for row in files}
-    actual = {path.relative_to(source).as_posix() for path in source.rglob("*") if path.is_file() and path.name != "ksi-source-provenance.json"}
+    actual = {path.relative_to(source).as_posix() for path in source.rglob("*") if path.is_file() and path != source / "ksi-source-provenance.json"}
     if actual != expected:
-        raise ValueError("Whisper source inventory changed after fetching.")
+        raise ValueError("Native source inventory changed after fetching.")
     for row in files:
         if digest_file(safe_member(source, row["path"])) != row["sha256"]:
-            raise ValueError("Whisper source content changed after fetching.")
+            raise ValueError("Native source content changed after fetching.")
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.mkdir(mode=0o700)
     staged_source = destination / "upstream-source"
@@ -75,6 +75,13 @@ def build_whisper_cpu(source: Path, *, cmake: Path, destination: Path, commit: s
         target = staged_source / row["path"]
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source / row["path"], target)
+    return staged_source
+
+
+def build_whisper_cpu(source: Path, *, cmake: Path, destination: Path, commit: str) -> Path:
+    if not cmake.is_file():
+        raise ValueError("The clean CMake executable is missing.")
+    staged_source = _stage_native_source(source, destination, commit)
     build_directory = destination / "build"
     with tempfile.TemporaryDirectory(prefix=".ksi-compiler-home-", dir=destination.parent) as temporary:
         environment = {"HOME": temporary, "TMPDIR": temporary, "PATH": "/usr/bin:/bin:/usr/sbin:/sbin", "MACOSX_DEPLOYMENT_TARGET": "14.0", "GIT_CEILING_DIRECTORIES": str(destination.absolute())}
@@ -91,6 +98,40 @@ def build_whisper_cpu(source: Path, *, cmake: Path, destination: Path, commit: s
     if not binary.is_file() or not os.access(binary, os.X_OK):
         raise RuntimeError("The native whisper-cli build produced no executable.")
     return binary
+
+
+def build_raster_media_engine(engine: str, source: Path, libraries: Path,
+                              destination: Path, *, commit: str) -> dict:
+    if engine not in {"ffmpeg", "imagemagick"} or libraries.is_symlink() or not (libraries / "bin/pkg-config").is_file():
+        raise ValueError("Selected engine or pinned native library prefix is invalid.")
+    staged = _stage_native_source(source, destination, commit)
+    build = destination / "build"
+    build.mkdir()
+    prefix = libraries.absolute()
+    public_prefix = "/KSI-native"
+    maps = f"-ffile-prefix-map={staged}=upstream/{engine} -fdebug-prefix-map={staged}=upstream/{engine} -ffile-prefix-map={prefix}=upstream/native-libraries"
+    with tempfile.TemporaryDirectory(prefix=".ksi-engine-home-", dir=destination.parent) as temporary:
+        environment = {"HOME": temporary, "TMPDIR": temporary, "PATH": str(prefix / "bin") + ":/usr/bin:/bin", "MACOSX_DEPLOYMENT_TARGET": "14.0", "LC_ALL": "C", "GIT_CEILING_DIRECTORIES": str(destination), "PKG_CONFIG_PATH": str(prefix / "lib/pkgconfig"), "PKG_CONFIG_LIBDIR": str(prefix / "lib/pkgconfig"), "CFLAGS": "-O2 -mmacosx-version-min=14.0 " + maps, "CXXFLAGS": "-O2 -mmacosx-version-min=14.0 " + maps, "CPPFLAGS": "-I" + str(prefix / "include"), "LDFLAGS": "-L" + str(prefix / "lib") + " -mmacosx-version-min=14.0"}
+        if engine == "ffmpeg":
+            options = ["--prefix=" + public_prefix, "--cc=clang", "--cxx=clang++", "--disable-autodetect", "--disable-debug", "--disable-doc", "--disable-ffplay", "--disable-shared", "--enable-static", "--disable-x86asm", "--enable-gpl", "--enable-libx264", "--enable-libvpx", "--enable-libopus", "--enable-libass", "--enable-libmp3lame", "--enable-videotoolbox", "--enable-audiotoolbox", "--enable-securetransport"]
+            targets = ["ffmpeg", "ffprobe"]
+        else:
+            options = ["--prefix=" + public_prefix, "--disable-shared", "--enable-static", "--disable-openmp", "--with-modules=no", "--without-magick-plus-plus", "--without-perl", "--without-x", "--without-gslib", "--without-gs-font-dir", "--without-rsvg", "--without-pango", "--without-xml", "--without-fftw", "--without-gvc", "--without-jxl", "--without-openexr", "--without-raw", "--without-djvu", "--without-lqr", "--without-raqm", "--without-fontconfig", "--without-freetype", "--with-heic=yes", "--with-webp=yes", "--with-jpeg=yes", "--with-png=yes", "--with-tiff=yes", "--with-zlib=yes"]
+            targets = []
+        subprocess.run([str(staged / "configure"), *options], cwd=build, env=environment, check=True, timeout=600)
+        if engine == "imagemagick":
+            from xml.etree import ElementTree
+            config = ElementTree.parse(build / "config/configure.xml")
+            delegates = next((row.get("value", "").split() for row in config.iter("configure") if row.get("name") == "DELEGATES"), [])
+            if not {"heic", "jpeg", "png", "tiff", "webp"} <= set(delegates):
+                raise RuntimeError("Raster build is missing required delegates; no incomplete engine is staged.")
+        subprocess.run(["/usr/bin/make", "-j4", *targets], cwd=build, env=environment, check=True, timeout=3600)
+    binaries = [build / "ffmpeg", build / "ffprobe"] if engine == "ffmpeg" else [build / "utilities/magick"]
+    if any(not path.is_file() or not os.access(path, os.X_OK) for path in binaries):
+        raise RuntimeError("Selected native engine did not produce its expected executables.")
+    result = {"schema_version": 1, "engine": engine, "architecture": host_architecture(), "source_commit": commit, "configure_options": options, "acceptance_tested": False, "binaries": [{"filename": path.name, "sha256": digest_file(path), "size": path.stat().st_size} for path in binaries]}
+    atomic_write_json(destination / "native-build-provenance.json", result)
+    return result
 
 
 def extract_oxipng(archive: Path, *, sha256: str, destination: Path) -> Path:

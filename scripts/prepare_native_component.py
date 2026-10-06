@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from ksi_local.bundle_runtime import host_architecture
-from ksi_local.native_build import build_whisper_cpu, extract_oxipng, fetch_git_source
+from ksi_local.native_build import build_raster_media_engine, build_whisper_cpu, extract_oxipng, fetch_git_source
 
 
 def main():
@@ -14,6 +14,14 @@ def main():
     actions = parser.add_subparsers(dest="action", required=True)
     source = actions.add_parser("fetch-whisper-source")
     source.add_argument("destination", type=Path)
+    generic = actions.add_parser("fetch-source")
+    generic.add_argument("identifier", choices=["whisper-source", "ffmpeg-source", "imagemagick-source"])
+    generic.add_argument("destination", type=Path)
+    raster = actions.add_parser("build-engine")
+    raster.add_argument("engine", choices=["ffmpeg", "imagemagick"])
+    raster.add_argument("source", type=Path)
+    raster.add_argument("libraries", type=Path)
+    raster.add_argument("destination", type=Path)
     whisper = actions.add_parser("build-whisper")
     whisper.add_argument("source", type=Path)
     whisper.add_argument("cmake", type=Path)
@@ -24,10 +32,12 @@ def main():
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     inputs = json.loads((root / "config/native-sources.json").read_text(encoding="utf-8"))["inputs"]
-    entry = inputs["whisper-source"]
-    if args.action == "fetch-whisper-source":
+    entry = inputs[args.identifier] if args.action == "fetch-source" else inputs[args.engine + "-source"] if args.action == "build-engine" else inputs["whisper-source"]
+    if args.action in {"fetch-whisper-source", "fetch-source"}:
         record = fetch_git_source(entry["url"], tag=entry["revision"], commit=entry["commit"], destination=args.destination.absolute())
         print(json.dumps({"commit": record["commit"], "files": len(record["files"])}))
+    elif args.action == "build-engine":
+        print(json.dumps(build_raster_media_engine(args.engine, args.source.absolute(), args.libraries.absolute(), args.destination.absolute(), commit=entry["commit"])))
     elif args.action == "build-whisper":
         print(build_whisper_cpu(args.source.absolute(), cmake=args.cmake.absolute(), destination=args.destination.absolute(), commit=entry["commit"]))
     else:

@@ -57,6 +57,22 @@ artifact with its pinned public source and upstream license headers. It does not
 acceptance suite or publish a release. Native runtime/engine assembly is not
 evidence that the final DMG, GUI or model processing works.
 
+The selected native codec/delegate libraries have separate public artifact locks
+in `config/native-libraries-*.json`. A build-only pinned micromamba resolver
+operates with a temporary home and no user configuration. Offline prefix
+installation uses already SHA-256-verified local archives, without re-solving
+or contacting a package index. The broad FFmpeg/ImageMagick binary packages
+were not selected: their unrelated Ghostscript/GUI/OpenVINO dependencies are
+outside this build's raster/media scope. FFmpeg and ImageMagick are built from
+their own pinned commits against the selected libraries instead.
+
+These locks deliberately state `redistribution_review_complete: false`.
+Declared package license labels do not replace upstream notices, matching
+recipe patches or corresponding sources. The final engine/library package
+must retain those materials and pass the binary license/privacy gate. The
+build-only resolver, package metadata and development prefix are not copied
+wholesale into the shipped app.
+
 Successful assembly records `acceptance_tested: false`. It is not native
 functional/quality evidence, a successful clean installation, notarization,
 or release approval. Each final architecture still needs automated acceptance

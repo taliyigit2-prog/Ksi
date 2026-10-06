@@ -1,6 +1,46 @@
 {
   "schema_version": 1,
   "inputs": {
+    "ffmpeg-source": {
+      "type": "git",
+      "version": "8.1.2",
+      "revision": "n8.1.2",
+      "commit": "38b88335f99e76ed89ff3c93f877fdefce736c13",
+      "url": "https://github.com/FFmpeg/FFmpeg.git",
+      "license": "GPL-2.0-or-later",
+      "build_configuration": "Selected libx264/libvpx/libopus/libass/libmp3lame; no nonfree components"
+    },
+    "imagemagick-source": {
+      "type": "git",
+      "version": "7.1.2-31",
+      "revision": "7.1.2-31",
+      "commit": "fb965f1b54a65ddb633f8c2eac4452c782c66d7f",
+      "url": "https://github.com/ImageMagick/ImageMagick.git",
+      "license": "ImageMagick",
+      "build_configuration": "Selected raster delegates; no Ghostscript, X11, SVG, FFTW or network delegates"
+    },
+    "micromamba-arm64": {
+      "architecture": "arm64",
+      "version": "2.9.0",
+      "revision": "2.9.0-0",
+      "url": "https://github.com/mamba-org/micromamba-releases/releases/download/2.9.0-0/micromamba-osx-arm64",
+      "sha256": "ec2a072f028e1a7cf20f3e2e74d5a8127cf5a5f27636375b5359811565f4e5be",
+      "size": 14596096,
+      "license": "BSD-3-Clause",
+      "digest_source": "GitHub release asset digest",
+      "build_only": true
+    },
+    "micromamba-x86_64": {
+      "architecture": "x86_64",
+      "version": "2.9.0",
+      "revision": "2.9.0-0",
+      "url": "https://github.com/mamba-org/micromamba-releases/releases/download/2.9.0-0/micromamba-osx-64",
+      "sha256": "1e71054bb3ac9a076e21f7ec48acfef536f9b3f1408f371a942784bf5ef83d8a",
+      "size": 16317928,
+      "license": "BSD-3-Clause",
+      "digest_source": "GitHub release asset digest",
+      "build_only": true
+    },
     "whisper-source": {
       "type": "git",
       "version": "1.9.4",
