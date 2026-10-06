@@ -1,5 +1,12 @@
 # KSI Local Studio
 
+> Development notice (2026-10-06): the native sidebar redesign, Intel support
+> and model-inclusive offline installers are under implementation. There is
+> no completed new binary release yet. See the
+> [accepted desktop scope](docs/decisions/2026-10-offline-desktop.md). Source
+> commits are checkpoints, not evidence that final engine/installation tests
+> have passed. The earlier release gates below describe the previous baseline.
+
 KSI Local Studio is a free, subscription-free, local-first macOS application for
 video, subtitle, dubbing, document, article, image and creative workflows. Codex,
 ChatGPT and cloud AI APIs are optional integrations, not runtime requirements.

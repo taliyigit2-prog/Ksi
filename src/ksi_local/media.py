@@ -75,6 +75,8 @@ def probe_local_media(raw_path: str, *, ffprobe_path: str | None = None) -> dict
             executable,
             "-v",
             "error",
+            "-protocol_whitelist",
+            "file,pipe",
             "-show_entries",
             (
                 "format=duration,size,format_name:"
