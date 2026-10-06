@@ -34,6 +34,13 @@ be included in the final distribution SBOM before shipping:
 - ONNX Runtime: MIT; https://github.com/microsoft/onnxruntime
 - ImageMagick: ImageMagick License; https://github.com/ImageMagick/ImageMagick
 - whisper.cpp: MIT; https://github.com/ggml-org/whisper.cpp
+- Piper: GPL-3.0; https://github.com/OHF-Voice/piper1-gpl
+
+Piper is invoked as an independent executable for CPU speech; its implementation
+is not copied into Apache-2.0 KSI modules. Any distribution of the engine must
+include its license, corresponding source and notices for compiled dependencies
+(including eSpeak). The build sealer rejects a copyleft engine without an explicit
+corresponding-source artifact. This is not by itself a complete license audit.
 
 Models have separate licenses. rembg's commercial BRIA model and cloud
 backend are not selected by KSI. Native FFmpeg binaries have build-dependent

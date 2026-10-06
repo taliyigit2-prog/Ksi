@@ -697,6 +697,12 @@ def _download(args: argparse.Namespace) -> int:
 
 
 def _translate_srt(args: argparse.Namespace) -> int:
+    from contextlib import nullcontext
+    from ksi_local.argos_client import ArgosClient
+
+    engine = getattr(args, "engine", "gemma")
+    if engine == "argos":
+        args.model = "argos-direct-cpu"
     cues = clean_rolling_captions(read_srt(args.input))
     source_language = args.source_language
     if source_language == "auto":
@@ -718,13 +724,26 @@ def _translate_srt(args: argparse.Namespace) -> int:
     target.parent.mkdir(parents=True, exist_ok=True)
     partial = target.with_name(f".{target.name}.partial")
     prefix = read_srt(partial) if partial.is_file() else []
+    from ksi_local.media import sha256_file
+
+    identity_file = partial.with_suffix(partial.suffix + ".identity.json")
+    identity = {"schema_version": 1, "input_sha256": sha256_file(Path(args.input)),
+        "engine": engine, "model": args.model, "source_language": source_language,
+        "target_language": args.target_language,
+        "glossary_sha256": sha256_file(Path(args.glossary)) if args.glossary else None}
+    if identity_file.is_file():
+        if identity_file.is_symlink() or identity_file.stat().st_size > 65536 or json.loads(identity_file.read_text(encoding="utf-8")) != identity:
+            raise RuntimeError("Çeviri checkpoint'i farklı kaynak, motor veya sözlüğe ait; mevcut dosyalar korundu.")
+    elif prefix and engine == "argos":
+        raise RuntimeError("Eski çeviri checkpoint'i Argos ile karıştırılamaz; mevcut dosya korundu.")
+    atomic_write_json(identity_file, identity)
     if len(prefix) > len(cues):
         raise RuntimeError("Çeviri checkpoint'i kaynak altyazıdan daha uzun.")
     for translated_cue, source_cue in zip(prefix, cues, strict=False):
         if (translated_cue.start, translated_cue.end) != (source_cue.start, source_cue.end):
             raise RuntimeError("Çeviri checkpoint zamanları kaynak altyazıyla eşleşmiyor.")
     remaining = cues[len(prefix) :]
-    client = OllamaClient(base_url=args.ollama_url, timeout_seconds=args.timeout)
+    client = ArgosClient(Path(args.models_directory).parent / "argos") if engine == "argos" else OllamaClient(base_url=args.ollama_url, timeout_seconds=args.timeout)
     translated: list = []
     if remaining:
 
@@ -742,7 +761,7 @@ def _translate_srt(args: argparse.Namespace) -> int:
                 )
             )
 
-        with managed_ollama(
+        with nullcontext() if engine == "argos" else managed_ollama(
             executable=args.ollama,
             models_directory=args.models_directory,
             base_url=args.ollama_url,
@@ -814,6 +833,11 @@ def _quality_srt(args: argparse.Namespace) -> int:
 
 
 def _translate_document(args: argparse.Namespace) -> int:
+    from ksi_local.argos_client import ArgosClient
+
+    engine = getattr(args, "engine", "gemma")
+    if engine == "argos":
+        args.model = "argos-direct-cpu"
     canonical = Path(args.input).expanduser().resolve()
     output = Path(args.output_directory).expanduser().resolve()
 
@@ -832,7 +856,7 @@ def _translate_document(args: argparse.Namespace) -> int:
         needs_model = document_needs_model(
             canonical, source_language=args.source_language
         )
-        client = OllamaClient(base_url=args.ollama_url, timeout_seconds=args.timeout)
+        client = ArgosClient(Path(args.models_directory).parent / "argos") if engine == "argos" and needs_model else OllamaClient(base_url=args.ollama_url, timeout_seconds=args.timeout)
         options = {
             "client": client if needs_model else None,
             "source_language": args.source_language,
@@ -844,7 +868,7 @@ def _translate_document(args: argparse.Namespace) -> int:
             "source_title": args.source_title,
             "on_progress": progress,
         }
-        if needs_model:
+        if needs_model and engine != "argos":
             with managed_ollama(
                 executable=args.ollama,
                 models_directory=args.models_directory,
@@ -1635,6 +1659,7 @@ def build_parser() -> argparse.ArgumentParser:
     translate.add_argument("--models-directory", required=True)
     translate.add_argument("--ollama-url", default="http://127.0.0.1:11435")
     translate.add_argument("--model", default="translategemma:4b-it-q8_0")
+    translate.add_argument("--engine", choices=("gemma", "argos"), default="gemma")
     translate.add_argument("--batch-size", type=int, default=12)
     translate.add_argument("--timeout", type=int, default=600)
     translate.add_argument("--glossary")
@@ -1653,6 +1678,7 @@ def build_parser() -> argparse.ArgumentParser:
     document_translate.add_argument("--models-directory", required=True)
     document_translate.add_argument("--ollama-url", default="http://127.0.0.1:11435")
     document_translate.add_argument("--model", default="translategemma:4b-it-q8_0")
+    document_translate.add_argument("--engine", choices=("gemma", "argos"), default="gemma")
     document_translate.add_argument("--batch-size", type=int, default=6)
     document_translate.add_argument("--timeout", type=int, default=600)
     document_translate.add_argument("--glossary")

@@ -38,9 +38,15 @@ boundaries. Network actions require explicit user intent. Job state is checkpoin
 sources and completed results are not automatically deleted. See
 [the architecture guide](docs/ARCHITECTURE.md).
 
-The desktop UI separates New Job, Processing, History, System and Help into focused tabs.
+The redesigned desktop uses a sidebar for Download, Video/Audio, Documents/Web,
+Images, Queue, History and Library, with Help and Settings at the bottom.
 System information stays in its own panel instead of opening an unsolicited dialog. Interface
 language and System/Light/Dark theme are independent persisted preferences.
+
+The new development adapters add persistent FFmpeg media jobs, constrained image
+tools and explicit Gemma/Argos translation selection. Intel ASR and CPU speech
+adapters are implemented, but architecture-specific runtime/model packaging and
+real-engine verification remain prerequisites for claiming complete Intel support.
 
 ## Source installation
 

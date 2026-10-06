@@ -162,8 +162,13 @@ def synthesize(args: argparse.Namespace) -> dict[str, object]:
     report_path = Path(args.report).expanduser().resolve()
     segment_directory = Path(args.segments_directory).expanduser().resolve()
     model_directory = Path(args.model_directory).expanduser().resolve()
-    profile = load_voice_profile(args.voice_profile)
-    if profile.engine != "chatterbox-multilingual-v3":
+    cpu = getattr(args, "engine", "chatterbox") == "piper"
+    if cpu:
+        from ksi_local.piper_backend import verified_voice
+        profile = verified_voice(model_directory)
+    else:
+        profile = load_voice_profile(args.voice_profile)
+    if not cpu and profile.engine != "chatterbox-multilingual-v3":
         raise ValueError("Kabul edilen Chatterbox Multilingual V3 profili gerekli.")
     if not source.is_file() or not model_directory.is_dir():
         raise FileNotFoundError("Dublaj altyazısı veya Chatterbox modeli bulunamadı.")
@@ -208,7 +213,12 @@ def synthesize(args: argparse.Namespace) -> dict[str, object]:
 
     model = None
     torch = None
-    if missing:
+    cpu_segments = {}
+    if missing and cpu:
+        from ksi_local.piper_backend import generate_segments
+        _emit(WorkerEvent("started", "tts", message="Piper Turkish · CPU"))
+        cpu_segments = generate_segments(missing, segment_directory, model_directory)
+    if missing and not cpu:
         _prepare_numba_cache()
         import torch as torch_module
         from chatterbox.mtl_tts import ChatterboxMultilingualTTS
@@ -232,25 +242,30 @@ def synthesize(args: argparse.Namespace) -> dict[str, object]:
     for cue in cues:
         if cue.index in restored:
             continue
-        assert model is not None and torch is not None
         cue_hash = text_sha256(cue)
         raw = segment_directory / f"segment-{cue.index:06d}.raw.wav"
         fitted = segment_directory / f"segment-{cue.index:06d}.wav"
-        torch.manual_seed(profile.seed)
+        if cpu:
+            raw = cpu_segments[cue.index]
+        else:
+            assert model is not None and torch is not None
+            torch.manual_seed(profile.seed)
         # Chatterbox emits a token-by-token tqdm bar to stderr. The GUI already
         # shows stable per-segment progress, so discard that terminal-only noise.
         with (
             Path(os.devnull).open("w", encoding="utf-8") as sink,
             contextlib.redirect_stderr(sink),
         ):
-            waveform = model.generate(
-                clean_spoken_text(cue.text),
-                language_id=profile.language,
-                audio_prompt_path=None,
-                exaggeration=profile.exaggeration,
-                cfg_weight=profile.cfg_weight,
-            )
-        _write_generated(raw, waveform, model.sr)
+            if not cpu:
+                waveform = model.generate(
+                    clean_spoken_text(cue.text),
+                    language_id=profile.language,
+                    audio_prompt_path=None,
+                    exaggeration=profile.exaggeration,
+                    cfg_weight=profile.cfg_weight,
+                )
+        if not cpu:
+            _write_generated(raw, waveform, model.sr)
         generated_seconds, _raw_leading, peak_dbfs = _audio_measurements(raw)
         target_seconds = cue_duration(cue)
         factor = fit_segment_audio(
@@ -332,6 +347,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--segments-directory", required=True)
     parser.add_argument("--model-directory", required=True)
     parser.add_argument("--voice-profile", required=True)
+    parser.add_argument("--engine", choices=("chatterbox", "piper"), default="chatterbox")
     parser.add_argument("--ffmpeg", required=True)
     parser.add_argument("--report", required=True)
     parser.add_argument("--max-segments", type=int, help=argparse.SUPPRESS)

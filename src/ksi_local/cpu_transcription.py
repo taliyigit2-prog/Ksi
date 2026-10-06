@@ -7,7 +7,7 @@ import math
 import tempfile
 from pathlib import Path
 
-from ksi_local.bundle_runtime import tool_path
+from ksi_local.bundle_runtime import tool_path, bundle_root, OfflinePayload, digest_file
 from ksi_local.engine_runner import run_engine
 from ksi_local.subtitles import write_srt
 
@@ -21,6 +21,11 @@ def transcribe_cpu(
     raw_model = Path(model).expanduser()
     if raw_model.is_symlink() or not raw_model.is_file() or raw_model.suffix != ".bin":
         raise RuntimeError("Intel konuşma yazımı için paketteki yerel Whisper GGML modeli bulunamadı.")
+    resources = bundle_root()
+    if resources is not None:
+        entry = next((item for item in OfflinePayload.load(resources).files if item.role == "model" and item.identifier == "whisper-cpp-turbo"), None)
+        if entry is None or raw_model.stat().st_size != entry.size or digest_file(raw_model) != entry.sha256:
+            raise RuntimeError("Intel Whisper modeli bütünlük doğrulamasından geçmedi.")
     output.parent.mkdir(parents=True, exist_ok=True)
     if not duration_seconds or not math.isfinite(duration_seconds) or duration_seconds <= 0:
         raise ValueError("Konuşma yazımı için geçerli medya süresi gerekir.")

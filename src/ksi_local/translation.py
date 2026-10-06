@@ -82,7 +82,8 @@ def translate_cues(
         )
         # Gemma instruction-tuned models do not use a separate system role, so
         # all constraints deliberately live in the user turn.
-        response = client.generate(
+        response = client.translate_items(items, source_language=source_language,
+            target_language=target, glossary=active_glossary) if hasattr(client, "translate_items") else client.generate(
             model=model,
             prompt=prompt,
             json_mode=True,

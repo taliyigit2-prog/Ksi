@@ -706,7 +706,8 @@ def _translate_batch(
     fragment = Glossary(glossary.source_language, glossary.terms, ()).prompt_fragment()
     if fragment:
         instruction += "\n" + fragment
-    response = client.generate(
+    response = client.translate_items(items, source_language=glossary.source_language,
+        target_language="tr", glossary=glossary) if hasattr(client, "translate_items") else client.generate(
         model=model,
         prompt=instruction + "\nINPUT:\n" + json.dumps(items, ensure_ascii=False),
         json_mode=True,

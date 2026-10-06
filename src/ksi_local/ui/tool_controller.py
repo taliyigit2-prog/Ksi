@@ -13,6 +13,7 @@ from ksi_local.privacy import redact_sensitive_text
 from ksi_local.core_service import CoreService
 from ksi_local.media_tools import _validate
 from ksi_local.tool_jobs import validate_image_request
+from ksi_local.ui.strings import text
 
 
 class ToolController(QObject):
@@ -23,6 +24,7 @@ class ToolController(QObject):
     finished = Signal()
     busyChanged = Signal(bool)
     activeChanged = Signal(str)
+    summary = Signal(object)
 
     def __init__(self, window):
         super().__init__(window)
@@ -36,6 +38,7 @@ class ToolController(QObject):
         self.progress.connect(lambda value: window.progress.setValue(round(value * 100)))
         self.status.connect(window.status.setText)
         self.failed.connect(window.status.setText)
+        self.summary.connect(self._summary)
 
     @property
     def busy(self):
@@ -99,29 +102,38 @@ class ToolController(QObject):
         self.thread.start()
 
     def _run(self, service, identifiers):
+        counts = {"ok": 0, "failed": 0, "cancelled": 0}
         try:
             for index, identifier in enumerate(identifiers):
                 if self.cancel_event.is_set():
                     for pending in identifiers[index:]:
                         if service.store.get_job(pending).status is JobStatus.QUEUED:
                             service.store.transition_job(pending, JobStatus.CANCELLED)
+                    counts["cancelled"] += len(identifiers) - index
                     break
                 self.status.emit(f"{index + 1}/{len(identifiers)}")
                 self.activeChanged.emit(identifier)
                 try:
                     result = service.execute_tool_job(identifier, confirm=True, cancel=self.cancel_event, on_progress=lambda value, current=index: self.progress.emit((current + value) / len(identifiers)))
                     self.result.emit(result)
+                    counts["ok"] += 1
                 except OperationCancelled:
+                    counts["cancelled"] += 1
                     continue
                 except Exception as error:
+                    counts["failed"] += 1
                     self.failed.emit(redact_sensitive_text(str(error))[:1000])
                 self.progress.emit((index + 1) / len(identifiers))
         finally:
             try:
+                self.summary.emit(counts)
                 self.finished.emit()
             except RuntimeError:
                 # Only possible when the parent application is shutting down.
                 pass
+
+    def _summary(self, counts):
+        self.status.emit(text("batch_result", self.window.preferences.ui_language).format(**counts))
 
     def _finished(self):
         self._busy = False

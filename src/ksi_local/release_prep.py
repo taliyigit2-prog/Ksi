@@ -57,6 +57,7 @@ PUBLIC_SCRIPTS = (
     "scripts/build_public_source.py",
     "scripts/install_macos_app.sh",
     "scripts/notarize_release.sh",
+    "scripts/seal_offline_payload.py",
 )
 ALLOWED_BINARY_SUFFIXES = {".png", ".gif", ".icns"}
 BLOCKED_PARTS = {
@@ -174,6 +175,8 @@ def _iter_public_inputs(source: Path) -> Iterable[tuple[Path, Path]]:
         if path.is_file():
             yield path, Path(relative)
     public_readme = source / "docs/public/README.md"
+    if not public_readme.is_file():
+        public_readme = source / "README.md"
     if public_readme.is_file():
         yield public_readme, Path("README.md")
     for directory in PUBLIC_DIRECTORIES:

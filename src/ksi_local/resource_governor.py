@@ -25,6 +25,23 @@ def single_model_lock():
         return
     path = default_database_path().parent / "model-operation.lock"
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    inherited = os.environ.get("KSI_MODEL_LOCK_FD")
+    if inherited is not None:
+        try:
+            inherited_fd = int(inherited)
+            actual, expected = os.fstat(inherited_fd), path.stat(follow_symlinks=False)
+            if inherited_fd < 3 or (actual.st_dev, actual.st_ino) != (expected.st_dev, expected.st_ino):
+                raise ValueError("Miras alınan model kilidi geçersiz.")
+            fcntl.flock(inherited_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except (OSError, ValueError) as error:
+            raise RuntimeError("Model işçi kilidi doğrulanamadı.") from error
+        token = _MODEL_DESCRIPTOR.set(inherited_fd)
+        try:
+            yield
+        finally:
+            # Parent owns the shared open-file description; never unlock it here.
+            _MODEL_DESCRIPTOR.reset(token)
+        return
     descriptor = os.open(path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
     acquired = False
     token = None

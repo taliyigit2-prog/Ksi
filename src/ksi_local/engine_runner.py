@@ -51,8 +51,12 @@ def run_engine(
     if cancel is not None and cancel.is_set():
         raise OperationCancelled("İşlem iptal edildi.")
     descriptor = active_model_descriptor()
+    worker_environment = local_worker_environment(environment)
+    worker_environment.pop("KSI_MODEL_LOCK_FD", None)
+    if descriptor is not None:
+        worker_environment["KSI_MODEL_LOCK_FD"] = str(descriptor)
     process = subprocess.Popen(
-        argv, cwd=cwd, env=local_worker_environment(environment),
+        argv, cwd=cwd, env=worker_environment,
         stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         start_new_session=True, shell=False,
         pass_fds=(descriptor,) if descriptor is not None else (),

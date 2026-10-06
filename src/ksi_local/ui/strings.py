@@ -35,6 +35,9 @@ COPY = {
 
 
 TOOL_COPY = {
+    "batch_result": "Tamamlanan: {ok} · Hatalı: {failed} · İptal: {cancelled}|Готово: {ok} · Ошибки: {failed} · Отменено: {cancelled}|Completed: {ok} · Failed: {failed} · Cancelled: {cancelled}|Completados: {ok} · Errores: {failed} · Cancelados: {cancelled}|Fertig: {ok} · Fehler: {failed} · Abgebrochen: {cancelled}|Terminés : {ok} · Échecs : {failed} · Annulés : {cancelled}|Completati: {ok} · Errori: {failed} · Annullati: {cancelled}|完成：{ok} · 失败：{failed} · 取消：{cancelled}",
+    "storage": "Depolama|Хранилище|Storage|Almacenamiento|Speicher|Stockage|Archiviazione|存储",
+    "open_workspace": "Çalışma alanını aç|Открыть рабочую папку|Open workspace|Abrir espacio de trabajo|Arbeitsordner öffnen|Ouvrir l’espace de travail|Apri area di lavoro|打开工作区",
     "tool_local": "Özgün dosyalar korunur; işlemler bu Mac’te yapılır.|Оригиналы сохраняются; обработка выполняется на этом Mac.|Originals are preserved; processing stays on this Mac.|Se conservan los originales; procesamiento en este Mac.|Originale bleiben erhalten; Verarbeitung auf diesem Mac.|Les originaux sont conservés; traitement sur ce Mac.|Gli originali sono conservati; elaborazione su questo Mac.|保留原文件；在此 Mac 上处理。",
     "operation": "İşlem|Операция|Operation|Operación|Vorgang|Opération|Operazione|操作",
     "format": "Biçim|Формат|Format|Formato|Format|Format|Formato|格式",

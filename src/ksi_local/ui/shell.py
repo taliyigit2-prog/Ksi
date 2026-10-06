@@ -1,17 +1,19 @@
 """Native sidebar and Halite-style settings over the existing service widgets."""
 
 import platform
+from dataclasses import replace
 from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
-    QButtonGroup, QFrame, QHBoxLayout, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget,
+    QButtonGroup, QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget,
 )
 
 from ksi_local import __version__
 from ksi_local.ui.components import Card, ModelRow
 from ksi_local.ui.strings import text as studio_text
+from ksi_local.preferences import save_preferences
 
 
 LABELS = {
@@ -179,6 +181,16 @@ class StudioShell:
         row.addStretch(1)
         preferences.body.addLayout(row)
         body.addWidget(preferences)
+        translation = Card()
+        self.translation_label = QLabel()
+        translation.body.addWidget(self.translation_label)
+        self.translation_engine = QComboBox()
+        self.translation_engine.addItem("Gemma · local", "gemma")
+        self.translation_engine.addItem("Argos · CPU", "argos")
+        self.translation_engine.setCurrentIndex(self.translation_engine.findData(window.preferences.translation_engine))
+        self.translation_engine.currentIndexChanged.connect(self._translation_engine_changed)
+        translation.body.addWidget(self.translation_engine)
+        body.addWidget(translation)
         self.models_heading = QLabel()
         self.models_heading.setObjectName("sectionLabel")
         body.addWidget(self.models_heading)
@@ -189,6 +201,9 @@ class StudioShell:
         self.model_status.setObjectName("mutedLabel")
         self.model_status.setWordWrap(True)
         self.model_list.addWidget(self.model_status)
+        from ksi_local.ui.storage_card import StorageCard
+        self.storage_card = StorageCard(window)
+        body.addWidget(self.storage_card)
         self.about_heading = QLabel()
         self.about_heading.setObjectName("sectionLabel")
         body.addWidget(self.about_heading)
@@ -220,6 +235,12 @@ class StudioShell:
         self.window.library_page.retranslate()
         self.window.media_tools_page.retranslate()
         self.window.image_tools_page.retranslate()
+        self.storage_card.retranslate()
+        self.window._set_combo_item_texts(self.window.history_filter, {
+            "media": studio_text("video", self.window.preferences.ui_language),
+            "image": studio_text("images", self.window.preferences.ui_language),
+        })
+        self.translation_label.setText(studio_text("translation", self.window.preferences.ui_language))
         self.window.system_heading.setText(labels[3])
         self.window.ui_language_label.setText(labels[5])
         self.window.theme_label.setText(labels[6])
@@ -228,6 +249,16 @@ class StudioShell:
         self.description.setText(labels[9])
         self.advanced.setText(labels[10])
         self.model_status.setText(self.window._t("system.waiting"))
+
+    def _translation_engine_changed(self):
+        selected = self.translation_engine.currentData()
+        if self.window._process_is_running():
+            blocked = self.translation_engine.blockSignals(True)
+            self.translation_engine.setCurrentIndex(self.translation_engine.findData(self.window.preferences.translation_engine))
+            self.translation_engine.blockSignals(blocked)
+            return
+        self.window.preferences = replace(self.window.preferences, translation_engine=selected)
+        save_preferences(self.window.preferences)
 
     def _models_ready(self, rows):
         while self.model_list.count():

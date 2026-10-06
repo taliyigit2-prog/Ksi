@@ -13,6 +13,7 @@ import threading
 import uuid
 from dataclasses import dataclass, replace
 from pathlib import Path
+from ksi_local.bundle_runtime import tool_path, bundle_root, host_architecture
 
 from PySide6.QtCore import (
     QEvent,
@@ -265,6 +266,8 @@ def _bundled_tool_manifest_path() -> Path:
 
 
 def _chatterbox_python_path() -> Path:
+    if bundle_root() is not None:
+        return Path(tool_path("chatterbox-python"))
     root = Path(__file__).resolve().parents[2]
     candidates = (
         root / "chatterbox-venv/bin/python",
@@ -1612,6 +1615,8 @@ class MainWindow(QMainWindow):
             ("Tüm işler", "all"),
             ("Videolar", "video"),
             ("Belgeler", "document"),
+            ("Medya araçları", "media"),
+            ("Görseller", "image"),
             ("Tamamlananlar", "completed"),
             ("İlgi gerekenler", "attention"),
         ):
@@ -2456,15 +2461,21 @@ class MainWindow(QMainWindow):
         process.terminate()
 
     def _job_kind_language_label(self, record: JobRecord) -> str:
+        if record.job_kind in {JobKind.MEDIA, JobKind.IMAGE}:
+            from ksi_local.ui.strings import text
+            return text("images" if record.job_kind is JobKind.IMAGE else "video", self.preferences.ui_language)
         kind = self._jt("document" if record.job_kind is JobKind.DOCUMENT else "video")
         language = (
             self._jt("automatic")
             if record.source_language == AUTO_LANGUAGE
             else source_language_name(record.source_language, self.preferences.ui_language)
         )
-        return f"{kind} · {language} · SSD"
+        return f"{kind} · {language}"
 
     def _job_output_label(self, record: JobRecord) -> str:
+        if record.job_kind in {JobKind.MEDIA, JobKind.IMAGE}:
+            from ksi_local.ui.strings import text
+            return text("images" if record.job_kind is JobKind.IMAGE else "video", self.preferences.ui_language)
         if record.download_only:
             return self._jt("download")
         outputs: list[str] = []
@@ -2691,6 +2702,8 @@ class MainWindow(QMainWindow):
         selected_filter = str(self.history_filter.currentData() or "all")
 
         def matches(record: JobRecord) -> bool:
+            if selected_filter in {"media", "image"} and record.job_kind.value != selected_filter:
+                return False
             if selected_filter == "video" and record.job_kind is not JobKind.VIDEO:
                 return False
             if selected_filter == "document" and record.job_kind is not JobKind.DOCUMENT:
@@ -4037,8 +4050,8 @@ class MainWindow(QMainWindow):
                 want_subtitle=snapshot.want_subtitle,
                 want_summary=snapshot.want_summary,
                 want_dub=snapshot.want_dub,
-                ffmpeg_path=shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg",
-                ffprobe_path=shutil.which("ffprobe") or "/opt/homebrew/bin/ffprobe",
+                ffmpeg_path=str(tool_path("ffmpeg")),
+                ffprobe_path=str(tool_path("ffprobe")),
                 browser_session=self._browser_session_from_snapshot(snapshot),
                 udemy_access_confirmed=snapshot.udemy_access_confirmed,
                 job_kind=snapshot.job_kind,
@@ -4440,10 +4453,12 @@ class MainWindow(QMainWindow):
             "translate-document",
             str(canonical),
             str(outputs),
+            "--engine",
+            self.preferences.translation_engine,
             "--source-language",
             record.source_language,
             "--ollama",
-            shutil.which("ollama") or "/opt/homebrew/bin/ollama",
+            str(tool_path("ollama")),
             "--models-directory",
             str(self.workspace.models_ollama),
             "--glossary",
@@ -4509,7 +4524,7 @@ class MainWindow(QMainWindow):
             str(canonical),
             str(outputs),
             "--ollama",
-            shutil.which("ollama") or "/opt/homebrew/bin/ollama",
+            str(tool_path("ollama")),
             "--models-directory",
             str(self.workspace.models_ollama),
             "--summary-source",
@@ -4757,9 +4772,9 @@ class MainWindow(QMainWindow):
                     "--deno",
                     str(self.workspace.deno),
                     "--ffmpeg",
-                    shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg",
+                    str(tool_path("ffmpeg")),
                     "--ffprobe",
-                    shutil.which("ffprobe") or "/opt/homebrew/bin/ffprobe",
+                    str(tool_path("ffprobe")),
                     "--max-height",
                     str(max_height),
                     "--media-index",
@@ -4973,7 +4988,7 @@ class MainWindow(QMainWindow):
         output_directory = self.current_job / "outputs"
         common = [
             "--ollama",
-            shutil.which("ollama") or "/opt/homebrew/bin/ollama",
+            str(tool_path("ollama")),
             "--models-directory",
             str(self.workspace.models_ollama),
         ]
@@ -4991,6 +5006,8 @@ class MainWindow(QMainWindow):
                     "translate-srt",
                     str(self.source_subtitle),
                     str(translated_subtitle),
+                    "--engine",
+                    self.preferences.translation_engine,
                     "--source-language",
                     language,
                     "--glossary",
@@ -5025,9 +5042,9 @@ class MainWindow(QMainWindow):
                             str(translated_subtitle),
                             str(subtitled_video),
                             "--ffmpeg",
-                            shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg",
+                            str(tool_path("ffmpeg")),
                             "--ffprobe",
-                            shutil.which("ffprobe") or "/opt/homebrew/bin/ffprobe",
+                            str(tool_path("ffprobe")),
                         ],
                     )
 
@@ -5036,16 +5053,17 @@ class MainWindow(QMainWindow):
             dubbed_audio = output_directory / "turkce-dublaj.wav"
             timing_report = output_directory / "turkce-dublaj.zamanlama.json"
             segment_directory = self.current_job / "work/dub-segments"
-            ffmpeg = shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg"
-            ffprobe = shutil.which("ffprobe") or "/opt/homebrew/bin/ffprobe"
+            ffmpeg = str(tool_path("ffmpeg"))
+            ffprobe = str(tool_path("ffprobe"))
             recognized = self.current_job / "work/turkce-dublaj.asr.srt"
             dub_quality = output_directory / "turkce-dublaj.kalite.json"
             dubbed_video = output_directory / "turkce-dublaj.mp4"
             final_dub_ready = self._stage_output_is_complete("mux", dubbed_video)
             if not final_dub_ready:
-                chatterbox_python = _chatterbox_python_path()
+                cpu_voice = host_architecture() == "x86_64"
+                chatterbox_python = Path(sys.executable) if cpu_voice else _chatterbox_python_path()
                 voice_profile = _bundled_voice_profile_path()
-                tts_model = self.workspace.root / "models/tts/chatterbox-multilingual-v3"
+                tts_model = self.workspace.root / ("models/tts/piper" if cpu_voice else "models/tts/chatterbox-multilingual-v3")
                 if not chatterbox_python.is_file():
                     raise RuntimeError("Chatterbox ARM64 çalışma ortamı bulunamadı.")
                 if not voice_profile.is_file() or not tts_model.is_dir():
@@ -5061,6 +5079,8 @@ class MainWindow(QMainWindow):
                             "ksi_local.tts_worker",
                             str(translated_subtitle),
                             str(dubbed_audio),
+                            "--engine",
+                            "piper" if cpu_voice else "chatterbox",
                             "--segments-directory",
                             str(segment_directory),
                             "--model-directory",

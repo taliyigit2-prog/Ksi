@@ -13,6 +13,7 @@ from ksi_local.i18n import SUPPORTED_UI_LANGUAGES
 
 EXPORT_KINDS = ("all", "video", "summary", "subtitle", "translation")
 THEMES = ("system", "light", "dark")
+TRANSLATION_ENGINES = ("gemma", "argos")
 ONBOARDING_VERSION = 2
 
 
@@ -26,6 +27,7 @@ class UserPreferences:
     application_location: str = "user_applications"
     workspace_location: str = "internal"
     theme: str = "dark"
+    translation_engine: str = "gemma"
 
 
 def preferences_path() -> Path:
@@ -81,6 +83,8 @@ def load_preferences(path: str | Path | None = None) -> UserPreferences:
             if payload.get("theme") in THEMES
             else "dark"
         ),
+        translation_engine=(str(payload.get("translation_engine"))
+            if payload.get("translation_engine") in TRANSLATION_ENGINES else "gemma"),
     )
 
 
@@ -105,7 +109,9 @@ def save_preferences(
         raise ValueError("Geçersiz çalışma alanı konumu.")
     if preferences.theme not in THEMES:
         raise ValueError("Geçersiz arayüz teması.")
-    atomic_write_json(target, {"schema_version": 6, **asdict(preferences)})
+    if preferences.translation_engine not in TRANSLATION_ENGINES:
+        raise ValueError("Geçersiz çeviri motoru.")
+    atomic_write_json(target, {"schema_version": 7, **asdict(preferences)})
     try:
         target.chmod(0o600)
     except OSError:
