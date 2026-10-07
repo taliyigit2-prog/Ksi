@@ -1,6 +1,7 @@
 """Persistent tools jobs use synthetic files and mocked native execution."""
 
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -9,6 +10,7 @@ from ksi_local.job_store import JobKind, JobStatus, JobStore
 from ksi_local.media_tools import MediaRequest, MediaResult
 from ksi_local.settings import WorkspacePaths
 from ksi_local.tool_jobs import ToolJobService, validate_image_request
+from ksi_local.engine_runner import OperationCancelled
 
 
 class ToolJobTests(unittest.TestCase):
@@ -28,6 +30,25 @@ class ToolJobTests(unittest.TestCase):
     def test_kind_survives_reopening_database(self):
         identifier = self.service.submit_media(self.request)
         self.assertEqual(JobStore(self.store.path).get_job(identifier).job_kind, JobKind.MEDIA)
+
+    def test_cancel_during_cached_output_hash_is_persisted_before_claim(self):
+        identifier = self.service.submit_media(self.request)
+        def render(request, **options):
+            output = Path(request.destination)
+            output.write_bytes(b"complete synthetic output")
+            return MediaResult(str(output), self.source.stat().st_size, output.stat().st_size, 1, False, ())
+        with patch("ksi_local.tool_jobs.process_media", side_effect=render):
+            result = self.service.execute(identifier)
+        with self.store._connect() as connection:
+            connection.execute("UPDATE jobs SET status = ? WHERE id = ?", (JobStatus.QUEUED, identifier))
+        event = threading.Event()
+        event.set()
+        with patch("ksi_local.tool_jobs.process_media") as engine:
+            with self.assertRaises(OperationCancelled):
+                self.service.execute(identifier, cancel=event)
+        engine.assert_not_called()
+        self.assertEqual(self.store.get_job(identifier).status, JobStatus.CANCELLED)
+        self.assertEqual(Path(result["output"]).read_bytes(), b"complete synthetic output")
 
     def test_verified_receipt_recovers_published_output_without_rerender(self):
         from ksi_local.exporter import select_job_artifacts

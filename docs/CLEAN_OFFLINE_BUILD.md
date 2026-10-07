@@ -323,3 +323,13 @@ against that PID before sending HTTP headers/body. A foreign listener racing
 startup or replacing a dead server cannot receive text through an earlier
 readiness result. Process-inspection failures close the request; development
 daemon reuse remains separate from the sealed-app path.
+
+Native runtime/prefix/engine/application assembly rejects Rosetta translation.
+The translation flag is read by `sysctlbyname` in the same Python process; a
+separate universal `sysctl` executable could run natively while its parent is
+emulated. Importing and inspecting an Intel artifact on ARM remains allowed,
+but cannot constitute native Intel functional or installation acceptance.
+
+Cancelling a tools job while its cached result is being hashed, before SQL
+claim, persists the cancellation instead of leaving a queued retry eligible
+for execution. Existing output files and completed stages are preserved.

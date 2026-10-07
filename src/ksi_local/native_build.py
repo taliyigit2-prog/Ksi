@@ -14,6 +14,7 @@ from urllib.parse import urlsplit
 
 from ksi_local.atomic_files import atomic_write_json
 from ksi_local.bundle_runtime import digest_file, host_architecture
+from ksi_local.native_processor import require_native_build_process
 
 
 def fetch_git_source(url: str, *, tag: str, commit: str, destination: Path, notice_source_only: bool = False) -> dict:
@@ -99,6 +100,7 @@ def _stage_native_source(source: Path, destination: Path, commit: str) -> Path:
 
 
 def build_whisper_cpu(source: Path, *, cmake: Path, destination: Path, commit: str) -> Path:
+    require_native_build_process()
     if not cmake.is_file():
         raise ValueError("The clean CMake executable is missing.")
     staged_source = _stage_native_source(source, destination, commit)
@@ -122,6 +124,7 @@ def build_whisper_cpu(source: Path, *, cmake: Path, destination: Path, commit: s
 
 def build_raster_media_engine(engine: str, source: Path, libraries: Path,
                               destination: Path, *, commit: str) -> dict:
+    require_native_build_process()
     if engine not in {"ffmpeg", "imagemagick"} or libraries.is_symlink() or not (libraries / "bin/pkg-config").is_file():
         raise ValueError("Selected engine or pinned native library prefix is invalid.")
     staged = _stage_native_source(source, destination, commit)

@@ -12,6 +12,7 @@ from urllib.parse import unquote, urlsplit
 from ksi_local.atomic_files import atomic_write_json, atomic_write_text
 from ksi_local.build_inputs import fetch_pinned_input
 from ksi_local.bundle_runtime import digest_file, host_architecture
+from ksi_local.native_processor import require_native_build_process
 
 
 def validate_native_lock(data: dict) -> list[dict]:
@@ -64,6 +65,7 @@ def install_native_prefix(data: dict, cache: Path, executable: Path,
     rows = validate_native_lock(data)
     if data["architecture"] != host_architecture():
         raise ValueError("Native prefix installation requires the actual target processor.")
+    require_native_build_process()
     if executable.is_symlink() or not executable.is_file() or digest_file(executable) != executable_sha256:
         raise ValueError("Native installer is not the pinned build-only executable.")
     if not destination.is_absolute() or destination.exists() or destination.is_symlink():

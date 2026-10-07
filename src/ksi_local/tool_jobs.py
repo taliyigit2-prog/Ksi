@@ -98,7 +98,21 @@ class ToolJobService:
         on_progress: Callable[[float], None] | None = None,
     ) -> dict:
         with execution_lease(self.store.path.parent, identifier):
-            return self._execute_owned(identifier, cancel=cancel, on_progress=on_progress)
+            try:
+                return self._execute_owned(identifier, cancel=cancel, on_progress=on_progress)
+            except OperationCancelled as error:
+                # Receipt hashing happens before the SQL claim. An explicit
+                # cancellation there must not leave a supposedly queued job
+                # eligible for another automatic execution. Completed outputs
+                # and previously completed stages remain intact for resume.
+                record = self.store.get_job(identifier)
+                if record.job_kind in {JobKind.MEDIA, JobKind.IMAGE} and record.status in {JobStatus.QUEUED, JobStatus.RUNNING}:
+                    self.store.ensure_stages(identifier, ["local_tools"])
+                    stage = self.store.get_stage(identifier, "local_tools")
+                    if stage.status in {StageStatus.PENDING, StageStatus.RUNNING}:
+                        self.store.set_stage(identifier, "local_tools", StageStatus.CANCELLED, error=str(error))
+                    self.store.transition_job(identifier, JobStatus.CANCELLED, error=str(error))
+                raise
 
     def _execute_owned(
         self, identifier: str, *, cancel: threading.Event | None = None,

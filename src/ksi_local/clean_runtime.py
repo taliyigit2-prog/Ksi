@@ -15,6 +15,7 @@ from pathlib import Path
 from ksi_local.atomic_files import atomic_write_json, atomic_write_text
 from ksi_local.build_inputs import extract_python_input
 from ksi_local.bundle_runtime import digest_file, host_architecture
+from ksi_local.native_processor import require_native_build_process
 from ksi_local.wheel_lock import requirements_text, validate_wheel_lock
 
 
@@ -25,6 +26,7 @@ def assemble_python_runtime(archive: Path, python_input: dict, wheel_lock: dict,
     architecture = wheel_lock["architecture"]
     if host_architecture() != architecture or python_input.get("architecture") != architecture:
         raise ValueError("Clean runtime assembly requires the native target architecture.")
+    require_native_build_process()
     if not destination.is_absolute() or destination.exists() or destination.is_symlink():
         raise FileExistsError("The clean runtime destination must be a new absolute directory.")
     if wheelhouse.is_symlink() or not wheelhouse.is_dir():

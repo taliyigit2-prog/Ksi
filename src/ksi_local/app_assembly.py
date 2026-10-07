@@ -21,6 +21,7 @@ from ksi_local.copy_on_write import clone_file
 from ksi_local.offline_build import seal_offline_payload
 from ksi_local.wheel_lock import validate_wheel_lock
 from ksi_local.distribution_notices import validate_notice_inventory
+from ksi_local.native_processor import require_native_build_process
 
 
 def copy_clean_tree(source: Path, destination: Path) -> None:
@@ -113,6 +114,7 @@ def assemble_app(repository: Path, runtime: Path, components: Path, specificatio
     rows = validate_wheel_lock(wheel_lock)
     if architecture != host_architecture() or wheel_lock["architecture"] != architecture:
         raise ValueError("App assembly must run on its actual native architecture.")
+    require_native_build_process()
     if not destination.is_absolute() or destination.suffix != ".app" or destination.exists() or destination.is_symlink():
         raise FileExistsError("The app destination must be a new absolute .app path.")
     if any(path.is_symlink() or not path.is_dir() for path in (repository, runtime, components)):
