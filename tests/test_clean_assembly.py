@@ -10,6 +10,22 @@ from ksi_local.app_assembly import bind_signed_tool_manifest, committed_file, co
 
 
 class CleanTreeTests(unittest.TestCase):
+    def test_framework_bundle_is_signed_and_verified_after_its_native_file(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            framework = root / "Synthetic.framework"
+            framework.mkdir()
+            binary = framework / "Synthetic"
+            binary.write_bytes(b"\xcf\xfa\xed\xfe" + b"synthetic, not executable")
+            def result(command, **kwargs):
+                return subprocess.CompletedProcess(command, 0, stdout="arm64" if command[0] == "/usr/bin/lipo" else "")
+            with patch("ksi_local.app_assembly.subprocess.run", side_effect=result) as commands:
+                self.assertEqual(sign_native_payload(root, "arm64"), 1)
+            recorded = [call.args[0] for call in commands.call_args_list]
+            self.assertEqual(recorded[1][-1], str(binary))
+            self.assertEqual(recorded[2][-1], str(framework))
+            self.assertIn("--verify", recorded[3])
+
     def test_source_is_read_from_the_named_commit_not_the_working_tree(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

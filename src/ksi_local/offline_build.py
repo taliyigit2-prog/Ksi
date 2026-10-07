@@ -110,13 +110,13 @@ def seal_offline_payload(resources: Path, specification: dict) -> dict:
     manifest = safe_member(resources, "offline-manifest.json")
     if catalog.exists() or manifest.exists():
         raise FileExistsError("Mühürlenmiş paket dosyaları yeniden yazılmaz.")
-    atomic_write_bytes(catalog, encoded_catalog)
+    atomic_write_bytes(catalog, encoded_catalog, mode=0o644)
     entries.append(PayloadFile("model-catalog.json", digest_file(catalog), catalog.stat().st_size, "support", "model-catalog"))
     data = {"schema_version": 1, "architecture": architecture, "files": [asdict(entry) for entry in entries]}
     encoded_manifest = (json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
     if len(encoded_manifest) > MAX_MANIFEST_BYTES:
         raise ValueError("Paket manifesti boyut sınırı aşıyor.")
-    atomic_write_bytes(manifest, encoded_manifest)
+    atomic_write_bytes(manifest, encoded_manifest, mode=0o644)
     verified = OfflinePayload.load(resources, architecture=architecture)
     for entry in verified.files:
         verified.verify(entry)

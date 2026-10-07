@@ -46,7 +46,7 @@ def validate_runtime(runtime, lock, python_input, source_inputs, scope):
     for member in ("python/bin/python3.12", "python/lib/python3.12/LICENSE.txt"):
         path = safe_member(runtime, member)
         if not path.is_file() or path.stat().st_size == 0:
-            raise ValueError("Isolated Python interpreter or original aggregate notice is missing.")
+            raise ValueError("Isolated Python interpreter or original license text is missing.")
     return provenance
 
 

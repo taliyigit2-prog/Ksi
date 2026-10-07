@@ -78,6 +78,17 @@ def sign_native_payload(resources: Path, architecture: str) -> int:
     for path in binaries:
         subprocess.run(["/usr/bin/codesign", "--force", "--sign", "-", "--timestamp=none", str(path)],
             check=True, capture_output=True, timeout=120)
+    # Signing only a framework's Mach-O executable does not sign the framework
+    # bundle itself. Seal code-bearing nested bundles bottom-up before payload
+    # hashes are generated; do not let the outer app's signing mutate them.
+    bundles = [path for path in (resources, *resources.rglob("*"))
+        if path.is_dir() and path.suffix.casefold() in {".framework", ".app", ".bundle", ".plugin"}
+        and any(binary.is_relative_to(path) for binary in binaries)]
+    for bundle in sorted(bundles, key=lambda path: (len(path.parts), str(path)), reverse=True):
+        subprocess.run(["/usr/bin/codesign", "--force", "--sign", "-", "--timestamp=none", str(bundle)],
+            check=True, capture_output=True, timeout=120)
+        subprocess.run(["/usr/bin/codesign", "--verify", "--deep", "--strict", str(bundle)],
+            check=True, capture_output=True, timeout=120)
     return len(binaries)
 
 

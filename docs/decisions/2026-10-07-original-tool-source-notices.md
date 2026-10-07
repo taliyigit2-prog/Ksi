@@ -68,3 +68,14 @@ copied from potentially changed working-tree files. Copied component bytes are
 rechecked against their approved input hashes before shebang normalization or
 signing may alter build output. Isolated speech provenance and source overrides
 are revalidated after materialization as well as before it.
+
+Native QtCore signing preflight demonstrated that signing its inner Mach-O
+file alone leaves the framework bundle unsigned. Code-bearing nested framework,
+app, bundle and plugin directories are therefore ad-hoc signed and strictly
+verified bottom-up before final payload hashing. This structural build preflight
+is not GUI, inference, installation or complete application acceptance evidence.
+
+Public payload manifests and model catalogs use read-only-to-other-users 0644
+permissions, not private-state 0600 defaults. This permits a different macOS
+account to read an installed application without running it as administrator;
+user preferences, jobs and acceptance data keep their private-state policy.

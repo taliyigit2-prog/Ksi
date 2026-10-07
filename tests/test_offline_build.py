@@ -55,6 +55,8 @@ class OfflineBuildTests(unittest.TestCase):
         result = seal_offline_payload(self.resources, self.specification)
         self.assertFalse(result["tested"])
         self.assertEqual(result["files"], 3)
+        for name in ("offline-manifest.json", "model-catalog.json"):
+            self.assertEqual((self.resources / name).stat().st_mode & 0o777, 0o644)
         self.assertIn("MIT fixture", ModelManager(self.resources, self.root / "installed").license_text("cpu"))
         with self.assertRaises(FileExistsError):
             seal_offline_payload(self.resources, self.specification)
