@@ -64,13 +64,15 @@ def validate_notice_inventory(resources: Path, specification: dict, lock: dict, 
 
 
 def stage_distribution_notices(lock: dict, wheel_report: dict, wheel_directory: Path,
-                               supplements: dict, destination: Path) -> dict:
+                               supplements: dict, destination: Path, *, namespace: str = "main") -> dict:
     """Supplements map exact package versions to original pinned text/source rows.
 
     Each row supplies a root directory, relative path, expected SHA-256/size,
     public provenance URL, and kind ('license' or 'source'). Local roots are
     deliberately omitted from generated provenance.
     """
+    if namespace not in {"main", "piper", "chatterbox"}:
+        raise ValueError("Python notice namespace is invalid.")
     locked = {_name(row["name"]): row for row in validate_wheel_lock(lock)}
     if wheel_report.get("schema_version") != 1 or wheel_report.get("architecture") != lock["architecture"]:
         raise ValueError("Notice inventory architecture/version differs from the wheel lock.")
@@ -93,7 +95,7 @@ def stage_distribution_notices(lock: dict, wheel_report: dict, wheel_directory: 
         for file in package.get("files", []):
             if file.get("kind") == "license":
                 rows.append(dict(file, root=wheel_directory, source_url=expected["url"],
-                    target="licenses/python/" + file["path"]))
+                    target="licenses/python/" + namespace + "/" + file["path"]))
         extra = supplements.get(name)
         if extra is not None:
             if extra.get("version") != expected["version"]:

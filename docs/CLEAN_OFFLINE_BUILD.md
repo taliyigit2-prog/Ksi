@@ -291,3 +291,9 @@ locked prefix. It does not publish an application or run product acceptance.
 The bounded artifact importer accepts `--scope main` and independently checks
 the architecture's wheel lock, CPython pin and actual Mach-O architectures;
 the older isolated Piper import remains the default scope.
+
+Main, Piper and Chatterbox wheel notices use distinct paths so different NumPy
+or other dependency versions cannot replace each other's legal texts. The
+explicit component merger deduplicates only byte-identical, identical-metadata
+records; path/identifier/model-family collisions or changed pinned inputs fail
+before the merged destination is created. Ambient build files are never copied.

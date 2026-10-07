@@ -69,6 +69,7 @@ PUBLIC_SCRIPTS = (
     "scripts/stage_python_notices.py",
     "scripts/stage_offline_models.py",
     "scripts/build_model_notice_bindings.py",
+    "scripts/merge_offline_components.py",
     "scripts/fetch_corresponding_source.py",
     "scripts/fetch_ollama_models.py",
     "scripts/import_native_artifact.py",

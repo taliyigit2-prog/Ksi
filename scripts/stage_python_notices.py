@@ -73,7 +73,7 @@ def main():
                     "sha256": source["sha256"], "size": source["size"], "source_url": source["url"]}]
         normalized = name.lower().replace("_", "-")
         supplements[normalized] = {"version": version, "files": rows}
-    result = stage_distribution_notices(lock, report, directory, supplements, args.destination.absolute())
+    result = stage_distribution_notices(lock, report, directory, supplements, args.destination.absolute(), namespace=args.scope)
     inventory = args.destination.absolute() / "python-notice-inventory.json"
     rows = list(result["files"])
     # Keep each isolated prefix's inventory distinct while allowing identical
