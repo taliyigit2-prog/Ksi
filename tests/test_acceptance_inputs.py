@@ -6,16 +6,18 @@ import tarfile
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from ksi_local.acceptance_inputs import import_inputs
+from ksi_local.model_input_restore import restore_model_inputs
 
 
 class AcceptanceInputTests(unittest.TestCase):
-    def fixture(self, root, *, extra=None, inventory_fault=None):
+    def fixture(self, root, *, extra=None, inventory_fault=None, defer=False, identifier="example"):
         transport = root / "transport"
         transport.mkdir()
         model = b"synthetic model input"
-        row = dict(path="models/example", role="model", identifier="example", size=len(model),
+        row = dict(path="models/example", role="model", identifier=identifier, size=len(model),
                    sha256=hashlib.sha256(model).hexdigest())
         rows = [row]
         if inventory_fault == "digest":
@@ -33,6 +35,9 @@ class AcceptanceInputTests(unittest.TestCase):
             "runtime/runtime-provenance.json": json.dumps(dict(architecture="x86_64", wheel_lock_sha256="a"*64)).encode(),
             "input-provenance.json": provenance,
         }
+        if defer:
+            files.pop("components/models/example")
+            files["deferred-model-inputs.json"] = json.dumps(dict(schema_version=1, architecture="x86_64", files=[row])).encode()
         buffer = io.BytesIO()
         with tarfile.open(fileobj=buffer, mode="w:gz") as archive:
             for name, content in files.items():
@@ -123,3 +128,73 @@ class AcceptanceInputTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     import_inputs(transport, root / "new", digest, architecture="x86_64")
                 self.assertFalse((root / "new").exists())
+
+    def test_deferred_model_import_is_an_explicit_incomplete_build_stage(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            transport, digest = self.fixture(root, defer=True)
+            with self.assertRaises(ValueError):
+                import_inputs(transport, root / "denied", digest, architecture="x86_64")
+            self.assertFalse((root / "denied").exists())
+            result = import_inputs(transport, root / "allowed", digest, architecture="x86_64", allow_deferred=True)
+            self.assertEqual(result["deferred_model_files"], 1)
+            self.assertFalse(result["native_acceptance_performed"])
+            self.assertFalse((root / "allowed/components/models/example").exists())
+
+    def test_restoration_requires_network_opt_in_and_verifies_restored_bytes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            transport, digest = self.fixture(root, defer=True)
+            imported = root / "imported"
+            import_inputs(transport, imported, digest, architecture="x86_64", allow_deferred=True)
+            content = b"synthetic model input"
+            pins = {"inputs": {"example": dict(size=len(content), sha256=hashlib.sha256(content).hexdigest(),
+                    url="https://huggingface.co/synthetic/fixture/resolve/" + "a"*40 + "/model.bin")}}
+            def generated_input(_pin, target):
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(content)
+            with patch("ksi_local.model_input_restore.fetch_pinned_input", side_effect=generated_input) as fetch:
+                with self.assertRaises(ValueError):
+                    restore_model_inputs(imported, pins, {"models": []})
+                fetch.assert_not_called()
+                result = restore_model_inputs(imported, pins, {"models": []}, allow_network=True)
+                self.assertEqual(result["restored_model_files"], 1)
+                self.assertFalse(result["native_acceptance_performed"])
+
+    def test_unknown_or_unofficial_restore_pins_are_rejected_before_download(self):
+        for fault in ("unknown", "digest", "unofficial", "credentials"):
+            with self.subTest(fault=fault), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                transport, digest = self.fixture(root, defer=True)
+                imported = root / "imported"
+                import_inputs(transport, imported, digest, architecture="x86_64", allow_deferred=True)
+                content = b"synthetic model input"
+                row = dict(size=len(content), sha256=hashlib.sha256(content).hexdigest(),
+                           url="https://huggingface.co/synthetic/fixture/resolve/" + "a"*40 + "/model.bin")
+                if fault == "digest":
+                    row["sha256"] = "b"*64
+                elif fault == "unofficial":
+                    row["url"] = "https://example.invalid/model.bin"
+                elif fault == "credentials":
+                    row["url"] = "https://user:pass@huggingface.co/model.bin"
+                pins = {"inputs": {} if fault == "unknown" else {"example": row}}
+                with patch("ksi_local.model_input_restore.fetch_pinned_input") as fetch:
+                    with self.assertRaises(ValueError):
+                        restore_model_inputs(imported, pins, {"models": []}, allow_network=True)
+                    fetch.assert_not_called()
+
+    def test_ollama_blob_url_is_derived_only_from_committed_digest(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            transport, digest = self.fixture(root, defer=True, identifier="example-model")
+            imported = root / "imported"
+            import_inputs(transport, imported, digest, architecture="x86_64", allow_deferred=True)
+            content = b"synthetic model input"
+            sha = hashlib.sha256(content).hexdigest()
+            sources = {"models": [dict(name="example", layers=[dict(role="model", size=len(content), sha256=sha)])]}
+            def generated_input(pin, target):
+                self.assertEqual(pin["url"], "https://registry.ollama.ai/v2/library/example/blobs/sha256:" + sha)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(content)
+            with patch("ksi_local.model_input_restore.fetch_pinned_input", side_effect=generated_input):
+                self.assertEqual(restore_model_inputs(imported, {"inputs": {}}, sources, allow_network=True)["restored_model_files"], 1)

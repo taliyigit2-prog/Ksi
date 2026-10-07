@@ -47,7 +47,9 @@ jobs:
         run: |
           gh release download "$KSI_INPUT_TAG" --repo "$GITHUB_REPOSITORY" --dir build/input-transport --pattern 'native-intel-inputs.tar.gz.part*' --pattern transfer.json
       - name: Verify every transfer part, archive member and component
-        run: python3 scripts/import_acceptance_inputs.py x86_64 build/input-transport build/native-inputs "$KSI_INPUT_SHA256"
+        run: python3 scripts/import_acceptance_inputs.py x86_64 build/input-transport build/native-inputs "$KSI_INPUT_SHA256" --allow-deferred
+      - name: Restore build-only model files from exact original official pins
+        run: python3 scripts/restore_model_inputs.py build/native-inputs --allow-network
       - name: Assemble ad-hoc candidate on actual Intel processor
         run: |
           build/native-inputs/runtime/python/bin/python3.12 scripts/assemble_offline_app.py build/native-inputs/runtime build/native-inputs/components build/native-inputs/components/component-specification.json 'build/native-app/KSI Local Studio.app' > build/native-app-build.json

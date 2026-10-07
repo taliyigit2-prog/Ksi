@@ -11,6 +11,7 @@ if __name__ == "__main__":
     parser.add_argument("transport", type=Path)
     parser.add_argument("destination", type=Path)
     parser.add_argument("sha256")
+    parser.add_argument("--allow-deferred", action="store_true", help="Build-only input staging; never offline app acceptance")
     args = parser.parse_args()
     print(json.dumps(import_inputs(args.transport.absolute(), args.destination.absolute(),
-        args.sha256, architecture=args.architecture)))
+        args.sha256, architecture=args.architecture, allow_deferred=args.allow_deferred)))

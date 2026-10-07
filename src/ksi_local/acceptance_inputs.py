@@ -13,7 +13,40 @@ MAX_TRANSFER_BYTES = 32 * 1024**3
 MAX_TRANSFER_MEMBERS = 100000
 
 
-def import_inputs(transport: Path, destination: Path, expected_sha256: str, *, architecture: str) -> dict:
+def deferred_models(root: Path, components: dict) -> list[dict]:
+    metadata = safe_member(root, "deferred-model-inputs.json")
+    if not metadata.exists():
+        return []
+    if not metadata.is_file() or metadata.stat().st_size > 16 * 1024:
+        raise ValueError("Deferred model inventory is oversized or missing")
+    document = json.loads(metadata.read_bytes())
+    if not isinstance(document, dict):
+        raise ValueError("Deferred model inventory must be an object")
+    rows = document.get("files")
+    if (document.get("schema_version") != 1 or document.get("architecture") != components.get("architecture")
+            or not isinstance(rows, list) or not 1 <= len(rows) <= 8):
+        raise ValueError("Deferred model inventory is invalid")
+    available = {row["path"]: row for row in components["files"]}
+    seen = set()
+    for row in rows:
+        if not isinstance(row, dict) or not isinstance(row.get("path"), str):
+            raise ValueError("Deferred model row is malformed")
+        if (type(row.get("size")) is not int or row["size"] <= 0
+                or not isinstance(row.get("identifier"), str) or not 1 <= len(row["identifier"]) <= 128
+                or not re.fullmatch(r"[0-9a-f]{64}", str(row.get("sha256")))):
+            raise ValueError("Deferred model pin is invalid")
+        entry = available.get(row["path"])
+        if (entry is None or entry.get("role") != "model" or not row["path"].startswith("models/")
+                or row["path"].casefold() in seen
+                or any(row.get(key) != entry.get(key) for key in ("identifier", "size", "sha256"))):
+            raise ValueError("Only exact inventoried model files may be deferred")
+        safe_member(root / "components", row["path"])
+        seen.add(row["path"].casefold())
+    return rows
+
+
+def import_inputs(transport: Path, destination: Path, expected_sha256: str, *, architecture: str,
+                  allow_deferred: bool = False) -> dict:
     if architecture not in {"arm64", "x86_64"} or not re.fullmatch(r"[0-9a-f]{64}", expected_sha256):
         raise ValueError("Explicit architecture and reviewed archive SHA-256 required")
     if transport.is_symlink() or not transport.is_dir() or not destination.is_absolute() or destination.exists() or destination.is_symlink():
@@ -67,7 +100,7 @@ def import_inputs(transport: Path, destination: Path, expected_sha256: str, *, a
                 parts = PurePosixPath(name).parts
                 if (not name or len(name) > 2048 or "\\" in name or "\x00" in name
                         or any(p in {"", ".", ".."} for p in name.split("/")) or name.startswith("/")
-                        or not parts or parts[0] not in {"runtime", "components", "input-provenance.json"}
+                        or not parts or parts[0] not in {"runtime", "components", "input-provenance.json", "deferred-model-inputs.json"}
                         or name.casefold() in seen or not (member.isfile() or member.isdir())
                         or member.uid != 0 or member.gid != 0 or member.uname or member.gname
                         or member.mode & 0o7000):
@@ -101,7 +134,14 @@ def import_inputs(transport: Path, destination: Path, expected_sha256: str, *, a
                     or row["path"].casefold() in component_paths):
                 raise ValueError("Component inventory contains an invalid or duplicate row")
             component_paths.add(row["path"].casefold())
+        deferred = deferred_models(expanded, components)
+        if deferred and not allow_deferred:
+            raise ValueError("Deferred models require explicit build-only opt-in")
+        deferred_paths = {row["path"] for row in deferred}
+        for row in rows:
             member = safe_member(expanded / "components", row["path"])
+            if row["path"] in deferred_paths and not member.exists():
+                continue
             if not member.is_file() or member.stat().st_size != row["size"] or digest_file(member) != row["sha256"]:
                 raise ValueError("Extracted component changed before native assembly")
         runtime_file = safe_member(expanded, "runtime/runtime-provenance.json")
@@ -118,4 +158,4 @@ def import_inputs(transport: Path, destination: Path, expected_sha256: str, *, a
         for child in expanded.iterdir():
             child.rename(destination / child.name)
     return dict(architecture=architecture, files=len(rows), archive_sha256=expected_sha256,
-                native_acceptance_performed=False)
+                deferred_model_files=len(deferred), native_acceptance_performed=False)

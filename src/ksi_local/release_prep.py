@@ -82,6 +82,7 @@ PUBLIC_SCRIPTS = (
     "scripts/import_native_artifact.py",
     "scripts/import_speech_artifact.py",
     "scripts/import_acceptance_inputs.py",
+    "scripts/restore_model_inputs.py",
     "scripts/lock_native_libraries.py",
     "scripts/lock_python_wheels.py",
     "scripts/prepare_native_component.py",
@@ -177,6 +178,7 @@ PREDECESSOR_ALLOWLIST = {
 SYNTHETIC_TEST_ALLOWLIST = {
     ("tests/test_downloader.py", "credential-url"),
     ("tests/test_wheel_lock.py", "credential-url"),  # Literal user:password rejection fixture.
+    ("tests/test_acceptance_inputs.py", "credential-url"),  # Exact synthetic user:pass rejection fixture only.
     ("tests/test_phase25.py", "credential-url"),
     ("tests/test_phase29.py", "credential-url"),
     ("tests/test_phase36.py", "openai-key"),
