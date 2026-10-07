@@ -85,3 +85,10 @@ Piper source COPYING byte-for-byte. App assembly additionally requires the
 matching Piper and embedded eSpeak archive digests from the committed public
 source pins. A nested g2pW Apache notice in the wheel does not satisfy Piper's
 primary GPL notice/source obligation.
+
+`stage_media_executables.py` binds relocated FFmpeg, ffprobe and ImageMagick
+executables to the matching original source notice identifiers. It validates
+actual native architecture, executable hashes and retained source archive pins
+before copying. FFmpeg/ffprobe explicitly reference the complete corresponding
+source archive. Shared libraries remain in their independently attributed
+native library stage; merging must preserve the graph's relative layout.
