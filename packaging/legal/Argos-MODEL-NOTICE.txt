@@ -1,0 +1,15 @@
+Argos direct English/Turkish model attribution
+
+The included direct language packages are the unmodified inference members of
+the official translate-en_tr-1_5 and translate-tr_en-1_5 archives. Their original
+README files and corpus citations are preserved in the model directories.
+
+The upstream maintainer states that Argos model-training work is covered by
+MIT/CC0 in the public model-license discussion:
+https://github.com/argosopentech/argos-translate/issues/76#issuecomment-815704991
+
+The original Argos project MIT copyright and permission notice is included
+separately. This attribution does not grant new rights in the cited corpora,
+Wiktionary or other training material. No training corpus is redistributed.
+Unused Stanza tokenizer weights are excluded; inference weights are unchanged.
+This notice is not a legal-review certificate or a claim of dataset ownership.

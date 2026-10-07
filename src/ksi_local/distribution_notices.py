@@ -12,6 +12,7 @@ import json
 import re
 import shutil
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from ksi_local.atomic_files import atomic_write_json
 from ksi_local.bundle_runtime import digest_file, safe_member
@@ -102,6 +103,10 @@ def stage_distribution_notices(lock: dict, wheel_report: dict, wheel_directory: 
             raise ValueError("Locked package has no original license text: " + name)
         members = []
         for row in rows:
+            source_url = row.get("source_url")
+            parsed = urlsplit(source_url) if isinstance(source_url, str) else None
+            if parsed is None or parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:
+                raise ValueError("Notice provenance must be a clean public HTTPS source.")
             root = row["root"]
             if root.is_symlink() or not root.is_dir() or row.get("kind") not in {"license", "source"}:
                 raise ValueError("Supplement source directory/kind is invalid.")

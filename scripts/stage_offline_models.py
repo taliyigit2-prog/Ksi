@@ -57,6 +57,8 @@ def stage(repository, build, bindings, destination, architecture):
 
     def family(identifier, title, description, license, members):
         notices = bindings.get("families", {}).get(identifier)
+        if identifier == "whisper" and architecture == "x86_64" and isinstance(notices, list):
+            notices = [notice for notice in notices if notice not in {"apache-2.0-text", "mlx-model-card"}]
         if not isinstance(notices, list) or not notices or not set(notices) <= license_ids:
             raise ValueError("Model family needs explicit original license bindings: " + identifier)
         if license == "Gemma" and not {"gemma-original-license", "gemma-terms", "gemma-prohibited-use", "gemma-notice", "ksi-model-terms"} <= set(notices):

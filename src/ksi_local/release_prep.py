@@ -68,6 +68,7 @@ PUBLIC_SCRIPTS = (
     "scripts/collect_source_license_texts.py",
     "scripts/stage_python_notices.py",
     "scripts/stage_offline_models.py",
+    "scripts/build_model_notice_bindings.py",
     "scripts/fetch_corresponding_source.py",
     "scripts/fetch_ollama_models.py",
     "scripts/import_native_artifact.py",
@@ -233,6 +234,9 @@ def _iter_public_inputs(source: Path) -> Iterable[tuple[Path, Path]]:
     python_notices = source / "config/python-notice-sources.json"
     if python_notices.is_file():
         yield python_notices, Path("config/python-notice-sources.json")
+    model_notices = source / "config/model-notice-snapshots.json"
+    if model_notices.is_file():
+        yield model_notices, Path("config/model-notice-snapshots.json")
 
 
 def _sanitized_configuration(source: Path, destination: Path) -> None:

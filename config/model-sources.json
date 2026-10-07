@@ -2,6 +2,14 @@
   "schema_version": 1,
   "redistribution_review_complete": false,
   "inputs": {
+    "openai-whisper-license": {
+      "url": "https://raw.githubusercontent.com/openai/whisper/86098128c0b4f24f0e2aa2994de830614b474227/LICENSE",
+      "revision": "86098128c0b4f24f0e2aa2994de830614b474227",
+      "size": 1063,
+      "sha256": "b5d65a59060e68c4ff940e1eddfa6f94b2d68fdf58ed7f4dd57721c997e35e9d",
+      "license": "MIT",
+      "purpose": "Original OpenAI Whisper notice; distinct from the whisper.cpp engine notice"
+    },
     "whisper-cpp-turbo": {
       "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo.bin",
       "revision": "5359861c739e955e79d9a303bcbc70fb988958b1",

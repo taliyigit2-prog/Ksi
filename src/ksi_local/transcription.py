@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import gc
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,20 @@ from ksi_local.resource_governor import serialized_model
 DEFAULT_WHISPER_MODEL = "mlx-community/whisper-large-v3-turbo-8bit"
 NO_SPEECH_THRESHOLD = 0.6
 HALLUCINATION_SILENCE_SECONDS = 2.0
+
+
+def release_mlx_model() -> None:
+    """Release upstream's retained model before the heavy-model lease ends."""
+    module = sys.modules.get("mlx_whisper.transcribe")
+    holder = getattr(module, "ModelHolder", None)
+    if holder is not None:
+        holder.model = None
+        holder.model_path = None
+    gc.collect()
+    core = sys.modules.get("mlx.core")
+    clear = getattr(core, "clear_cache", None)
+    if callable(clear):
+        clear()
 
 
 def _srt_time(seconds: float) -> str:
@@ -117,20 +132,23 @@ def transcribe_media(
         import mlx_whisper
     except ImportError as error:
         raise RuntimeError("mlx-whisper kurulu değil.") from error
-    result = mlx_whisper.transcribe(
-        str(source),
-        path_or_hf_repo=model,
-        language=None if language == AUTO_LANGUAGE else language,
-        word_timestamps=True,
-        condition_on_previous_text=True,
-        temperature=0.0,
-        compression_ratio_threshold=2.4,
-        logprob_threshold=-1.0,
-        no_speech_threshold=NO_SPEECH_THRESHOLD,
-        hallucination_silence_threshold=HALLUCINATION_SILENCE_SECONDS,
-        initial_prompt=initial_prompt,
-        verbose=None,
-    )
+    try:
+        result = mlx_whisper.transcribe(
+            str(source),
+            path_or_hf_repo=model,
+            language=None if language == AUTO_LANGUAGE else language,
+            word_timestamps=True,
+            condition_on_previous_text=True,
+            temperature=0.0,
+            compression_ratio_threshold=2.4,
+            logprob_threshold=-1.0,
+            no_speech_threshold=NO_SPEECH_THRESHOLD,
+            hallucination_silence_threshold=HALLUCINATION_SILENCE_SECONDS,
+            initial_prompt=initial_prompt,
+            verbose=None,
+        )
+    finally:
+        release_mlx_model()
     segments = result.get("segments") if isinstance(result, dict) else None
     if not isinstance(segments, list):
         raise RuntimeError("Whisper beklenen segment listesini döndürmedi.")

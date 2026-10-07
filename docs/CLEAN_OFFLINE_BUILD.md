@@ -273,3 +273,21 @@ voice, U2NetP and both direct Argos packages are required. A separate explicit
 license-binding input supplies original notices and their hashes; these cannot
 be guessed from a model's display name. Staging has no network access and makes
 no inference, quality, installation or redistribution-approval claim.
+
+Model notice bindings preserve the original OpenAI Whisper MIT copyright,
+distinct from whisper.cpp's engine copyright. Gemma's inert terms snapshots
+have explicit observed-text pins in `config/model-notice-snapshots.json`;
+no immutable upstream checksum or user acceptance is asserted. Argos grants
+remain accompanied by the original README corpus citations and a model-specific
+attribution notice. Piper's original voice declaration/card is retained without
+inventing a new copyright grant or equating its voice with Chatterbox.
+
+MLX Whisper's upstream model holder is explicitly released in a `finally` block
+before the shared heavy-model lease ends, including inference failures. Merely
+clearing allocator caches does not release that retained model reference.
+
+The separate native main-runtime workflow archives only a freshly assembled
+locked prefix. It does not publish an application or run product acceptance.
+The bounded artifact importer accepts `--scope main` and independently checks
+the architecture's wheel lock, CPython pin and actual Mach-O architectures;
+the older isolated Piper import remains the default scope.

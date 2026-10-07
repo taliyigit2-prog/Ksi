@@ -1,0 +1,42 @@
+name: Native main runtime inputs
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: arm64
+            runner: macos-14
+          - architecture: x86_64
+            runner: macos-15-intel
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    env:
+      PYTHONPATH: src
+      PYTHONDONTWRITEBYTECODE: '1'
+      KSI_BUILD_PYTHON: build/ci-bootstrap/python/bin/python3.12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Bootstrap only from pinned public inputs
+        run: python3 scripts/bootstrap_build_environment.py build/ci-bootstrap
+      - name: Fetch exact main wheel lock
+        run: '"$KSI_BUILD_PYTHON" scripts/lock_python_wheels.py fetch "config/python-wheels-${{ matrix.architecture }}.json" build/wheelhouse-main'
+      - name: Assemble fresh main runtime on its actual native processor
+        run: '"$KSI_BUILD_PYTHON" scripts/assemble_clean_runtime.py "${{ matrix.architecture }}" "build/cache/python-${{ matrix.architecture }}-3.12.15.tar.gz" build/wheelhouse-main build/runtime-main'
+      - name: Archive only the fresh runtime inputs, not a final application
+        run: 'tar --exclude="__pycache__" --exclude="*.pyc" --exclude="*.pyo" -czf "build/main-runtime-${{ matrix.architecture }}.tar.gz" -C build runtime-main'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: main-runtime-${{ matrix.architecture }}
+          path: build/main-runtime-${{ matrix.architecture }}.tar.gz
+          if-no-files-found: error
+          retention-days: 7

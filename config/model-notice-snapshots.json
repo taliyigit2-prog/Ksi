@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "redistribution_review_complete": false,
+  "snapshots": {
+    "gemma-terms": {
+      "source_url": "https://ai.google.dev/gemma/terms",
+      "text_sha256": "ab9f1c77327f13c6d6aea5906dc4c0083f772ae317879c84cc412c6791eff48c",
+      "text_size": 8830,
+      "retrieved_at": "2026-10-06T21:23:51.955107+00:00",
+      "digest_source": "Observed inert text snapshot of the official mutable page, not an upstream immutable digest"
+    },
+    "gemma-prohibited-use": {
+      "source_url": "https://ai.google.dev/gemma/prohibited_use_policy",
+      "text_sha256": "27577629c03188b4c80a425d8a6ca5c16959ee6f30354c8fa257c78832e9fa99",
+      "text_size": 3690,
+      "retrieved_at": "2026-10-06T21:23:52.804148+00:00",
+      "digest_source": "Observed inert text snapshot of the official mutable page, not an upstream immutable digest"
+    }
+  }
+}
