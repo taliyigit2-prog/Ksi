@@ -81,3 +81,30 @@ class OfflineBuildTests(unittest.TestCase):
         self.specification["models"][0]["members"] = ["unknown"]
         with self.assertRaises(ValueError):
             seal_offline_payload(self.resources, self.specification)
+
+    def test_licensed_shared_library_cannot_bypass_copyleft_source_gate(self):
+        path = self.resources / "engines/lib/example.dylib"
+        path.parent.mkdir(parents=True)
+        content = b"synthetic shared library fixture"
+        path.write_bytes(content)
+        self.specification["files"].append({"path": "engines/lib/example.dylib",
+            "role": "support", "identifier": "example-library", "size": len(content),
+            "sha256": hashlib.sha256(content).hexdigest(), "license": "LGPL-3.0-only",
+            "license_file": "example-license", "source_url": "https://example.org/library",
+            "revision": "synthetic-fixture-v1"})
+        with self.assertRaisesRegex(ValueError, "kaynak"):
+            seal_offline_payload(self.resources, self.specification)
+        self.assertFalse((self.resources / "offline-manifest.json").exists())
+
+    def test_licensed_shared_library_requires_original_notice(self):
+        path = self.resources / "engines/lib/example.dylib"
+        path.parent.mkdir(parents=True)
+        content = b"synthetic shared library fixture"
+        path.write_bytes(content)
+        self.specification["files"].append({"path": "engines/lib/example.dylib",
+            "role": "support", "identifier": "example-library", "size": len(content),
+            "sha256": hashlib.sha256(content).hexdigest(), "license": "MIT",
+            "license_file": "missing-notice", "source_url": "https://example.org/library",
+            "revision": "synthetic-fixture-v1"})
+        with self.assertRaisesRegex(ValueError, "lisans"):
+            seal_offline_payload(self.resources, self.specification)

@@ -55,9 +55,12 @@ def seal_offline_payload(resources: Path, specification: dict) -> dict:
         seen.add(entry.path.casefold())
         entries.append(entry)
     for entry in entries:
-        if entry.role not in {"tool", "model"}:
-            continue
         row = records[(entry.role, entry.identifier)]
+        # Native shared libraries are support files, not top-level tools.
+        # Explicitly licensed support members must retain the same notices and
+        # corresponding-source closure; changing role cannot bypass that gate.
+        if entry.role not in {"tool", "model"} and not (entry.role == "support" and "license" in row):
+            continue
         if not isinstance(row.get("license"), str) or ("license", row.get("license_file")) not in records:
             raise ValueError(f"Bileşen lisans metni eksik: {entry.identifier}")
         source = row.get("source_url")

@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import subprocess
 from pathlib import Path
 
 from ksi_local.bundle_runtime import host_architecture
@@ -29,6 +30,7 @@ def main():
     oxipng = actions.add_parser("extract-oxipng")
     oxipng.add_argument("archive", type=Path)
     oxipng.add_argument("destination", type=Path)
+    oxipng.add_argument("--architecture", choices=("arm64", "x86_64"))
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     inputs = json.loads((root / "config/native-sources.json").read_text(encoding="utf-8"))["inputs"]
@@ -41,8 +43,14 @@ def main():
     elif args.action == "build-whisper":
         print(build_whisper_cpu(args.source.absolute(), cmake=args.cmake.absolute(), destination=args.destination.absolute(), commit=entry["commit"]))
     else:
-        entry = inputs["oxipng-" + host_architecture()]
-        print(extract_oxipng(args.archive.absolute(), sha256=entry["sha256"], destination=args.destination.absolute()))
+        architecture = args.architecture or host_architecture()
+        entry = inputs["oxipng-" + architecture]
+        executable = extract_oxipng(args.archive.absolute(), sha256=entry["sha256"], destination=args.destination.absolute())
+        actual = subprocess.run(["/usr/bin/lipo", "-archs", str(executable)], check=True,
+            capture_output=True, text=True, timeout=30).stdout.split()
+        if architecture not in actual:
+            raise ValueError("Oxipng native binary differs from its pinned architecture.")
+        print(json.dumps({"architecture": architecture, "staged": True, "acceptance_tested": False}))
 
 
 if __name__ == "__main__":

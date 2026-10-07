@@ -304,3 +304,7 @@ It rejects unknown/ambiguous owners and changed signed graph members. Split
 FreeType packages can retain the same-version umbrella package notices. Native
 notice coverage still does not imply complete corresponding-source closure or
 license approval; those remain separate final binary gates.
+
+Explicitly licensed support libraries pass the same notice/provenance and
+GPL/LGPL corresponding-source checks as tools and models. A library cannot
+bypass that boundary merely because its payload role is `support`.
