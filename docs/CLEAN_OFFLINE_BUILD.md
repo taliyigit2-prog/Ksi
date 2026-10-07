@@ -297,3 +297,10 @@ or other dependency versions cannot replace each other's legal texts. The
 explicit component merger deduplicates only byte-identical, identical-metadata
 records; path/identifier/model-family collisions or changed pinned inputs fail
 before the merged destination is created. Ambient build files are never copied.
+
+The native attribution inventory binds every staged library to its exact locked
+archive's `info/paths.json`, original license texts and recipe/patch records.
+It rejects unknown/ambiguous owners and changed signed graph members. Split
+FreeType packages can retain the same-version umbrella package notices. Native
+notice coverage still does not imply complete corresponding-source closure or
+license approval; those remain separate final binary gates.
