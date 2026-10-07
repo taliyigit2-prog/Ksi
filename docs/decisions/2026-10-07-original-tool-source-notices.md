@@ -23,3 +23,12 @@ Universal Mach-O binaries must be inspected one architecture slice at a time.
 Inspecting a universal executable's default Go build information can describe
 its first slice rather than the requested host architecture. Intel inspection
 on an ARM machine does not establish native Intel functional acceptance.
+
+`stage_cargo_source_notices.py` preserves the registry archives whose original
+checksums occur in Deno's commit-bound `Cargo.lock`, together with their original
+legal texts and declared metadata. An isolated `cargo vendor --locked` source
+fetch does not compile or run crate build scripts. This inventory is explicitly
+a workspace-source superset: build/test-only crates are not automatically
+declared to be linked into the shipped executable. Missing legal text is listed
+as a gap, never replaced with an invented upstream grant. Changed archives,
+changed locks, other registries and unsafe notice members fail closed.
