@@ -2,6 +2,16 @@
   "schema_version": 1,
   "redistribution_review_complete": false,
   "sources": {
+    "ffmpeg-corresponding-source": {
+      "source_archive_sha256": "4a26df901e05368cbd522dd784ddbdcaf13c2c62bd748352f6208f3e2344113a",
+      "members": ["COPYING.GPLv2", "COPYING.GPLv3", "COPYING.LGPLv2.1", "COPYING.LGPLv3", "LICENSE.md"],
+      "pending_closure": ["Exact relocated executable and compiled GPL configuration binding"]
+    },
+    "imagemagick-corresponding-source": {
+      "source_archive_sha256": "d37bca661cf0f32e332471b13ff18d8046301fde3fc98219c62bec02ccb5bc75",
+      "members": ["LICENSE", "NOTICE"],
+      "pending_closure": ["Exact relocated executable and raster delegate configuration binding"]
+    },
     "piper-corresponding-source": {
       "source_archive_sha256": "70d062c1e80b0967b311f53e6036d9c78e146a6065d7444f3cec4a2fe85d2ea5",
       "members": ["COPYING", "src/piper/tashkeel/LICENSE", "src/piper/hebrew/LICENSE", "licenses/LICENSE.g2pW-Apache-2.0"],

@@ -1,6 +1,18 @@
 {
   "schema_version": 1,
   "inputs": {
+    "ffmpeg-corresponding-source": {
+      "type": "git", "version": "8.1.2", "revision": "n8.1.2",
+      "commit": "38b88335f99e76ed89ff3c93f877fdefce736c13",
+      "url": "https://github.com/FFmpeg/FFmpeg.git", "license": "GPL-2.0-or-later",
+      "notice_source_only": true
+    },
+    "imagemagick-corresponding-source": {
+      "type": "git", "version": "7.1.2-31", "revision": "7.1.2-31",
+      "commit": "fb965f1b54a65ddb633f8c2eac4452c782c66d7f",
+      "url": "https://github.com/ImageMagick/ImageMagick.git", "license": "ImageMagick",
+      "notice_source_only": true
+    },
     "piper-corresponding-source": {
       "type": "git", "version": "1.8.0", "revision": "v1.8.0",
       "commit": "639388b6317fc4731e91d53da42aea68fd4166ff",
