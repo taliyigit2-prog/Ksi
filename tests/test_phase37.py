@@ -135,21 +135,14 @@ class Phase37Tests(unittest.TestCase):
                     notarization_verifier=lambda _path: False,
                 )
 
-    def test_installer_verifies_payload_before_swap_and_creates_rollback_backup(self) -> None:
-        installer = (ROOT / "packaging/KSI-Local-Studio-installer").read_text()
-        builder = (ROOT / "scripts/build_personal_dmg.sh").read_text()
-        self.assertLess(installer.index("PAYLOAD_MANIFEST"), installer.index("RUNTIME_SWAPPED=true"))
-        self.assertIn("shasum -a 256", installer)
-        self.assertIn("create_release_backup", installer)
-        self.assertIn("verify_release_backup", installer)
-        self.assertIn("payload.sha256", builder)
-        self.assertIn("runtime_portability", builder)
-        self.assertIn("offline_complete", builder)
-        self.assertIn('"models_included": false', builder)
-        self.assertIn("MANIFEST_COUNT", installer)
-        self.assertIn("PAYLOAD_COUNT", installer)
-        self.assertEqual(installer.count("shasum -a 256 -c"), 1)
-        self.assertNotIn('shasum -a 256 "$candidate"', installer)
+    def test_offline_builder_verifies_payload_and_never_swaps_user_runtime(self) -> None:
+        builder = (ROOT / "src/ksi_local/dmg_transport.py").read_text()
+        self.assertLess(builder.index("payload.verify(entry)"), builder.index("destination.mkdir"))
+        self.assertIn('"models_included": True', builder)
+        self.assertIn('"installation_tested": False', builder)
+        self.assertIn('"/usr/bin/hdiutil", "verify"', builder)
+        self.assertNotIn("RUNTIME_SWAPPED", builder)
+        self.assertNotIn("Path.home()", builder)
 
     def test_offline_runtime_rejects_machine_external_python_links(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

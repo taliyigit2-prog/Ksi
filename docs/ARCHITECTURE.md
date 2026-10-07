@@ -31,6 +31,19 @@ requires autonomous acceptance instead of invented human scores. New binary
 release evidence is not yet available; do not interpret source checkpoints as
 successful cross-architecture, model-quality or installation verification.
 
+`autonomous_release` is the approved ad-hoc boundary. Every required automatic
+case is bound to the source commit, processor and exact offline manifest; named
+objective checks and zero unresolved privacy/license findings are mandatory.
+`distribution_integrity` mounts media read-only and compares a complete bundle
+inventory including the launcher and outer code seal with the accepted app.
+Matching checksums on self-described DMG files are not sufficient. Both native
+architectures must use the same final version; development versions remain gated.
+
+The old personal environment-copy installers are retired. The portable bundle
+launcher resolves its Python, tools and models relative to the application, checks
+the processor, sanitizes interpreter/plugin injection variables and does not use
+the predecessor's runtime. Source assembly never replaces an installed app.
+
 ```text
 GUI ─┐
 CLI ─┼─> KSI Core ─> jobs, storage, security and resource governor
@@ -154,8 +167,8 @@ and symbolic-link target and rejects unlisted payload members. A development run
 on Homebrew remains usable on its source Mac but is not a clean-Mac distribution artifact.
 ## Final release gate
 
-`final_release` is the non-destructive Phase 40 boundary. It inventories only regenerable
-development caches, build output, hidden environment dumps and obsolete distribution artifacts;
+`final_release` is the historical non-destructive Phase 40 boundary. Its revised
+cleanup preview inventories only regenerable development caches and obsolete distribution artifacts;
 it never deletes or moves them. Its protection list explicitly keeps project source, tests,
 documentation, local environments, workspace identity, user jobs, completed outputs, private
 catalogs, acceptance evidence and accepted models.

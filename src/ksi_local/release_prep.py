@@ -55,11 +55,11 @@ PUBLIC_SCRIPTS = (
     "scripts/cleanup_obsolete_stages.py",
     "scripts/stage_auxiliary_tools.py",
     "scripts/stage_transitive_notices.py",
+    "scripts/stage_v8_embedded_notices.py",
+    "scripts/native_acceptance_preflight.py",
     "scripts/build_app_icon.sh",
     "scripts/build_ocr_helper.sh",
-    "scripts/build_personal_dmg.sh",
     "scripts/build_public_source.py",
-    "scripts/install_macos_app.sh",
     "scripts/notarize_release.sh",
     "scripts/seal_offline_payload.py",
     "scripts/build_offline_dmg.py",
@@ -151,9 +151,12 @@ TEXT_SUFFIXES = {
 }
 SECRET_PATTERNS = (
     ("private-key", re.compile(r"-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----")),
-    ("github-token", re.compile(r"\b(?:ghp|github_pat)_[A-Za-z0-9_]{20,}\b")),
+    ("github-token", re.compile(r"\b(?:gh[pousr]|github_pat)_[A-Za-z0-9_]{20,}\b")),
     ("openai-key", re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b")),
-    ("aws-key", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
+    ("aws-key", re.compile(r"\b(?:AKIA|ASIA)[0-9A-Z]{16}\b")),
+    ("huggingface-token", re.compile(r"\bhf_[A-Za-z0-9]{25,}\b")),
+    ("google-key", re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b")),
+    ("slack-token", re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}\b")),
     ("credential-url", re.compile(r"https?://[^\s/:]+:[^\s/@]+@")),
     (
         "user-home",
@@ -178,6 +181,21 @@ SYNTHETIC_TEST_ALLOWLIST = {
     ("tests/test_phase4.py", "user-home"),
     ("tests/test_phase22_identity.py", "literal-workspace-id"),
 }
+
+
+def _synthetic_test_match(name: str, rule: str, matched: str) -> bool:
+    """A fixture exception never exempts an entire test file from scanning."""
+    if (name, rule) not in SYNTHETIC_TEST_ALLOWLIST:
+        return False
+    if rule == "credential-url":
+        return matched in {"https" + "://user:pass@", "https" + "://user:password@"}
+    if rule == "openai-key":
+        return matched == "sk-" + "abcdefghijklmnopqrstuvwxyz123456"
+    if rule == "user-home":
+        return matched == "/" + "Users/test/"
+    if rule == "literal-workspace-id":
+        return matched.split(":", 1)[1].strip().strip('"') == "test-workspace"
+    return False
 
 
 @dataclass(frozen=True)
@@ -247,6 +265,10 @@ def _iter_public_inputs(source: Path) -> Iterable[tuple[Path, Path]]:
     native_sources = source / "config/native-corresponding-sources.json"
     if native_sources.is_file():
         yield native_sources, Path("config/native-corresponding-sources.json")
+    for name in ("tool-source-notices.json", "v8-embedded-notices.json"):
+        path = source / "config" / name
+        if path.is_file():
+            yield path, Path("config") / name
 
 
 def _sanitized_configuration(source: Path, destination: Path) -> None:
@@ -397,7 +419,7 @@ def audit_public_tree(root: str | Path) -> tuple[AuditFinding, ...]:
             continue
         for rule, pattern in SECRET_PATTERNS:
             for match in pattern.finditer(text):
-                if (name, rule) in SYNTHETIC_TEST_ALLOWLIST:
+                if _synthetic_test_match(name, rule, match.group()):
                     continue
                 findings.append(AuditFinding(name, rule, text.count("\n", 0, match.start()) + 1))
         if "Video" + "TR" in text and name not in PREDECESSOR_ALLOWLIST:
@@ -466,7 +488,7 @@ def audit_git_history(repository: str | Path) -> tuple[AuditFinding, ...]:
                 continue
             for rule, pattern in SECRET_PATTERNS:
                 for match in pattern.finditer(text):
-                    if (name, rule) in SYNTHETIC_TEST_ALLOWLIST:
+                    if _synthetic_test_match(name, rule, match.group()):
                         continue
                     findings.append(
                         AuditFinding(

@@ -233,6 +233,12 @@ def assemble_app(repository: Path, runtime: Path, components: Path, specificatio
     voice.update(status="local-default", accepted_at=None)
     voice.pop("user_evaluation", None)
     voice["voice"]["description"] = "Local Turkish narrator · upstream built-in preset"
+    if architecture == "x86_64":
+        voice["engine"] = "piper-fettah-cpu"
+        voice["model"] = {"workspace_relative_directory": "models/tts/piper"}
+        voice["runtime"] = {"device": "cpu", "watermark": None}
+        voice["voice"].update(description="Turkish Fettah · CPU · no voice cloning",
+                               seed=0, exaggeration=0, cfg_weight=0)
     atomic_write_json(profile, voice, mode=0o644)
     for row in spec["files"]:
         origin = safe_member(components, row["path"])

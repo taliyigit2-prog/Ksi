@@ -89,6 +89,14 @@ class Phase36Tests(unittest.TestCase):
             self.assertIn("ksi-local-studio", names)
             self.assertIn("PySide6", names)
 
+    def test_fixture_allowlist_does_not_exempt_other_values_in_same_file(self) -> None:
+        from ksi_local.release_prep import _synthetic_test_match
+
+        known = "sk-" + "abcdefghijklmnopqrstuvwxyz123456"
+        unexpected = "sk-" + "z" * 40
+        self.assertTrue(_synthetic_test_match("tests/test_phase36.py", "openai-key", known))
+        self.assertFalse(_synthetic_test_match("tests/test_phase36.py", "openai-key", unexpected))
+
     def test_audit_rejects_secret_symlink_and_private_state(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

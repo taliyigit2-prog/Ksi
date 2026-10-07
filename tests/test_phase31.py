@@ -65,7 +65,7 @@ class Phase31Tests(unittest.TestCase):
 
     def test_private_catalog_is_ignored_and_not_packaged(self) -> None:
         gitignore = (ROOT / ".gitignore").read_text()
-        installer = (ROOT / "scripts/install_macos_app.sh").read_text()
+        installer = (ROOT / "src/ksi_local/app_assembly.py").read_text()
         self.assertIn("*.local.json", gitignore)
         self.assertNotIn("private-catalog.local.json", installer)
         self.assertIn("public-catalog.json", installer)

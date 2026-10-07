@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import plistlib
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -65,13 +66,19 @@ def build_dmg_transport(app: Path, destination: Path) -> dict:
             "Apple tarafından noterlenmemiş ad-hoc imzalı pakettir.\n"
             "macOS ilk açılış uyarısında Sistem Ayarları > Gizlilik ve Güvenlik yolunu kullanabilirsiniz.\n")
         image = destination / (name + ".dmg")
+        compressed = stage / (name + ".dmg")
         command = ["/usr/bin/hdiutil", "create", "-quiet", "-volname", "KSI Local Studio",
                    "-srcfolder", str(media), "-format", "UDZO", "-imagekey", "zlib-level=6"]
-        if sum(entry.size for entry in payload.files) >= GITHUB_ASSET_LIMIT:
-            # Create native UDIF segments directly, avoiding a second complete
-            # compressed copy while a multi-gigabyte monolithic image exists.
-            command.extend(["-segmentSize", "1800m"])
-        _command([*command, str(image)])
+        # macOS accepts create -segmentSize for device images, but may silently
+        # ignore it with -srcfolder. First verify the compressed image, then
+        # use the dedicated native segmentation operation (no recompression).
+        _command([*command, str(compressed)])
+        _command(["/usr/bin/hdiutil", "verify", str(compressed)])
+        if compressed.stat().st_size >= GITHUB_ASSET_LIMIT:
+            _command(["/usr/bin/hdiutil", "segment", "-quiet", "-segmentSize", "1800m",
+                      "-o", str(image), str(compressed)])
+        else:
+            shutil.copy2(compressed, image)
         _command(["/usr/bin/hdiutil", "verify", str(image)])
     parts = sorted(path for path in destination.iterdir() if path.suffix in {".dmg", ".dmgpart"})
     if not parts or sum(path.suffix == ".dmg" for path in parts) != 1:
@@ -82,6 +89,7 @@ def build_dmg_transport(app: Path, destination: Path) -> dict:
             raise RuntimeError("Dağıtım dosyası GitHub tek dosya sınırını aşıyor.")
         files.append({"filename": part.name, "size": part.stat().st_size, "sha256": digest_file(part)})
     report = {"schema_version": 1, "product": "KSI Local Studio", "version": version,
+        "source_commit": metadata.get("KSISourceCommit"),
         "architecture": architecture, "transport": "segmented-udif" if len(parts) > 1 else "udif",
         "models_included": True, "notarized": False, "app_signing": "ad-hoc",
         "installation_tested": False, "files": files,

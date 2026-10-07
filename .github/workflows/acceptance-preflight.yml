@@ -1,0 +1,27 @@
+name: Native acceptance resource preflight
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: macos-15-intel
+    timeout-minutes: 10
+    env:
+      PYTHONPATH: src
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Inspect actual Intel processor and available internal disk
+        run: python3 scripts/native_acceptance_preflight.py x86_64 build/native-acceptance-preflight.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: native-acceptance-preflight-x86_64
+          path: build/native-acceptance-preflight.json
+          if-no-files-found: error
+          retention-days: 3

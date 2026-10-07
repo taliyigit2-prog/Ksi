@@ -161,60 +161,38 @@ class PhaseNineteenPackagingTests(unittest.TestCase):
         self.assertEqual(installer_plist["CFBundleShortVersionString"], __version__)
         self.assertEqual(installer_plist["LSArchitecturePriority"], ["arm64"])
 
-    def test_daily_launcher_uses_private_runtime_without_project_path(self) -> None:
-        launcher = (ROOT / "packaging/KSI-Local-Studio-launcher").read_text(encoding="utf-8")
-        self.assertIn("Library/Application Support/KSI Local Studio/runtime", launcher)
+    def test_daily_launcher_uses_bundled_runtime_without_personal_path(self) -> None:
+        launcher = (ROOT / "packaging/KSI-Local-Studio-portable-launcher").read_text(encoding="utf-8")
+        self.assertIn('$KSI_APP_ROOT/Contents/Resources', launcher)
+        self.assertIn('$KSI_RESOURCES/runtime', launcher)
         self.assertIn("PYTHONNOUSERSITE=1", launcher)
         self.assertIn("PYTHONDONTWRITEBYTECODE=1", launcher)
         self.assertIn("OLLAMA_NO_CLOUD=true", launcher)
         self.assertNotIn("Desktop/Ceviri", launcher)
+        self.assertNotIn("Library/Application Support", launcher)
 
-    def test_dmg_contains_one_click_installer_and_keeps_models_on_ssd(self) -> None:
-        builder = (ROOT / "scripts/build_personal_dmg.sh").read_text(encoding="utf-8")
-        installer = (ROOT / "packaging/KSI-Local-Studio-installer").read_text(encoding="utf-8")
-        self.assertIn("KSI Local Studio Kur.app", builder)
-        self.assertIn(".payload/runtime", builder)
-        self.assertIn("Desktop/KSI Local Studio/1 - Programı Aç.app", installer)
-        self.assertIn("Önceki KSI Local Studio sürümü korundu", installer)
-        self.assertIn("Büyük yapay zekâ modelleri harici SSD üzerinde kaldı", installer)
-        self.assertNotIn("models/ollama", builder)
-        self.assertNotIn("models/whisper", builder)
-        self.assertGreaterEqual(builder.count("PYTHONDONTWRITEBYTECODE=1"), 4)
+    def test_dmg_embeds_models_and_uses_standard_applications_install(self) -> None:
+        builder = (ROOT / "src/ksi_local/dmg_transport.py").read_text(encoding="utf-8")
+        self.assertIn('entry.role == "model"', builder)
+        self.assertIn('symlink_to("/Applications")', builder)
+        self.assertIn('"models_included": True', builder)
+        for retired in ("scripts/build_personal_dmg.sh", "scripts/install_macos_app.sh",
+                        "packaging/KSI-Local-Studio-installer", "packaging/KSI-Local-Studio-launcher"):
+            self.assertFalse((ROOT / retired).exists())
 
-    def test_installers_refuse_to_swap_a_running_application(self) -> None:
-        personal_installer = (ROOT / "packaging/KSI-Local-Studio-installer").read_text(
-            encoding="utf-8"
-        )
-        developer_installer = (ROOT / "scripts/install_macos_app.sh").read_text(
-            encoding="utf-8"
-        )
-        for script in (personal_installer, developer_installer):
-            with self.subTest(script=script[:40]):
-                self.assertIn("app.lock", script)
-                self.assertIn("LOCK_EX | fcntl.LOCK_NB", script)
-                self.assertIn("local rollback_status=$?", script)
-                self.assertNotIn("local status=$?", script)
-                self.assertGreaterEqual(script.count("PYTHONDONTWRITEBYTECODE=1"), 4)
+    def test_builder_cannot_overwrite_an_existing_application(self) -> None:
+        assembler = (ROOT / "src/ksi_local/app_assembly.py").read_text(encoding="utf-8")
+        self.assertIn("destination.exists()", assembler)
+        self.assertIn("raise FileExistsError", assembler)
+        self.assertNotIn("rmtree", assembler)
 
-    def test_developer_installer_stages_and_audits_portable_python(self) -> None:
-        installer = (ROOT / "scripts/install_macos_app.sh").read_text(encoding="utf-8")
-        self.assertIn("KSI_PORTABLE_PYTHON_ROOT", installer)
-        self.assertIn("cpython-3.12.13-macos-aarch64-none", installer)
-        self.assertIn('"$STAGED_RUNTIME/python"', installer)
-        self.assertIn("prepare", installer)
-        self.assertIn("runtime_portability", installer)
-        self.assertIn(
-            'PYTHONDONTWRITEBYTECODE=1 "$STAGED_RUNTIME/venv/bin/python"',
-            installer,
-        )
-        self.assertIn(
-            'PYTHONDONTWRITEBYTECODE=1 "$STAGED_RUNTIME/python/bin/python3.12"',
-            installer,
-        )
-        self.assertLess(
-            installer.index("runtime_portability"),
-            installer.index("RUNTIME_SWAPPED=true"),
-        )
+    def test_developer_assembly_requires_clean_locked_native_inputs(self) -> None:
+        assembler = (ROOT / "src/ksi_local/app_assembly.py").read_text(encoding="utf-8")
+        self.assertIn("require_native_build_process()", assembler)
+        self.assertIn("validate_wheel_lock(wheel_lock)", assembler)
+        self.assertIn('provenance.get("wheel_lock_sha256") != lock_digest', assembler)
+        self.assertIn("seal_offline_payload(resources, spec)", assembler)
+        self.assertIn('"--verify", "--deep", "--strict"', assembler)
 
     def test_official_frozen_pilot_embeds_front_end_document_dependencies(self) -> None:
         spec = (ROOT / "packaging/pysidedeploy.spec").read_text(encoding="utf-8")

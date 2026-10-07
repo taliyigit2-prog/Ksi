@@ -53,14 +53,17 @@ def import_completed_jobs(database: Path, source: Path, destination: Path, *, wo
     with sqlite3.connect(f"file:{database.as_posix()}?mode=ro", uri=True) as connection:
         if connection.execute("PRAGMA quick_check").fetchone() != ("ok",):
             raise RuntimeError("Eski iş geçmişi bütünlük denetiminden geçmedi.")
-        rows = connection.execute("SELECT id, job_directory, status FROM jobs").fetchall()
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(jobs)")}
+        kind_column = "job_kind" if "job_kind" in columns else "'video'"
+        rows = connection.execute("SELECT id, job_directory, status, " + kind_column + " FROM jobs").fetchall()
     ready = []
-    for identifier, directory, status in rows:
+    for identifier, directory, status, kind in rows:
         raw = Path(directory)
         origin = raw.resolve()
         if not origin.is_relative_to(source / "jobs"):
             continue
-        if status != "completed" or raw.is_symlink() or not origin.is_dir() or origin.parent != source / "jobs":
+        if (status != "completed" or kind not in {"video", "document"}
+                or raw.is_symlink() or not origin.is_dir() or origin.parent != source / "jobs"):
             report["pending"].append(identifier)
             continue
         target = destination / origin.relative_to(source)

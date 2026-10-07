@@ -1,6 +1,6 @@
 # KSI Local Studio
 
-> Development notice (2026-10-06): the native sidebar redesign, Intel support
+> Development notice (2026-10-07): the native sidebar redesign, Intel support
 > and model-inclusive offline installers are under implementation. There is
 > no completed new binary release yet. See the
 > [accepted desktop scope](docs/decisions/2026-10-offline-desktop.md). Source
@@ -29,7 +29,11 @@ ChatGPT and cloud AI APIs are optional integrations, not runtime requirements.
 
 The supported baseline is a 16 GB Apple Silicon Mac. KSI Local Studio runs at most
 one memory-heavy model at a time and keeps models, jobs and large media outside the
-source repository in `KSI-Workspace`.
+source repository, on the internal system disk in `KSI-Workspace`. An external
+SSD is not required or selectable for active runtime storage. Existing external
+data is preserved; completed video/document jobs are copied with hash verification
+and a database backup when their original disk is available. Unfinished jobs and
+legacy tool jobs stay archived rather than silently resuming from old paths.
 
 ## Architecture
 
@@ -62,7 +66,12 @@ python -m venv .venv
 AI models are not included in the repository or installed by this command. The setup
 wizard shows required disk space before any optional model installation. A fully offline
 installer will be published only after its embedded Python runtimes pass the clean-Mac
-portability gate; the current ad-hoc personal package is not that artifact.
+portability gate and both native architectures pass automatic acceptance. The old
+personal-runtime copying installers have been retired; they are not a supported
+installation path. New media contains `KSI Local Studio.app`, installed by dragging
+it to Applications. Models are included, with no first-install network or Homebrew
+requirement. Large images use native DMG segments: download all parts into the same
+folder and open the primary `.dmg`.
 
 ## CLI and MCP
 
@@ -100,22 +109,19 @@ PYTHONPATH=src .venv/bin/python scripts/build_public_source.py /new/output/direc
 Read [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md) and
 [AGENTS.md](AGENTS.md) before contributing.
 
-The release gate includes a resumable, privacy-safe human acceptance ledger and a
-model-free reliability audit. Acceptance records never store source URLs, account
-sessions, file contents or user paths. The reliability probe uses only a temporary
-directory and validates policy consistency, atomic publication, malformed worker
-messages and the local-only network boundary.
-
-Phase 40 adds a non-destructive cleanup preview and a fail-closed release evidence gate. A package
-is not publishable unless it matches the current release-source fingerprint and has passed human
-acceptance, clean-install acceptance, public source/history audits, reviewed cleanup, Developer ID
-signing and Apple notarization. See `RELEASE_NOTES.md` for the candidate's current status.
-Manifest claims alone cannot satisfy the signing or notarization checks.
+The approved distribution uses explicitly ad-hoc signing, without Apple notarization.
+macOS may require approval in Privacy & Security on first launch. The separate
+`autonomous_release` gate requires both actual native Mac architectures, immutable
+source-bound automatic test evidence, privacy/license closure, verified models,
+signatures and inspection of the actual application inside every DMG. Development
+candidates and manifest claims alone cannot satisfy this gate. No human scores are
+invented or required from the user. Historical human/notarized APIs remain separate.
+See `RELEASE_NOTES.md` for the candidate's current status.
 
 ## Road map
 
-The project is preparing a notarized release candidate, completing manual acceptance on clean Macs,
-and a final privacy/license audit. Windows packaging is a separate
+The project is completing native Apple Silicon/Intel offline packaging, automatic
+acceptance, and a final privacy/license audit. Windows packaging is a separate
 portability project and does not delay macOS acceptance.
 
 ## Thanks

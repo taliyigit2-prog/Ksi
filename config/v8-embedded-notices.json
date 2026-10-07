@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "v8_source_id": "v8-embedded-source",
+  "notices": [
+    {
+      "id": "v8-icu",
+      "revision": "ee5f27adc28bd3f15b2c293f726d14d2e336cbd5",
+      "url": "https://chromium.googlesource.com/chromium/deps/icu.git/+/ee5f27adc28bd3f15b2c293f726d14d2e336cbd5/LICENSE?format=TEXT",
+      "sha256": "451167c55c0fa447cc2d5632714f5e3c567fe4f1e1badefab2c1333852198aca"
+    },
+    {
+      "id": "v8-zlib",
+      "revision": "3246f1b60849cc505e231c5d19d0cbf358093555",
+      "url": "https://chromium.googlesource.com/chromium/src/third_party/zlib.git/+/3246f1b60849cc505e231c5d19d0cbf358093555/LICENSE?format=TEXT",
+      "sha256": "e32ff4e00d9d94930537635291da39e7e612703334bf6fde8c7f1686fe8a45a2"
+    },
+    {
+      "id": "v8-abseil",
+      "revision": "d16e32215c3ab90ba57c2e904a5344d85c7353e4",
+      "url": "https://chromium.googlesource.com/chromium/src/third_party/abseil-cpp.git/+/d16e32215c3ab90ba57c2e904a5344d85c7353e4/LICENSE?format=TEXT",
+      "sha256": "c79a7fea0e3cac04cd43f20e7b648e5a0ff8fa5344e644b0ee09ca1162b62747"
+    }
+  ]
+}
