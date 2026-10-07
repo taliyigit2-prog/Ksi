@@ -1,0 +1,68 @@
+name: Native Intel candidate validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      input_tag:
+        description: Private draft tag holding the reviewed input parts
+        type: string
+        required: true
+      input_sha256:
+        description: Independently reviewed joined archive SHA-256
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  native-intel:
+    # Draft release visibility requires push access. This short-lived repository
+    # token is exposed only to the download step, never stored in input archives.
+    permissions:
+      contents: write
+    if: github.event.repository.visibility == 'public'
+    runs-on: macos-15-intel
+    timeout-minutes: 90
+    env:
+      PYTHONPATH: src
+      PYTHONDONTWRITEBYTECODE: '1'
+      KSI_INPUT_TAG: ${{ inputs.input_tag }}
+      KSI_INPUT_SHA256: ${{ inputs.input_sha256 }}
+      KSI_STATE_DIRECTORY: /private/tmp/ksi-native-intel-candidate-state
+      QT_QPA_PLATFORM: offscreen
+      HF_HUB_OFFLINE: '1'
+      TRANSFORMERS_OFFLINE: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Inspect actual native Intel processor and disk budget
+        run: |
+          python3 scripts/native_acceptance_preflight.py x86_64 build/preflight.json
+          python3 -c 'import json; assert json.load(open("build/preflight.json"))["disk_budget_sufficient"], "Insufficient native validation disk budget"'
+      - name: Retrieve only reviewed private draft input parts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$KSI_INPUT_TAG" --repo "$GITHUB_REPOSITORY" --dir build/input-transport --pattern 'native-intel-inputs.tar.gz.part*' --pattern transfer.json
+      - name: Verify every transfer part, archive member and component
+        run: python3 scripts/import_acceptance_inputs.py x86_64 build/input-transport build/native-inputs "$KSI_INPUT_SHA256"
+      - name: Assemble ad-hoc candidate on actual Intel processor
+        run: |
+          build/native-inputs/runtime/python/bin/python3.12 scripts/assemble_offline_app.py build/native-inputs/runtime build/native-inputs/components build/native-inputs/components/component-specification.json 'build/native-app/KSI Local Studio.app' > build/native-app-build.json
+      - name: Verify all committed source tests on native Intel
+        run: |
+          export PATH="$GITHUB_WORKSPACE/build/native-inputs/components/engines/media:$PATH"
+          build/native-inputs/runtime/python/bin/python3.12 -m unittest discover -s tests -v > build/native-unit-suite.log 2>&1
+      - name: Archive only small validation evidence, not an unapproved app
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: native-intel-candidate-evidence
+          path: |
+            build/preflight.json
+            build/native-app-build.json
+            build/native-unit-suite.log
+          if-no-files-found: error
+          retention-days: 3

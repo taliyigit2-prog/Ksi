@@ -81,6 +81,7 @@ PUBLIC_SCRIPTS = (
     "scripts/fetch_ollama_models.py",
     "scripts/import_native_artifact.py",
     "scripts/import_speech_artifact.py",
+    "scripts/import_acceptance_inputs.py",
     "scripts/lock_native_libraries.py",
     "scripts/lock_python_wheels.py",
     "scripts/prepare_native_component.py",
