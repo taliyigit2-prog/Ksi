@@ -13,6 +13,26 @@ from ksi_local.workspace_selection import change_workspace
 
 
 class InternalStorageTests(unittest.TestCase):
+    def test_explicit_database_cannot_create_external_state(self):
+        from ksi_local.job_store import JobStore
+        with self.assertRaises(RuntimeError):
+            JobStore("/Volumes/unmounted-fixture/KSI-State/jobs.sqlite3")
+
+    def test_explicit_database_preserves_symlink_target(self):
+        from ksi_local.job_store import JobStore
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary).resolve()
+            (base / "original").mkdir()
+            (base / "link").symlink_to(base / "original", target_is_directory=True)
+            with self.assertRaises(RuntimeError):
+                JobStore(base / "link/state/jobs.sqlite3")
+            self.assertFalse((base / "original/state").exists())
+
+    def test_explicit_database_requires_absolute_internal_path(self):
+        from ksi_local.job_store import JobStore
+        with self.assertRaises(RuntimeError):
+            JobStore("relative-fixture/jobs.sqlite3")
+
     def test_database_environment_cannot_reintroduce_external_disk(self):
         from ksi_local.job_store import default_database_path
         with patch.dict(os.environ, {"KSI_STATE_DIRECTORY": "/Volumes/unmounted-fixture/KSI-State"}):

@@ -139,7 +139,11 @@ def _now() -> str:
 
 class JobStore:
     def __init__(self, database_path: str | Path | None = None) -> None:
-        self.path = Path(database_path or default_database_path()).expanduser().resolve()
+        from ksi_local.internal_storage import validate_internal_path
+        raw_path = Path(database_path or default_database_path()).expanduser()
+        if not raw_path.is_absolute():
+            raise RuntimeError("İş veritabanı mutlak bir dahili disk yolu olmalıdır.")
+        self.path = validate_internal_path(raw_path)
         self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         try:
             self.path.parent.chmod(0o700)
