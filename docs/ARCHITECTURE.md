@@ -24,6 +24,8 @@ SQLite schema 6 adds `media` and `image` job kinds. Tool requests stay in privat
 job directories; persisted output paths cannot redirect publication outside the
 job's outputs. Existing review/dubbing actions are unavailable for tool jobs.
 Native processes have deadlines, cancellation and bounded/redacted diagnostics.
+Cancellation and absolute deadlines remain active even if a still-running motor
+closes its output streams; output EOF is never treated as process completion.
 Both default and explicitly injected job-database paths are validated as absolute
 internal-disk locations before directory creation or SQLite initialization.
 

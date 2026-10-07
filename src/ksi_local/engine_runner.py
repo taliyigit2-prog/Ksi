@@ -106,8 +106,19 @@ def run_engine(
                     if len(buffer) > 16384:
                         # A hostile/broken tool must not grow an unbounded line.
                         buffer = buffer[-8192:]
-            remaining = max(0.1, timeout - (time.monotonic() - started))
-            process.wait(timeout=remaining)
+            # EOF is not process completion: a tool may close both output
+            # streams and continue running. Keep cancellation and the same
+            # absolute deadline active until its owned process actually exits.
+            while process.poll() is None:
+                if cancel is not None and cancel.is_set():
+                    raise OperationCancelled("İşlem iptal edildi.")
+                remaining = timeout - (time.monotonic() - started)
+                if remaining <= 0:
+                    raise TimeoutError("Yerel motor süre sınırını aştı.")
+                try:
+                    process.wait(timeout=min(0.1, remaining))
+                except subprocess.TimeoutExpired:
+                    continue
         if buffer:
             lines.append(redact_sensitive_text(buffer.decode("utf-8", errors="replace")[:4096]))
         if process.returncode != 0:
