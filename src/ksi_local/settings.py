@@ -1,4 +1,4 @@
-"""Resolve the configured SSD by identity instead of its changeable display name."""
+"""Resolve an internal workspace; legacy external state is archived, not erased."""
 
 from __future__ import annotations
 
@@ -7,11 +7,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from ksi_local.migration import workspace_directory_candidates
-from ksi_local.project_metadata import WORKSPACE_DIRECTORY
-from ksi_local.storage import discover_mounted_volumes, validate_selected_workspace
-from ksi_local.tool_integrity import pinned_tool_version
 from ksi_local.atomic_files import atomic_write_json
+from ksi_local.internal_storage import validate_internal_path
 from ksi_local.bundle_runtime import OfflinePayload, bundle_root, host_architecture, safe_member, tool_path
 from ksi_local.workspace_management import (
     WorkspaceLocation, load_selection, new_internal_selection, save_selection,
@@ -48,81 +45,58 @@ class WorkspacePaths:
 
 def resolve_workspace(*, initialize: bool = False) -> WorkspacePaths:
     from ksi_local.workspace_access import workspace_access
-    initial_creation = initialize and load_selection() is None and not identity_file().exists()
+    selection = load_selection()
+    initial_creation = initialize and (selection is None or selection.workspace_location is WorkspaceLocation.EXTERNAL)
     with workspace_access(mutation=initial_creation):
         return _resolve_workspace(initialize=initialize)
 
 
 def _resolve_workspace(*, initialize: bool = False) -> WorkspacePaths:
     selection = load_selection()
+    if selection is not None and selection.workspace_location is WorkspaceLocation.EXTERNAL:
+        if not initialize:
+            raise RuntimeError("Eski harici çalışma alanı kaydı korunuyor; dahili kurulumu uygulamadan tamamlayın.")
+        from dataclasses import asdict
+        from ksi_local.workspace_management import selection_path
+
+        # Immutable original configuration remains private. No external disk
+        # has to be connected, and no legacy model/job/source is modified.
+        archive = selection_path().parent / "legacy-external-workspace.local.json"
+        original = {"schema_version": 1, **asdict(selection)}
+        if archive.exists():
+            if archive.is_symlink() or json.loads(archive.read_text(encoding="utf-8")) != original:
+                raise RuntimeError("Önceki çalışma alanı yedeği farklı; üzerine yazılmadı.")
+        else:
+            atomic_write_json(archive, original, mode=0o600)
+        selection = None
     if selection is not None:
-        if selection.workspace_location is WorkspaceLocation.EXTERNAL:
-            # A missing selected SSD never falls back to internal storage.
-            volumes = discover_mounted_volumes()
-            if not any(
-                volume.volume_uuid == selection.volume_uuid
-                and volume.workspace_id == selection.workspace_id
-                and volume.writable and volume.internal is False
-                and Path(selection.workspace_root).resolve().is_relative_to(Path(volume.mount_point).resolve())
-                for volume in volumes
-            ):
-                raise RuntimeError("Seçili harici çalışma alanı bağlı ve yazılabilir değil.")
+        validate_internal_path(Path(selection.workspace_root))
         return _selected_paths(Path(selection.workspace_root), selection.workspace_id)
-    if not identity_file().exists() and not os.environ.get("KSI_IDENTITY_FILE"):
+    if initialize or (not identity_file().exists() and not os.environ.get("KSI_IDENTITY_FILE")):
         if not initialize:
             raise RuntimeError("KSI çalışma alanı henüz kurulmadı; uygulamayı açarak ilk kurulumu tamamlayın.")
         selection = new_internal_selection()
         root = Path(selection.workspace_root)
-        if root.is_symlink() or (root.exists() and any(root.iterdir())):
-            raise RuntimeError("İlk kurulum hedefi boş değil; mevcut kullanıcı verisine dokunulmadı.")
-        root.mkdir(parents=True, exist_ok=True, mode=0o700)
-        atomic_write_json(safe_member(root, ".workspace-id"), {"workspace_id": selection.workspace_id})
+        validate_internal_path(root)
+        if root.exists() and any(root.iterdir()):
+            # Recovery after a crash between marker creation and selection
+            # persistence must adopt the same identity, not overwrite data.
+            from dataclasses import replace
+            from ksi_local.workspace_selection import marker_identity
+
+            selection = replace(selection, workspace_id=marker_identity(root))
+        else:
+            root.mkdir(parents=True, exist_ok=True, mode=0o700)
+            atomic_write_json(safe_member(root, ".workspace-id"), {"workspace_id": selection.workspace_id})
         # Persist before model copying: an interrupted install resumes this same
         # workspace rather than generating a new identity over existing files.
         save_selection(selection)
         return _selected_paths(root, selection.workspace_id)
-    try:
-        identity = json.loads(identity_file().read_text(encoding="utf-8"))
-        expected_uuid = str(identity["volume_uuid"])
-        expected_workspace_id = str(identity["workspace_id"])
-    except (OSError, ValueError, KeyError) as error:
-        raise RuntimeError("KSI Local Studio SSD kimlik ayarı okunamadı.") from error
-
-    selected = None
-    for volume in discover_mounted_volumes():
-        valid, _ = validate_selected_workspace(
-            volume,
-            expected_volume_uuid=expected_uuid,
-            expected_workspace_id=expected_workspace_id,
-        )
-        if valid:
-            selected = volume
-            break
-    if selected is None:
-        raise RuntimeError("KSI Local Studio için ayarlanan harici SSD bağlı ve yazılabilir değil.")
-
-    root = next(
-        (candidate for candidate in workspace_directory_candidates(Path(selected.mount_point)) if candidate.is_dir()),
-        Path(selected.mount_point) / WORKSPACE_DIRECTORY,
-    )
-    if bundle_root() is not None:
-        return _selected_paths(root, expected_workspace_id)
-    yt_dlp = root / "tools" / "yt-dlp" / pinned_tool_version("yt-dlp") / "yt-dlp"
-    deno = root / "tools" / "deno" / pinned_tool_version("deno") / "deno"
-    if not yt_dlp.is_file() or not deno.is_file():
-        raise RuntimeError("SSD üzerindeki doğrulanmış yt-dlp veya Deno aracı bulunamadı.")
-    return WorkspacePaths(
-        root=root,
-        jobs=root / "jobs",
-        outputs=root / "outputs",
-        models_ollama=root / "models" / "ollama",
-        models_whisper=root / "models" / "whisper" / "large-v3-turbo-8bit",
-        yt_dlp=yt_dlp,
-        deno=deno,
-    )
+    raise RuntimeError("Eski depolama kaydı korunuyor; dahili kurulumu uygulamadan tamamlayın.")
 
 
 def _selected_paths(root: Path, workspace_id: str) -> WorkspacePaths:
+    validate_internal_path(root)
     if root.is_symlink():
         raise RuntimeError("Çalışma alanı kökü sembolik bağlantı olamaz.")
     if not root.is_absolute():

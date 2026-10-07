@@ -14,7 +14,8 @@ Argos imports only occur inside the dedicated local-only worker.
 `bundle_runtime` validates architecture, paths, sizes and SHA-256 hashes without
 network access. Packaged tools never fall back to Homebrew. First-run internal
 workspace selection is persisted before model copying, so an interrupted copy
-can resume. A selected missing external volume never becomes an internal one.
+can resume. Active workspaces are internal-only. Previously selected external
+configuration is archived privately; it cannot block a new internal setup.
 In-process model install caching is invalidated by manifest/file size/mtime
 changes; hashes are verified on initial use and again when an AI worker loads
 the selected model.
@@ -58,8 +59,9 @@ revalidate output paths against the active workspace.
 `ksi_local.workspace_management` keeps application placement separate from the
 jobs/models/cache workspace selection. Machine identity remains outside source
 control. Workspace relocation is staged, SHA-256 verified, atomically promoted,
-and non-destructive to the source. Missing removable storage never triggers an
-implicit internal workspace.
+and non-destructive to the source. The 2026-10-07 approved revision removes
+external runtime storage. Legacy data remains untouched; historical paths must
+be migrated with a database backup rather than simply renaming folders.
 
 `ksi_local.providers` is the GUI-independent source boundary. It exposes common
 inspect, authorize, download, progress, stop and resume capabilities while the

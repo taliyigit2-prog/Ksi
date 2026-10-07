@@ -5,7 +5,7 @@ import uuid
 from pathlib import Path
 
 from ksi_local.atomic_files import atomic_write_json
-from ksi_local.storage import discover_mounted_volumes
+from ksi_local.internal_storage import validate_internal_path
 from ksi_local.workspace_access import workspace_access
 from ksi_local.workspace_management import ApplicationLocation, WorkspaceLocation, WorkspaceSelection, relocate_workspace, save_selection
 
@@ -29,13 +29,7 @@ def change_workspace(target: Path, *, relocate_from: Path | None = None, volumes
     if target == Path("/") or target.is_symlink() or any(parent.is_symlink() for parent in target.parents):
         raise ValueError("Yeni çalışma alanı normal, mutlak ve ayrı bir klasör olmalıdır.")
     with workspace_access(mutation=True):
-        discovered = discover_mounted_volumes() if volumes is None else volumes
-        external = [volume for volume in discovered if volume.internal is False and target.is_relative_to(Path(volume.mount_point).resolve())]
-        volume = max(external, key=lambda item: len(item.mount_point)) if external else None
-        if target.is_relative_to(Path("/Volumes")) and volume is None:
-            raise RuntimeError("Seçilen harici disk bağlı ve kimliği doğrulanabilir değil.")
-        if volume is not None and (not volume.suitable_external_workspace or target == Path(volume.mount_point).resolve()):
-            raise RuntimeError("Harici çalışma alanı yazılabilir, UUID’li ve yeterli boş alana sahip bir disk alt klasörü olmalıdır.")
+        validate_internal_path(target)
         if relocate_from is not None:
             origin = relocate_from.expanduser().absolute()
             expected = marker_identity(origin)
@@ -55,7 +49,7 @@ def change_workspace(target: Path, *, relocate_from: Path | None = None, volumes
             target.mkdir(parents=True, mode=0o700)
             atomic_write_json(target / ".workspace-id", {"workspace_id": str(uuid.uuid4())})
         selection = WorkspaceSelection(application_location=ApplicationLocation.USER_APPLICATIONS,
-            workspace_location=WorkspaceLocation.EXTERNAL if volume else WorkspaceLocation.INTERNAL,
-            workspace_root=str(target), workspace_id=marker_identity(target), volume_uuid=volume.volume_uuid if volume else None)
+            workspace_location=WorkspaceLocation.INTERNAL,
+            workspace_root=str(target), workspace_id=marker_identity(target), volume_uuid=None)
         save_selection(selection)
         return selection

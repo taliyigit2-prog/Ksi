@@ -51,6 +51,8 @@ PUBLIC_DOCUMENTS = (
     "docs/migration-from-predecessor.md",
 )
 PUBLIC_SCRIPTS = (
+    "scripts/audit_github_artifacts.py",
+    "scripts/cleanup_obsolete_stages.py",
     "scripts/build_app_icon.sh",
     "scripts/build_ocr_helper.sh",
     "scripts/build_personal_dmg.sh",

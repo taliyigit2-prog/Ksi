@@ -846,7 +846,6 @@ class FirstRunWizard(QDialog):
         self.application_location.addItem(t("first.app_system"), "system_applications")
         self.workspace_location = QComboBox()
         self.workspace_location.addItem(t("first.workspace_internal"), "internal")
-        self.workspace_location.addItem(t("first.workspace_external"), "external")
         self.application_location.setCurrentIndex(
             max(0, self.application_location.findData(application_location))
         )
@@ -1300,7 +1299,7 @@ class MainWindow(QMainWindow):
         self.progress.setRange(0, 1)
         self.progress.setValue(0)
         layout.addWidget(self.progress)
-        self.status = QLabel("SSD denetleniyor…")
+        self.status = QLabel("disk denetleniyor…")
         self.status.setTextFormat(Qt.TextFormat.PlainText)
         layout.addWidget(self.status)
         self.log = QPlainTextEdit()
@@ -1336,7 +1335,7 @@ class MainWindow(QMainWindow):
         self.add_outputs_button = QPushButton("Eksik Çıktıları Ekle")
         self.add_outputs_button.setEnabled(False)
         self.add_outputs_button.clicked.connect(self._add_outputs_selected)
-        self.cleanup_button = QPushButton("SSD Ara Dosyalarını Temizle")
+        self.cleanup_button = QPushButton("disk Ara Dosyalarını Temizle")
         self.cleanup_button.setEnabled(False)
         self.cleanup_button.clicked.connect(self._cleanup_selected)
         history_actions.addWidget(self.cleanup_button)
@@ -1570,7 +1569,7 @@ class MainWindow(QMainWindow):
         self.status.setAccessibleName("İşlem durumu")
         progress_layout.addWidget(self.status)
         self.job_context_label = QLabel(
-            "Henüz iş seçilmedi • Dil: — • Çıktı: — • Depolama: harici SSD"
+            "Henüz iş seçilmedi • Dil: — • Çıktı: — • Depolama: dahili disk"
         )
         self.job_context_label.setObjectName("hintLabel")
         self.job_context_label.setWordWrap(True)
@@ -4345,7 +4344,7 @@ class MainWindow(QMainWindow):
 
     def _launch_document_extraction(self, record: JobRecord) -> None:
         if self.workspace is None:
-            raise RuntimeError("Harici SSD kullanılamıyor.")
+            raise RuntimeError("Dahili disk kullanılamıyor.")
         if record.job_kind is not JobKind.DOCUMENT:
             raise ValueError("Seçilen iş bir belge işi değil.")
         job_directory = Path(record.job_directory).expanduser().resolve()
@@ -4437,7 +4436,7 @@ class MainWindow(QMainWindow):
             record.job_kind is not JobKind.DOCUMENT
             or not job_directory.is_relative_to(self.workspace.jobs.resolve())
         ):
-            raise RuntimeError("Belge çeviri işi güvenli SSD çalışma alanının dışında.")
+            raise RuntimeError("Belge çeviri işi güvenli disk çalışma alanının dışında.")
         canonical = job_directory / "work/belge-kaynagi.jsonl"
         if (
             canonical.is_symlink()
@@ -4493,13 +4492,13 @@ class MainWindow(QMainWindow):
 
     def _document_summary_command(self, record: JobRecord) -> PendingCommand:
         if self.workspace is None:
-            raise RuntimeError("Harici SSD kullanılamıyor.")
+            raise RuntimeError("Dahili disk kullanılamıyor.")
         job_directory = Path(record.job_directory).expanduser().resolve()
         if (
             record.job_kind is not JobKind.DOCUMENT
             or not job_directory.is_relative_to(self.workspace.jobs.resolve())
         ):
-            raise RuntimeError("Belge özet işi güvenli SSD çalışma alanının dışında.")
+            raise RuntimeError("Belge özet işi güvenli disk çalışma alanının dışında.")
         canonical = job_directory / "work/belge-kaynagi.jsonl"
         if (
             canonical.is_symlink()
@@ -4711,7 +4710,7 @@ class MainWindow(QMainWindow):
             candidate = Path(existing_job.job_directory).expanduser().resolve()
             if not candidate.is_relative_to(self.workspace.jobs.resolve()):
                 raise RuntimeError(
-                    "Kayıtlı iş klasörü doğrulanmış SSD çalışma alanının dışında."
+                    "Kayıtlı iş klasörü doğrulanmış disk çalışma alanının dışında."
                 )
             self.current_job = candidate
         self.current_job_id = job_id
@@ -4929,7 +4928,7 @@ class MainWindow(QMainWindow):
         if output.is_file():
             return True
         raise RuntimeError(
-            f"{stage} aşaması tamamlanmış görünüyor ancak çıktı dosyası SSD'de yok."
+            f"{stage} aşaması tamamlanmış görünüyor ancak çıktı dosyası diskte yok."
         )
 
     def _append_processing_commands(self) -> None:

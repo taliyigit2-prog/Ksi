@@ -2,9 +2,9 @@
 
 ## Başlamadan önce
 
-1. `Yiğit` adlı harici SSD'yi bağlayın.
-2. Masaüstündeki `KSI Local Studio` klasörünü açıp `1 - Programı Aç.app` uygulamasını çalıştırın.
-3. Alt bölümde `Hazır — SSD: ...` mesajını bekleyin.
+1. Uygulamayı bilgisayarın dahili diskindeki Applications klasöründen açın.
+2. İlk kurulum dahili çalışma alanını oluşturur; harici disk bağlamanız gerekmez.
+3. Alt bölümde `Hazır` mesajını bekleyin.
 4. İlk kullanımda `Sistem Durumu` düğmesiyle araçları ve modelleri kontrol edin.
 
 Arayüz dili üst bölümden Türkçe, Rusça, İngilizce, İspanyolca, Almanca, Fransızca, İtalyanca
@@ -12,7 +12,7 @@ veya Basitleştirilmiş Çince olarak değiştirilebilir. Seçim yeniden açıl�
 içeriğin diliyle bağımsızdır.
 
 `Sistem Durumu` hızlı kontrolde model dosyalarının varlığını ve boyutlarını denetler. `Modelleri
-Tam Doğrula` yaklaşık 12 GiB veriyi SSD'den okuyup SHA-256 karşılaştırması yapar. Bu işlem modeli
+Tam Doğrula` yaklaşık 12 GiB veriyi diskten okuyup SHA-256 karşılaştırması yapar. Bu işlem modeli
 belleğe yüklemez ve yapay zekâ çalıştırmaz; yalnız gerektiğinde yapılmalıdır.
 
 ## Normal kullanım
@@ -21,7 +21,7 @@ Bir YouTube/X bağlantısı yapıştırın veya MP4, MKV, MOV, WEBM, SRT, VTT, P
 dosyasını sürükleyin. Kaynak dilini bilmiyorsanız `Dili otomatik algıla` seçili kalsın. `Sadece indir`,
 `Türkçe altyazı`, `Türkçe yazılı özet` ve `Türkçe dublaj` seçeneklerinden gerekenleri işaretleyin.
 
-`İncele` yalnız başlık, süre, mevcut altyazı ve SSD bütçesini denetler. İndirme, ön inceleme
+`İncele` yalnız başlık, süre, mevcut altyazı ve disk bütçesini denetler. İndirme, ön inceleme
 penceresinde `Onayla ve Başlat` seçilmeden başlamaz. İş bittikten sonra çıktıyı inceleyebilir,
 Mac'e doğrulanmış biçimde kopyalayabilir veya eksik çıktı türünü aynı işten ekleyebilirsiniz.
 
@@ -62,7 +62,7 @@ mevcut klasör değişmez; yeni kopya `(2)`, `(3)` adıyla oluşturulur ve Finde
 - Türkçe belge çevirisi için TXT, yapıyı koruyan Markdown, düzenli DOCX ve gömülü fontlu PDF
 - Masaüstü, Belgeler veya seçilen dahili klasöre doğrulanmış ve çakışmasız kopyalama
 - Türkçe SRT, zaman kodlu Markdown özet ve düşük tonlu erkek sesli dublaj
-- İş kesilmesi veya SSD'nin ayrılmasından sonra güvenli yeniden deneme
+- İş kesilmesi veya disk erişim hatasından sonra güvenli yeniden deneme
 
 ## Bilinen sınırlar
 
@@ -90,16 +90,18 @@ mevcut klasör değişmez; yeni kopya `(2)`, `(3)` adıyla oluşturulur ve Finde
 
 ## Depolama ve temizlik
 
-Büyük modeller, kaynak video ve sonuçlar SSD'de kalır. Program SSD yokken büyük veriyi iç diske
-sessizce taşımaz. SSD'de en az 20 GiB güvenlik payı korunur. Son kabulde üç saatlik 1080p üst sınır
+Modeller, kaynak video ve sonuçlar bilgisayarın dahili diskinde tutulur. Çalışma alanı
+`Library/Application Support/KSI Local Studio/KSI-Workspace` altındadır. Eski harici disk
+ayarları ve dosyaları korunur; yeni kurulum eski diskin bağlanmasını gerektirmez.
+Dahili diskte en az 20 GiB güvenlik payı korunur. Önceki kabulde üç saatlik 1080p üst sınır
 senaryosu modeller önceden kuruluyken yaklaşık 49,0 GiB çalışma + güvenlik alanı gerektirdi.
 
-`SSD Ara Dosyalarını Temizle` yalnız seçili ve tamamlanmış işin yeniden üretilebilir dublaj
+`Disk Ara Dosyalarını Temizle` yalnız seçili ve tamamlanmış işin yeniden üretilebilir dublaj
 segmentlerini, geçici PCM sesini ve yarım checkpoint dosyalarını listeler. Kaynak video, kaynak
 transkript, Türkçe altyazı, özet ve final dublaj otomatik silinmez. Liste gösterilmeden ve siz açıkça
 onaylamadan temizlik yapılmaz.
 
-Mac'e kopyalama SSD'deki kaynağı silmez. Dosya boyutu ve SHA-256 doğrulanmadan görünür hedef
+Mac'e kopyalama diskteki kaynağı silmez. Dosya boyutu ve SHA-256 doğrulanmadan görünür hedef
 oluşturulmaz; hedefte 2 GiB güvenlik payı bırakılır. Masaüstü iCloud ile eşitleniyorsa büyük videolar
 Apple hesabınıza yüklenebilir.
 
@@ -127,7 +129,7 @@ kalıcı loglara yazılmaz. Codex paketi video/ses içermez; yalnız doğrulanm�
 
 ## Sorun olduğunda
 
-- SSD görünmüyorsa çıkarıp yeniden bağlayın ve `Hazır` mesajını bekleyin.
+- Disk erişim hatasında boş alanı ve çalışma klasörünün erişim izinlerini kontrol edin.
 - Araç/model hatasında `Sistem Durumu` ekranını açın; eksik görünen bileşenin adını not edin.
 - Yarım iş için geçmişten işi seçip `Seçili İşi Yeniden Dene` düğmesini kullanın.
 - Udemy/X oturum hatasında ana tarayıcı profilini değil ayrı profili yeniden seçin.

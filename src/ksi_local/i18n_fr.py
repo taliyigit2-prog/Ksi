@@ -46,7 +46,7 @@ CATALOG = {'header.subtitle': 'Traduire des vidéos ou des documents — entièr
  'button.start': 'Revoir et démarrer',
  'group.progress': 'Traitement et résultats',
  'status.checking': "Vérification de l'espace de stockage…",
- 'context.none': 'Aucune tâche sélectionnée • Langue : — • Sortie : — • Stockage : SSD externe',
+ 'context.none': 'Aucune tâche sélectionnée • Langue : — • Sortie : — • Stockage : disque interne',
  'button.stop': '■  Arrêter la tâche en cours',
  'log.placeholder': "Les détails du traitement s'affichent ici.",
  'results.ready': 'Résultats prêts',
@@ -110,11 +110,11 @@ CATALOG = {'header.subtitle': 'Traduire des vidéos ou des documents — entièr
  'system.check': 'Revue nécessaire',
  'system.close': 'Fermer',
  'system.verify': 'Vérifier complètement les modèles',
- 'system.open_storage': 'Ouvrir le dossier SSD',
- 'system.explanation': "Les outils, le SSD externe, les modèles locaux, la signature de l'application et les "
+ 'system.open_storage': 'Ouvrir le dossier disk',
+ 'system.explanation': "Les outils, le disque interne, les modèles locaux, la signature de l'application et les "
                        "candidats à un nettoyage sûr sont affichés ci-dessous. L'IA n'est pas exécutée "
                        'pendant que ce écran est ouvert.',
- 'system.note': 'La vérification complète lit environ 12 GiB de fichiers de modèle à partir du SSD pour les '
+ 'system.note': 'La vérification complète lit environ 12 GiB de fichiers de modèle à partir du disk pour les '
                 'vérifications SHA-256 ; elle ne charge pas les modèles en mémoire.',
  'preflight.document_title': 'Revue de la sécurité des documents',
  'preflight.download_title': 'Télécharger la revue',
@@ -134,7 +134,7 @@ CATALOG = {'header.subtitle': 'Traduire des vidéos ou des documents — entièr
  'preflight.blocked': 'Bloqué',
  'preflight.hash': 'SHA-256',
  'preflight.outputs': 'Sorties demandées',
- 'preflight.free_space': 'Espace SSD libre',
+ 'preflight.free_space': 'Espace disk libre',
  'preflight.detect_later': "Détecté automatiquement à l'étape suivante",
  'preflight.ocr_measure': "Mesuré pendant l'extraction de texte",
  'preflight.ocr_pages': 'Peut être nécessaire sur environ {count} pages',
@@ -212,20 +212,20 @@ CATALOG = {'header.subtitle': 'Traduire des vidéos ou des documents — entièr
                        'façon\xa0?',
  'export.copying': 'Vérification et copie des résultats sur le Mac…',
  'export.incomplete': "La copie n'a pas pu être terminée.",
- 'export.retry_action': "Vérifiez le SSD et l'espace libre de destination, puis appuyez à nouveau sur Copier "
+ 'export.retry_action': "Vérifiez le disk et l'espace libre de destination, puis appuyez à nouveau sur Copier "
                         'vers Mac.',
- 'export.source_preserved': "La source sur le SSD a été conservée\xa0; aucune destination partielle n'a été "
+ 'export.source_preserved': "La source sur le disk a été conservée\xa0; aucune destination partielle n'a été "
                             'laissée visible.',
  'export.copied_title': 'Copie terminée',
  'export.copied_status': 'Copie vérifiée vers Mac\xa0: {name}',
- 'export.copied_body': 'La taille et le SHA-256 ont été vérifiés. La source reste sur le SSD.\n'
+ 'export.copied_body': 'La taille et le SHA-256 ont été vérifiés. La source reste sur le disk.\n'
                        '\n'
                        '{destination}',
  'cleanup.not_ready_title': "Le nettoyage n'est pas prêt",
  'cleanup.not_verified': "La tâche sélectionnée n'est pas terminée et vérifiée.",
  'cleanup.select_action': 'Sélectionnez une tâche de stockage terminée et démarrez le nettoyage à nouveau.',
  'cleanup.inspect_failed_title': "Le nettoyage n'a pas pu être vérifié",
- 'cleanup.retry_action': 'Vérifiez la connexion du SSD et réessayez la suppression.',
+ 'cleanup.retry_action': 'Vérifiez la connexion du disk et réessayez la suppression.',
  'cleanup.none_title': "Aucune suppression n'est nécessaire",
  'cleanup.none_body': "Aucun fichier intermédiaire sûr n'a été trouvé.",
  'cleanup.more': '• … et {count} autres fichiers',
@@ -255,7 +255,7 @@ CATALOG = {'header.subtitle': 'Traduire des vidéos ou des documents — entièr
  'window.busy_body': "Gardez KSI Local Studio ouvert jusqu'à la copie vérifiée, la suppression ou la fin de "
                      'la vérification du système.',
  'review_package.create_failed': 'Impossible de créer le paquet de revue',
- 'review_package.create_action': 'Vérifiez la connexion SSD et de bureau, puis créez le paquet à nouveau.',
+ 'review_package.create_action': 'Vérifiez la connexion disk et de bureau, puis créez le paquet à nouveau.',
  'review_package.ready_title': 'Paquet de revue prêt',
  'review_package.ready': 'Le paquet de revue a été copié sur le bureau. Vous pouvez donner ce dossier à '
                          'Codex ou à un autre éditeur de texte ; lorsque la correction est terminée, '
@@ -290,7 +290,7 @@ CATALOG = {'header.subtitle': 'Traduire des vidéos ou des documents — entièr
  'review_package.undo_title': 'Annuler la dernière correction',
  'review_package.undo_confirm': 'Restaurer les fichiers à partir de la dernière correction externe\xa0?',
  'review_package.undo_failed': "La correction n'a pas pu être annulée",
- 'review_package.undo_action': 'Vérifier que les sorties de la tâche se trouvent sur le SSD et réessayer '
+ 'review_package.undo_action': 'Vérifier que les sorties de la tâche se trouvent sur le disk et réessayer '
                                "d'annuler.",
  'review_package.undo_dub_status': "Le texte a été restauré\xa0; le doublage n'a pas pu être mis à jour\xa0: "
                                    '{message}',
@@ -303,7 +303,7 @@ CATALOG = {'header.subtitle': 'Traduire des vidéos ou des documents — entièr
  'media.document_text_open_failed': "Le texte du document n'a pas pu être ouvert.",
  'media.viewer_failed': "L'affichage de texte local n'a pas pu être démarré.",
  'media.document_text_action': 'Ouvrir manuellement belge-kaynagi.txt depuis le dossier de la tâche sur le '
-                               'SSD.',
+                               'disk.',
  'media.subtitle_missing_title': 'Sous-titres non trouvés',
  'media.subtitle_missing': "Cette tâche n'a pas encore de sous-titres en turc.",
  'media.subtitle_open_failed': "Les sous-titres n'ont pas pu être ouverts.",
@@ -316,9 +316,9 @@ CATALOG = {'header.subtitle': 'Traduire des vidéos ou des documents — entièr
  'media.dub_missing': "Cette tâche n'a pas encore de vidéo doublée en turc.",
  'media.dub_open_failed': "La vidéo doublée n'a pas pu être ouverte.",
  'media.player_failed': "Le lecteur vidéo n'a pas pu être démarré.",
- 'media.dub_action': 'Ouvrir manuellement turkce-dublaj.mp4 depuis le SSD dans Finder.',
+ 'media.dub_action': 'Ouvrir manuellement turkce-dublaj.mp4 depuis le disk dans Finder.',
  'job.retry_failed': "La tâche n'a pas pu être relancée",
- 'job.retry_action': "Vérifier la connexion du SSD et réessayer la tâche depuis l'historique.",
+ 'job.retry_action': "Vérifier la connexion du disk et réessayer la tâche depuis l'historique.",
  'job.add_outputs_title': 'Ajouter les sorties manquantes',
  'job.add_outputs_body': 'Les téléchargements et transcript existants seront réutilisés. Ajouter\xa0: '
                          '{outputs}. Continuer\xa0?',
@@ -326,7 +326,7 @@ CATALOG = {'header.subtitle': 'Traduire des vidéos ou des documents — entièr
  'job.add_summary': 'Résumé turc avec horodatage',
  'job.add_dub': 'Doublage turc',
  'job.add_outputs_failed': "Impossible d'ajouter les sorties",
- 'job.add_outputs_action': 'Vérifiez la connexion du SSD et réessayez Ajouter les sorties manquantes.',
+ 'job.add_outputs_action': 'Vérifiez la connexion du disk et réessayez Ajouter les sorties manquantes.',
  'file.choose_source': 'Choisissez une vidéo, un sous-titre ou un document',
  'file.supported': 'Formats pris en charge (*.mp4 *.mkv *.mov *.webm *.srt *.vtt *.txt *.md *.pdf *.docx)',
  'report.ready': 'PRÊT',
@@ -578,10 +578,10 @@ JOB_TERMS = {'video': 'Vidéo',
  'language': 'Langue',
  'output': 'Sortie',
  'storage': 'Stockage',
- 'external_ssd': 'SSD externe',
+ 'external_ssd': 'disque interne',
  'queued': 'En attente',
  'running': 'En cours',
- 'waiting_for_ssd': 'En attente de SSD',
+ 'waiting_for_ssd': 'En attente de disk',
  'paused': 'En pause',
  'cancelled': 'Arrêté',
  'failed': 'Échec',

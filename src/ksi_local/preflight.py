@@ -165,7 +165,7 @@ def _inspect_document(
     if inspection.blocking_reasons:
         warnings.extend(f"ENGELLENDİ: {item}" for item in inspection.blocking_reasons)
     if free_bytes < required:
-        warnings.append("SSD'de belge kopyası ve 20 GiB güvenlik payı için alan yetersiz.")
+        warnings.append("disk'de belge kopyası ve 20 GiB güvenlik payı için alan yetersiz.")
     return PreflightResult(
         source_kind="document",
         platform="Yerel belge",
@@ -360,7 +360,7 @@ def inspect_source(
             processing_requested=processing_requested,
         )
         if not budget.fits:
-            raise RuntimeError("Yerel video için SSD güvenlik payı yetersiz.")
+            raise RuntimeError("Yerel video için disk güvenlik payı yetersiz.")
         return PreflightResult(
             source_kind="file",
             platform="Yerel video",
@@ -480,7 +480,7 @@ def inspect_source(
         fitting = [item.height for item in choices if item.fits]
         if not fitting:
             raise RuntimeError(
-                f"{index}. video için hiçbir kalite 20 GiB SSD güvenlik payını koruyamıyor."
+                f"{index}. video için hiçbir kalite 20 GiB disk güvenlik payını koruyamıyor."
             )
         media_metadata.append(metadata)
         built_media.append(

@@ -45,7 +45,7 @@ CATALOG = {'header.subtitle': 'Videos oder Dokumente übersetzen – vollständi
  'button.start': 'Überprüfen und starten',
  'group.progress': 'Verarbeitung und Ergebnisse',
  'status.checking': 'Speicherplatz prüfen…',
- 'context.none': 'Kein Projekt ausgewählt • Sprache: — • Ausgabe: — • Speicher: externer SSD',
+ 'context.none': 'Kein Projekt ausgewählt • Sprache: — • Ausgabe: — • Speicher: interne Festplatte',
  'button.stop': '■  Job stoppen',
  'log.placeholder': 'Verarbeitungsinformationen werden hier angezeigt.',
  'results.ready': 'Fertige Ergebnisse',
@@ -109,11 +109,11 @@ CATALOG = {'header.subtitle': 'Videos oder Dokumente übersetzen – vollständi
  'system.check': 'Überprüfung erforderlich',
  'system.close': 'Schließen',
  'system.verify': 'Modelle vollständig verifizieren',
- 'system.open_storage': 'SSD-Ordner öffnen',
- 'system.explanation': 'Werkzeuge, externer SSD, lokale Modelle, Anwendungsunterschrift und sichere '
+ 'system.open_storage': 'disk-Ordner öffnen',
+ 'system.explanation': 'Werkzeuge, interne Festplatte, lokale Modelle, Anwendungsunterschrift und sichere '
                        'Bereinigungskandidaten werden unten angezeigt. KI wird nicht ausgeführt, während '
                        'dieser Bildschirm geöffnet ist.',
- 'system.note': 'Die vollständige Verifizierung liest etwa 12 GiB an Modelldateien von der SSD für '
+ 'system.note': 'Die vollständige Verifizierung liest etwa 12 GiB an Modelldateien von der disk für '
                 'SHA-256-Prüfungen; sie lädt keine Modelle in den Speicher.',
  'preflight.document_title': 'Dokumentensicherheitsüberprüfung',
  'preflight.download_title': 'Überprüfung herunterladen',
@@ -133,7 +133,7 @@ CATALOG = {'header.subtitle': 'Videos oder Dokumente übersetzen – vollständi
  'preflight.blocked': 'Blockiert',
  'preflight.hash': 'SHA-256',
  'preflight.outputs': 'Gewünschte Ausgaben',
- 'preflight.free_space': 'Freier SSD-Speicher',
+ 'preflight.free_space': 'Freier disk-Speicher',
  'preflight.detect_later': 'Wird automatisch in der nächsten Phase erkannt',
  'preflight.ocr_measure': 'Wird während der Textextraktion gemessen',
  'preflight.ocr_pages': 'Kann auf etwa {count} Seiten erforderlich sein',
@@ -214,19 +214,19 @@ CATALOG = {'header.subtitle': 'Videos oder Dokumente übersetzen – vollständi
                        'verwenden und in die Cloud hochgeladen werden. Möchten Sie es trotzdem kopieren?',
  'export.copying': 'Überprüfung und Kopieren der Ergebnisse auf den Mac…',
  'export.incomplete': 'Kopie konnte nicht abgeschlossen werden.',
- 'export.retry_action': 'Überprüfen Sie die SSD und den verfügbaren Speicherplatz auf dem Ziel, und drücken '
+ 'export.retry_action': 'Überprüfen Sie die disk und den verfügbaren Speicherplatz auf dem Ziel, und drücken '
                         "Sie 'Kopie nach Mac' erneut.",
- 'export.source_preserved': 'Die Quelle auf der SSD wurde beibehalten; kein sichtbarer teilweiser Ziel wurde '
+ 'export.source_preserved': 'Die Quelle auf der disk wurde beibehalten; kein sichtbarer teilweiser Ziel wurde '
                             'zurückgelassen.',
  'export.copied_title': 'Kopiert',
  'export.copied_status': 'Überprüfte Kopie auf Mac: {name}',
- 'export.copied_body': 'Größe und SHA-256 wurden überprüft. Die Quelle bleibt auf der SSD.\n\n{destination}',
+ 'export.copied_body': 'Größe und SHA-256 wurden überprüft. Die Quelle bleibt auf der disk.\n\n{destination}',
  'cleanup.not_ready_title': 'Bereinigung ist noch nicht fertig',
  'cleanup.not_verified': 'Die ausgewählte Aufgabe ist nicht abgeschlossen und wurde nicht überprüft.',
  'cleanup.select_action': 'Wählen Sie eine abgeschlossene Speicher-Aufgabe aus und starten Sie die '
                           'Bereinigung erneut.',
  'cleanup.inspect_failed_title': 'Bereinigung konnte nicht überprüft werden',
- 'cleanup.retry_action': 'Überprüfen Sie die SSD-Verbindung und versuchen Sie es erneut mit der Bereinigung.',
+ 'cleanup.retry_action': 'Überprüfen Sie die disk-Verbindung und versuchen Sie es erneut mit der Bereinigung.',
  'cleanup.none_title': 'Keine Bereinigung erforderlich',
  'cleanup.none_body': 'Keine sicheren, temporären Dateien wurden gefunden.',
  'cleanup.more': '• … und {count} weitere Dateien',
@@ -257,7 +257,7 @@ CATALOG = {'header.subtitle': 'Videos oder Dokumente übersetzen – vollständi
  'window.busy_body': 'Behalten Sie KSI Local Studio geöffnet, bis die verifizierte Kopie, die Bereinigung '
                      'oder die Systemprüfung abgeschlossen ist.',
  'review_package.create_failed': 'Paket konnte nicht erstellt werden',
- 'review_package.create_action': 'Überprüfen Sie SSD und Desktop-Zugriff, und erstellen Sie das Paket '
+ 'review_package.create_action': 'Überprüfen Sie disk und Desktop-Zugriff, und erstellen Sie das Paket '
                                  'erneut.',
  'review_package.ready_title': 'Paket bereit',
  'review_package.ready': 'Das Paket wurde auf den Desktop kopiert. Sie können diesen Ordner an Codex oder '
@@ -295,7 +295,7 @@ CATALOG = {'header.subtitle': 'Videos oder Dokumente übersetzen – vollständi
  'review_package.undo_confirm': 'Wollen Sie die Dateien von vor der letzten externen Korrektur '
                                 'wiederherstellen?',
  'review_package.undo_failed': 'Korrektur konnte nicht rückgängig gemacht werden',
- 'review_package.undo_action': 'Stellen Sie sicher, dass die Ausgabedateien auf dem SSD-Laufwerk vorhanden '
+ 'review_package.undo_action': 'Stellen Sie sicher, dass die Ausgabedateien auf dem disk-Laufwerk vorhanden '
                                'sind und versuchen Sie es erneut.',
  'review_package.undo_dub_status': 'Text wurde wiederhergestellt; Synchronisation konnte nicht automatisch '
                                    'aktualisiert werden: {message}',
@@ -308,7 +308,7 @@ CATALOG = {'header.subtitle': 'Videos oder Dokumente übersetzen – vollständi
  'media.document_text_open_failed': 'Dokumenttext konnte nicht geöffnet werden',
  'media.viewer_failed': 'Der lokale Text-Viewer konnte nicht gestartet werden.',
  'media.document_text_action': "Öffnen Sie 'belge-kaynagi.txt' manuell aus dem Job-Ordner auf dem "
-                               'SSD-Laufwerk.',
+                               'disk-Laufwerk.',
  'media.subtitle_missing_title': 'Untertitel nicht gefunden',
  'media.subtitle_missing': 'Diese Aufgabe hat noch keine türkischen Untertitel.',
  'media.subtitle_open_failed': 'Untertitel konnten nicht geöffnet werden',
@@ -323,9 +323,9 @@ CATALOG = {'header.subtitle': 'Videos oder Dokumente übersetzen – vollständi
  'media.dub_missing': 'Diese Aufgabe hat noch kein türkisches Synchronisationsvideo.',
  'media.dub_open_failed': 'Synchronisationsvideo konnte nicht geöffnet werden',
  'media.player_failed': 'Der Videoplayer konnte nicht gestartet werden.',
- 'media.dub_action': "Öffnen Sie 'turkce-dublaj.mp4' manuell von dem SSD-Laufwerk in Finder.",
+ 'media.dub_action': "Öffnen Sie 'turkce-dublaj.mp4' manuell von dem disk-Laufwerk in Finder.",
  'job.retry_failed': 'Aufgabe konnte nicht neu gestartet werden',
- 'job.retry_action': 'Überprüfen Sie die SSD-Verbindung und versuchen Sie es erneut.',
+ 'job.retry_action': 'Überprüfen Sie die disk-Verbindung und versuchen Sie es erneut.',
  'job.add_outputs_title': 'Fehlende Ausgaben hinzufügen',
  'job.add_outputs_body': 'Die vorhandene Download- und Transkript-Datei wird wiederverwendet. Fügen Sie '
                          'hinzu: {outputs}. Fortfahren?',
@@ -333,7 +333,7 @@ CATALOG = {'header.subtitle': 'Videos oder Dokumente übersetzen – vollständi
  'job.add_summary': 'Zeitstempelbasierte türkische Zusammenfassung',
  'job.add_dub': 'Türkische Synchronisation',
  'job.add_outputs_failed': 'Ausgaben konnten nicht hinzugefügt werden',
- 'job.add_outputs_action': "Überprüfen Sie die SSD-Verbindung und drücken Sie 'Hinzufügen fehlende Ausgaben' "
+ 'job.add_outputs_action': "Überprüfen Sie die disk-Verbindung und drücken Sie 'Hinzufügen fehlende Ausgaben' "
                            'erneut.',
  'file.choose_source': 'Wählen Sie ein Video, Untertitel oder Dokument aus',
  'file.supported': 'Unterstützte Dateien (*.mp4 *.mkv *.mov *.webm *.srt *.vtt *.txt *.md *.pdf *.docx)',
@@ -591,10 +591,10 @@ JOB_TERMS = {'video': 'Video',
  'language': 'Sprache',
  'output': 'Ausgabe',
  'storage': 'Speicherung',
- 'external_ssd': 'externer SSD',
+ 'external_ssd': 'interne Festplatte',
  'queued': 'In Warteschlange',
  'running': 'In Arbeit',
- 'waiting_for_ssd': 'Wartet auf SSD',
+ 'waiting_for_ssd': 'Wartet auf disk',
  'paused': 'Ausgelegt',
  'cancelled': 'Abgebrochen',
  'failed': 'Fehlgeschlagen',

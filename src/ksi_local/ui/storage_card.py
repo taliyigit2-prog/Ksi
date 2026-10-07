@@ -1,4 +1,4 @@
-"""Storage status and explicit selection; no disconnected-volume fallback."""
+"""Internal storage status; the default application-data location stays private."""
 
 import shutil
 import threading
@@ -40,6 +40,10 @@ class StorageCard(Card):
         self.choose_button.clicked.connect(self._choose)
         for widget in (self.title, self.path, self.space, self.open_button, self.choose_button):
             self.body.addWidget(widget)
+        # Working data no longer needs a location picker or removable disk.
+        # Keep the internal-only migration method for compatibility, not as a
+        # second setup step in the normal settings UI.
+        self.choose_button.hide()
         self.inspected.connect(self._ready)
         self.changed.connect(self._changed)
         self.timer = QTimer(self)

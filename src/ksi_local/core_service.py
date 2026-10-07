@@ -58,7 +58,7 @@ class CoreService:
         self.network_allowed = network_allowed
 
     def set_workspace(self, workspace: WorkspacePaths | None) -> None:
-        """Refresh the removable workspace without changing explicit client roots."""
+        """Refresh the internal workspace without changing explicit client roots."""
         previous = self.workspace.root.resolve() if self.workspace is not None else None
         roots = [root for root in self.allowed_roots if root != previous]
         self.workspace = workspace
@@ -70,6 +70,9 @@ class CoreService:
         """An idle client must not resume writes against an obsolete selection."""
         if self.workspace is None:
             return
+        from ksi_local.internal_storage import validate_internal_path
+
+        validate_internal_path(self.workspace.root)
         from ksi_local.workspace_management import load_selection
         from ksi_local.settings import resolve_workspace
         selection = load_selection()

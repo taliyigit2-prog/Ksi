@@ -73,11 +73,7 @@ def load_preferences(path: str | Path | None = None) -> UserPreferences:
             if payload.get("application_location") in {"user_applications", "system_applications"}
             else "user_applications"
         ),
-        workspace_location=(
-            str(payload.get("workspace_location"))
-            if payload.get("workspace_location") in {"internal", "external"}
-            else "internal"
-        ),
+        workspace_location="internal",
         theme=(
             str(payload.get("theme"))
             if payload.get("theme") in THEMES
@@ -105,7 +101,7 @@ def save_preferences(
             raise ValueError("Geçersiz son dışa aktarma klasörü.")
     if preferences.application_location not in {"user_applications", "system_applications"}:
         raise ValueError("Geçersiz uygulama konumu.")
-    if preferences.workspace_location not in {"internal", "external"}:
+    if preferences.workspace_location != "internal":
         raise ValueError("Geçersiz çalışma alanı konumu.")
     if preferences.theme not in THEMES:
         raise ValueError("Geçersiz arayüz teması.")

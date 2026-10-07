@@ -32,7 +32,7 @@ TEST_APP = QApplication.instance() or QApplication([])
 def ready_report(*, passed: bool = True) -> SimpleNamespace:
     return SimpleNamespace(
         passed=passed,
-        workspace="/Volumes/Yiğit/KSI-Workspace",
+        workspace="/internal-fixture/KSI-Workspace",
         workspace_free_bytes=75 * 1024**3,
         tool_integrity_ok=True,
         health=SimpleNamespace(youtube_js_ready=True),

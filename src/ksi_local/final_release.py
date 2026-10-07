@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Iterable
@@ -86,16 +87,18 @@ def _directory_size(path: Path) -> int:
 
 
 def _candidate_directories(root: Path) -> Iterable[tuple[Path, str]]:
-    for path in root.rglob("*"):
-        if not path.is_dir() or path.is_symlink():
-            continue
-        relative = path.relative_to(root)
-        if any(part in {".git", ".venv", ".venv-chatterbox"} for part in relative.parts):
-            continue
-        if path.name in _CACHE_DIRECTORY_NAMES:
-            yield path, "Yeniden üretilebilir geliştirme önbelleği"
-        elif path.name in _FAILED_PILOT_NAMES:
-            yield path, "Başarısız ve yeniden çalıştırılabilir pilot çıktısı"
+    protected = {".git", "build", "models", "jobs", "outputs", "runtime", "KSI-Workspace", ".phase1"}
+    for directory, names, _files in os.walk(root, followlinks=False):
+        names[:] = [name for name in names if name not in protected
+                    and not name.startswith(".venv") and not (Path(directory) / name).is_symlink()]
+        for name in tuple(names):
+            path = Path(directory) / name
+            if name in _CACHE_DIRECTORY_NAMES:
+                yield path, "Yeniden üretilebilir geliştirme önbelleği"
+                names.remove(name)
+            elif name in _FAILED_PILOT_NAMES:
+                yield path, "Başarısız ve yeniden çalıştırılabilir pilot çıktısı"
+                names.remove(name)
 
 
 def build_cleanup_preview(project_root: str | Path) -> CleanupPreview:
@@ -117,20 +120,10 @@ def build_cleanup_preview(project_root: str | Path) -> CleanupPreview:
             continue
         found[relative] = CleanupPreviewItem(relative, _directory_size(path), reason)
 
-    for path in sorted(root.glob(".env*")):
-        if path.name == ".env.example" or path.is_symlink() or not path.is_file():
-            continue
-        found[path.name] = CleanupPreviewItem(
-            path.name,
-            path.stat().st_size,
-            "Git dışı gizli ortam dökümü; içerik önizlemeye alınmadı",
-        )
-
-    build_root = root / "build"
-    if build_root.is_dir() and not build_root.is_symlink():
-        found["build"] = CleanupPreviewItem(
-            "build", _directory_size(build_root), "Kurulumdan önce yeniden üretilebilen build çıktısı"
-        )
+    # Build inputs include verified models and legally required corresponding
+    # sources. A whole-build deletion is NEVER a safe cleanup candidate.
+    # Private environment files may be required credentials/configuration;
+    # excluding them from Git does not authorize deleting them locally.
 
     dist_root = root / "dist"
     if dist_root.is_dir() and not dist_root.is_symlink():
@@ -168,6 +161,8 @@ def build_cleanup_preview(project_root: str | Path) -> CleanupPreview:
         "Application Support içindeki tercihler, kabul kaydı ve private katalog",
         "Kullanıcının kabul ettiği yerel modeller",
         "Geçerli sürüm paketi ve checksum dosyaları",
+        "build içindeki doğrulanmış model, motor, kaynak ve lisans girdileri",
+        "Git dışı özel ortam ve kimlik bilgisi dosyaları",
     )
     return CleanupPreview(
         product=PRODUCT_NAME,

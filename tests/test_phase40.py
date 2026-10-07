@@ -43,7 +43,8 @@ class Phase40Tests(unittest.TestCase):
             self.assertTrue(artifact.is_file())
             self.assertTrue(env.is_file())
             self.assertFalse(preview.destructive_action_performed)
-            self.assertEqual(preview.total_candidate_bytes, 5 + env.stat().st_size + 3 + 5)
+            self.assertEqual(preview.total_candidate_bytes, 5 + 3 + 5)
+            self.assertNotIn(".env.local", [item.relative_path for item in preview.candidates])
             serialized = json.dumps(preview.to_dict(), ensure_ascii=False)
             self.assertNotIn("must-not-appear", serialized)
             self.assertIn("KSI-Workspace", serialized)
@@ -75,9 +76,9 @@ class Phase40Tests(unittest.TestCase):
 
             self.assertEqual(
                 [item.relative_path for item in preview.candidates],
-                ["build"],
+                [],
             )
-            self.assertEqual(preview.total_candidate_bytes, 5)
+            self.assertEqual(preview.total_candidate_bytes, 0)
 
     def test_release_source_fingerprint_covers_native_build_inputs(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

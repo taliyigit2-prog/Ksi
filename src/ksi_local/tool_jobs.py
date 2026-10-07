@@ -68,6 +68,9 @@ def validate_image_request(request: dict) -> None:
 
 class ToolJobService:
     def __init__(self, workspace: WorkspacePaths, store: JobStore):
+        from ksi_local.internal_storage import validate_internal_path
+
+        validate_internal_path(workspace.root)
         self.workspace = workspace
         self.store = store
 

@@ -35,7 +35,7 @@ class DocumentFormat(StrEnum):
 
 
 class DocumentImportCancelled(RuntimeError):
-    """Raised before an inspected document becomes visible on the SSD."""
+    """Raised before an inspected document becomes visible on the disk."""
 
 
 DOCUMENT_SUFFIXES = frozenset({".pdf", ".docx", ".md", ".txt"})
@@ -678,7 +678,7 @@ def import_document_source(
     expected_sha256: str,
     cancel_check: Callable[[], bool] | None = None,
 ) -> ImportedDocument:
-    """Copy a stable source to a hidden SSD file, verify, then publish exclusively."""
+    """Copy a stable source to a hidden disk file, verify, then publish exclusively."""
     source_path, handle, initial = _open_stable_source(source)
     destination = Path(destination_directory).expanduser().resolve()
     destination.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -730,7 +730,7 @@ def import_document_source(
         _rename_exclusive(temporary, target)
         published = True
         if target.stat().st_size != expected_size:
-            raise OSError("SSD'ye alınan belge boyutu doğrulanamadı.")
+            raise OSError("diske alınan belge boyutu doğrulanamadı.")
         return ImportedDocument(target, copied, actual_digest)
     except BaseException:
         temporary.unlink(missing_ok=True)

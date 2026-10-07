@@ -49,7 +49,9 @@ class RelocationResult:
 
 
 def default_internal_workspace() -> Path:
-    return Path.home() / WORKSPACE_DIRECTORY
+    from ksi_local.job_store import default_database_path
+
+    return default_database_path().parent / WORKSPACE_DIRECTORY
 
 
 def selection_path() -> Path:
@@ -62,11 +64,14 @@ def selection_path() -> Path:
 
 
 def save_selection(selection: WorkspaceSelection, path: str | Path | None = None) -> Path:
+    from ksi_local.internal_storage import validate_internal_path
+
     root = Path(selection.workspace_root).expanduser()
     if not root.is_absolute() or "\x00" in selection.workspace_root:
         raise ValueError("Çalışma alanı yolu mutlak ve güvenli olmalıdır.")
-    if selection.workspace_location is WorkspaceLocation.EXTERNAL and not selection.volume_uuid:
-        raise ValueError("Harici çalışma alanı için disk UUID'si gereklidir.")
+    if selection.workspace_location is not WorkspaceLocation.INTERNAL:
+        raise ValueError("Yeni çalışma alanı yalnız dahili diskte olabilir.")
+    validate_internal_path(root)
     target = Path(path or selection_path()).expanduser()
     atomic_write_json(target, {"schema_version": 1, **asdict(selection)})
     return target
