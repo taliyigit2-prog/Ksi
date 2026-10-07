@@ -66,6 +66,8 @@ PUBLIC_SCRIPTS = (
     "scripts/collect_native_notices.py",
     "scripts/collect_wheel_notices.py",
     "scripts/collect_source_license_texts.py",
+    "scripts/stage_python_notices.py",
+    "scripts/stage_offline_models.py",
     "scripts/fetch_corresponding_source.py",
     "scripts/fetch_ollama_models.py",
     "scripts/import_native_artifact.py",

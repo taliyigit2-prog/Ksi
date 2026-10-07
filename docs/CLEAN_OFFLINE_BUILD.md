@@ -257,3 +257,19 @@ Ollama startup verifies both pinned tag manifests and every installed layer and
 rejects manifest references not covered by the sealed payload. Packaged clients
 cannot send text to arbitrary unverified model tags. These checks supplement
 first-install integrity and prevent subsequent silent model changes.
+
+`stage_python_notices.py` binds each exact wheel to its original verified
+license texts, resolving missing texts only from matching public source pins.
+Qt/PySide source archives and their original notices are retained intact.
+The generated package inventory omits local build roots and explicitly keeps
+redistribution review incomplete: complete text coverage alone is not a binary
+license/source-closure approval. Isolated helper executables retain execute
+permissions during app assembly; notice/model data does not gain those bits.
+
+`stage_offline_models.py` produces explicit architecture-specific component and
+model-family lists from the public pins. Complete Ollama manifests/config/layers,
+the correct MLX or CPU Whisper layout, the correct V3 tokenizer or Intel Piper
+voice, U2NetP and both direct Argos packages are required. A separate explicit
+license-binding input supplies original notices and their hashes; these cannot
+be guessed from a model's display name. Staging has no network access and makes
+no inference, quality, installation or redistribution-approval claim.

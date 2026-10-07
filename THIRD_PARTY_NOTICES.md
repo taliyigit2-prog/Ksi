@@ -45,6 +45,13 @@ Matching Qt/PySide 6.11.2 sources have a separate official-checksum inventory in
 SVG, tool, image-format and timeline runtime modules even though KSI's own GUI
 uses Widgets; their source and license obligations are not ignored. Source
 collection does not certify license completeness or final binary compliance.
+
+The distribution-notice builder resolves missing wheel texts only against the
+matching source versions in `config/python-notice-sources.json` and the Qt
+inventory. Main and isolated speech package inventories are independently bound
+to their exact wheel hashes. App assembly rejects omitted or changed notices
+and corresponding-source members. These inventories explicitly do not promote
+text completeness into redistribution approval or product acceptance.
 # Desktop engine additions (implementation candidates)
 
 The following adapters do not copy complete third-party applications. Exact

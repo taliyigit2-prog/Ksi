@@ -20,6 +20,7 @@ from ksi_local.bundle_runtime import digest_file, host_architecture, safe_member
 from ksi_local.copy_on_write import clone_file
 from ksi_local.offline_build import seal_offline_payload
 from ksi_local.wheel_lock import validate_wheel_lock
+from ksi_local.distribution_notices import validate_notice_inventory
 
 
 def copy_clean_tree(source: Path, destination: Path) -> None:
@@ -171,8 +172,18 @@ def assemble_app(repository: Path, runtime: Path, components: Path, specificatio
             raise FileExistsError("Component staging would overwrite an existing member.")
         if not clone_file(origin, target):
             shutil.copy2(origin, target)
-        target.chmod(0o755 if row["role"] == "tool" else 0o644)
+        # Isolated runtime support includes executable helpers as well as data.
+        # Removing their execute bits breaks subprocess entry points even when
+        # the top-level interpreter was declared as a verified tool.
+        executable = row["role"] == "tool" or (row["role"] == "support" and os.access(origin, os.X_OK))
+        target.chmod(0o755 if executable else 0o644)
     normalize_build_shebangs(resources, (runtime, components, repository.parent))
+    validate_notice_inventory(resources, spec, wheel_lock, scope="main")
+    isolated_tools = {row["identifier"] for row in spec["files"] if row["role"] == "tool"}
+    for scope in ("piper", "chatterbox"):
+        if scope + "-python" in isolated_tools:
+            isolated_lock = json.loads((repository / f"config/python-{scope}-wheels-{architecture}.json").read_text())
+            validate_notice_inventory(resources, spec, isolated_lock, scope=scope)
     launcher = contents / "MacOS/KSI-Local-Studio"
     shutil.copy2(repository / "packaging/KSI-Local-Studio-portable-launcher", launcher)
     launcher.chmod(0o755)
