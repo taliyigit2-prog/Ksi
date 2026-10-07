@@ -218,6 +218,15 @@ environment. That commit uses `grapheme_mtl_merged_expanded_v1.json`; the other
 upstream `mtl_tokenizer.json` is not interchangeable. Both model API and actual
 speech output require final acceptance on the source-bound prefix.
 
+Qwen 3.5 uses an explicit text-only summary profile. The original pinned registry
+manifest contains a separate vision projector, which Ollama 0.24 rejects before
+falling back to a runner without `qwen35` support. The deterministic KSI profile
+removes only that unused manifest reference. Every original model blob, including
+the projector, remains hash-bound and included; weights are never modified.
+The original manifest and a source/derived-hash binding are retained separately.
+Installed model verification still checks the exact sealed derived manifest and
+all original blobs. This profile does not claim image-understanding capability.
+
 Argos staging keeps the five direct inference files and upstream README citations;
 unused Stanza tokenizer weights are excluded. Archive paths, links, duplicates,
 encryption, expansion limits and language direction are checked before extraction.

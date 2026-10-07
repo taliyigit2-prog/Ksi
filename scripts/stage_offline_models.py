@@ -12,10 +12,11 @@ import shutil
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from ksi_local.atomic_files import atomic_write_json
+from ksi_local.atomic_files import atomic_write_bytes, atomic_write_json
 from ksi_local.bundle_runtime import digest_file, safe_member
 from ksi_local.copy_on_write import clone_file
 from ksi_local.model_staging import ARGOS_INFERENCE_FILES
+from ksi_local.ollama_profiles import qwen_text_profile
 
 
 def read(path):
@@ -40,9 +41,10 @@ def stage(repository, build, bindings, destination, architecture):
         if target.casefold() in seen:
             raise ValueError("Model component paths collide.")
         seen.add(target.casefold())
-        if origin.is_symlink() or not origin.is_file() or origin.stat().st_size != pin["size"] or digest_file(origin) != pin["sha256"]:
+        valid = (len(origin) == pin["size"] and hashlib.sha256(origin).hexdigest() == pin["sha256"]) if isinstance(origin, bytes) else (not origin.is_symlink() and origin.is_file() and origin.stat().st_size == pin["size"] and digest_file(origin) == pin["sha256"])
+        if not valid:
             raise ValueError("Model staging input differs from its fixed digest: " + identifier)
-        if role == "license" and (not 0 < pin["size"] <= 256 * 1024 or not origin.read_text(encoding="utf-8").strip()):
+        if role == "license" and (isinstance(origin, bytes) or not 0 < pin["size"] <= 256 * 1024 or not origin.read_text(encoding="utf-8").strip()):
             raise ValueError("Model license must be nonempty bounded original text.")
         rows.append(dict(path=target, role=role, identifier=identifier, size=pin["size"], sha256=pin["sha256"], **metadata))
         plan.append((origin, target))
@@ -79,7 +81,18 @@ def stage(repository, build, bindings, destination, architecture):
         actual = [data["config"], *data["layers"]]
         if len(actual) != len(model["layers"]) or {(row["digest"], row["size"]) for row in actual} != {("sha256:" + row["sha256"], row["size"]) for row in model["layers"]}:
             raise ValueError("Ollama layer closure differs from its complete public pin.")
-        members.append((manifest_path, "models/ollama/" + manifest_name, manifest, model["name"] + "-manifest"))
+        if model["name"] == "qwen3.5":
+            original = manifest_path.read_bytes()
+            derived, binding = qwen_text_profile(original, manifest["sha256"])
+            if len(original) != manifest["size"]:
+                raise ValueError("Original Qwen manifest size differs from its public pin")
+            add(manifest_path, "sources/models/qwen3.5/original-registry-manifest.json", manifest, "support", "qwen-original-registry-manifest")
+            own = dict(size=len(derived), sha256=hashlib.sha256(derived).hexdigest(), url="https://github.com/taliyigit2-prog/Ksi", revision="qwen-text-profile-v1")
+            members.append((derived, "models/ollama/" + manifest_name, own, model["name"] + "-manifest"))
+            proof = (json.dumps(binding, sort_keys=True, separators=(",", ":")) + "\n").encode()
+            add(proof, "sources/models/qwen3.5/text-profile-binding.json", dict(size=len(proof), sha256=hashlib.sha256(proof).hexdigest()), "support", "qwen-text-profile-binding")
+        else:
+            members.append((manifest_path, "models/ollama/" + manifest_name, manifest, model["name"] + "-manifest"))
         for row in model["layers"]:
             name = "blobs/sha256-" + row["sha256"]
             pin = dict(row, url=f"https://registry.ollama.ai/v2/library/{model['name']}/blobs/sha256:{row['sha256']}", revision=model["manifest"]["sha256"])
@@ -130,7 +143,9 @@ def stage(repository, build, bindings, destination, architecture):
     for origin, relative in plan:
         target = safe_member(destination, relative)
         target.parent.mkdir(parents=True, exist_ok=True)
-        if not clone_file(origin, target):
+        if isinstance(origin, bytes):
+            atomic_write_bytes(target, origin, mode=0o644)
+        elif not clone_file(origin, target):
             shutil.copy2(origin, target)
         target.chmod(0o644)
     specification = {"schema_version": 1, "architecture": architecture, "files": rows, "models": models}

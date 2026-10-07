@@ -16,6 +16,9 @@ import shutil
 import sys
 import threading
 import uuid
+import fcntl
+import stat
+from contextlib import contextmanager
 from dataclasses import dataclass
 from collections import OrderedDict
 from pathlib import Path, PurePosixPath
@@ -33,6 +36,23 @@ _MODEL_INSTALL_CACHE: dict[tuple[str, str], tuple] = {}
 _MODEL_INSTALL_LOCK = threading.Lock()
 _RUNTIME_METADATA_CACHE = OrderedDict()
 _RUNTIME_METADATA_LOCK = threading.Lock()
+
+
+@contextmanager
+def _model_destination_lock(destination: Path):
+    """Serialize cooperating installers across application processes."""
+    if destination.is_symlink():
+        raise ValueError("Model hedefi sembolik bağlantı olamaz.")
+    destination.mkdir(parents=True, exist_ok=True, mode=0o700)
+    lock = safe_member(destination, ".ksi-model-install.lock")
+    descriptor = os.open(lock, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+    try:
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise ValueError("Model kurulum kilidi normal bir dosya olmalıdır.")
+        fcntl.flock(descriptor, fcntl.LOCK_EX)
+        yield
+    finally:
+        os.close(descriptor)
 
 
 def host_architecture(machine: str | None = None) -> str:
@@ -183,10 +203,10 @@ class OfflinePayload:
     def install_models(
         self, destination: Path, *, on_progress: Callable[[int, int], None] | None = None
     ) -> None:
-        # Removable-storage polling must not hash gigabytes every five seconds.
+        # Workspace polling must not hash gigabytes every five seconds.
         # The first use still verifies hashes; changes to the manifest or any
         # installed file's size/mtime invalidate the in-process shortcut.
-        with _MODEL_INSTALL_LOCK:
+        with _MODEL_INSTALL_LOCK, _model_destination_lock(destination):
             if destination.is_symlink():
                 raise ValueError("Model hedefi sembolik bağlantı olamaz.")
             entries = [entry for entry in self.files if entry.role == "model"]
@@ -228,12 +248,17 @@ class OfflinePayload:
         destination.mkdir(parents=True, exist_ok=True, mode=0o700)
         entries = [entry for entry in self.files if entry.role == "model"]
         pending: list[tuple[PayloadFile, Path]] = []
+        upgrades: list[tuple[PayloadFile, Path, str]] = []
         for entry in entries:
             if not entry.path.startswith("models/"):
                 raise ValueError("Model kaydı models dizini içinde olmalıdır.")
             target = safe_member(destination, entry.path.removeprefix("models/"))
             if target.exists():
-                if not target.is_file() or digest_file(target) != entry.sha256:
+                existing = digest_file(target) if target.is_file() else None
+                if existing != entry.sha256:
+                    if existing and self._known_qwen_upgrade(entry, existing):
+                        upgrades.append((entry, target, existing))
+                        continue
                     raise FileExistsError("Mevcut model farklı; kullanıcı dosyasına yazılmadı.")
             else:
                 pending.append((entry, target))
@@ -273,6 +298,43 @@ class OfflinePayload:
             finally:
                 if created:
                     temporary.unlink(missing_ok=True)
+
+        # Only an exact, provenance-bound registry manifest may be upgraded.
+        # Keep its original inode outside Ollama's active tag namespace. Never
+        # replace weights, edited manifests, or an unrelated backup.
+        for entry, target, original_sha in upgrades:
+            from ksi_local.atomic_files import atomic_write_bytes
+            content = self.verify(entry).read_bytes()
+            backup = safe_member(destination, f".ksi-model-manifests/qwen3.5-{original_sha}.json")
+            backup.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+            if digest_file(target) != original_sha:
+                raise FileExistsError("Model manifesti kurulum sırasında değişti; korunuyor.")
+            try:
+                os.link(target, backup)
+            except FileExistsError:
+                pass
+            if not backup.is_file() or digest_file(backup) != original_sha:
+                raise FileExistsError("Model manifesti yedeği farklı; korunuyor.")
+            if safe_member(destination, entry.path.removeprefix("models/")) != target or digest_file(target) != original_sha:
+                raise FileExistsError("Model manifesti kurulum sırasında değişti; korunuyor.")
+            atomic_write_bytes(target, content)
+
+    def _known_qwen_upgrade(self, entry: PayloadFile, existing_sha: str) -> bool:
+        """Authorize only the exact sealed text-profile transformation."""
+        if entry.path != "models/ollama/manifests/registry.ollama.ai/library/qwen3.5/4b":
+            return False
+        from ksi_local.ollama_profiles import qwen_text_profile
+        try:
+            original = self.component("support", "qwen-original-registry-manifest").read_bytes()
+            binding = json.loads(self.component("support", "qwen-text-profile-binding").read_bytes())
+            derived, expected = qwen_text_profile(original, existing_sha)
+            if binding != expected or hashlib.sha256(derived).hexdigest() != entry.sha256:
+                return False
+            projector = expected["omitted_projector_reference"].replace(":", "-")
+            return any(item.role == "model" and item.path == f"models/ollama/blobs/{projector}"
+                       and item.sha256 == projector.removeprefix("sha256-") for item in self.files)
+        except (RuntimeError, ValueError, OSError):
+            return False
 
 
 def runtime_payload(root: Path, *, architecture: str | None = None) -> OfflinePayload:
