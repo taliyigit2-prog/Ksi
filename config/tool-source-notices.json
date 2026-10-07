@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "redistribution_review_complete": false,
+  "sources": {
+    "ollama-source": {
+      "source_archive_sha256": "d16a34c9ace344987acd06eae07ab83cb313be868cbca7bd8035b6bb4abee3b1",
+      "members": ["LICENSE", "llama/llama.cpp/LICENSE", "ml/backend/ggml/ggml/LICENSE"],
+      "pending_closure": ["Go module dependencies", "MLX-C and MLX release dependencies"]
+    },
+    "deno-source": {
+      "source_archive_sha256": "5b667301d08fd04f437f74c5c20016703aaa3ffc6efd44d2a8c390255c15df47",
+      "members": ["LICENSE.md", "ext/webgpu/LICENSE.md", "cli/tsc/dts/node/LICENSE", "cli/tsc/dts/node/undici/LICENSE"],
+      "pending_closure": ["Release Rust dependencies", "V8 and its incorporated third-party notices"]
+    },
+    "yt-dlp-source": {
+      "source_archive_sha256": "dd71840f8a8849492b2ae2f55efba319b723b90912d31a9a180f5bc68218e7a1",
+      "members": ["LICENSE", "THIRD_PARTY_LICENSES.txt"],
+      "pending_closure": ["Actual macOS executable dependency inventory and corresponding copyleft sources"]
+    }
+  }
+}

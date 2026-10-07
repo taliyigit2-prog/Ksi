@@ -1,6 +1,24 @@
 {
   "schema_version": 1,
   "inputs": {
+    "ollama-source": {
+      "type": "git", "version": "0.24.0", "revision": "v0.24.0",
+      "commit": "c28ddc0a7b273cd286b680a6db0bef0c17bc0ec0",
+      "url": "https://github.com/ollama/ollama.git", "license": "MIT",
+      "notice_source_only": true
+    },
+    "deno-source": {
+      "type": "git", "version": "2.9.6", "revision": "v2.9.6",
+      "commit": "e518fbd66dda5debcbdefc0beb0b3756b37b64fa",
+      "url": "https://github.com/denoland/deno.git", "license": "MIT",
+      "notice_source_only": true
+    },
+    "yt-dlp-source": {
+      "type": "git", "version": "2026.08.19", "revision": "2026.08.19",
+      "commit": "3a08beaf031ab68f966401ead017ac81fe8486cf",
+      "url": "https://github.com/yt-dlp/yt-dlp.git", "license": "Unlicense",
+      "notice_source_only": true
+    },
     "ollama-macos": {
       "version": "0.24.0",
       "revision": "v0.24.0",

@@ -11,12 +11,31 @@ collect = runpy.run_path(str(Path(__file__).resolve().parents[1] / "scripts/coll
 
 
 class SourceLicenseTextTests(unittest.TestCase):
+    def test_explicit_selection_excludes_fixture_licenses_and_requires_every_member(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            archive = root / "source.tar"
+            with tarfile.open(archive, "w") as stream:
+                for name in ("LICENSE", "tests/fixture/LICENSE", "THIRD_PARTY_LICENSES.txt"):
+                    member = tarfile.TarInfo(name)
+                    content = b"Synthetic notice, not a real license grant"
+                    member.size = len(content)
+                    stream.addfile(member, io.BytesIO(content))
+            pin = hashlib.sha256(archive.read_bytes()).hexdigest()
+            result = collect(archive, pin, root / "selected", members=("LICENSE", "THIRD_PARTY_LICENSES.txt"))
+            self.assertEqual({row["path"] for row in result["files"]}, {"LICENSE", "THIRD_PARTY_LICENSES.txt"})
+            for names in (("missing/LICENSE",), ("LICENSE", "LICENSE"), ("../LICENSE",)):
+                destination = root / "rejected"
+                with self.assertRaises(ValueError):
+                    collect(archive, pin, destination, members=names)
+                self.assertFalse(destination.exists())
+
     def test_images_named_license_are_not_mistaken_for_notices(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             archive = root / "source.tar.gz"
             with tarfile.open(archive, "w:gz") as stream:
-                for name, data in (("source/LICENSE", b"Synthetic license"), ("source/licensewizard.png", b"\x89PNG\xff"), ("source/program.py", b"raise RuntimeError()")):
+                for name, data in (("source/LICENSE", b"Synthetic license"), ("source/licensewizard.png", b"\x89PNG\xff"), ("source/program.py", b"raise RuntimeError()"), ("source/license_command.rs", b"fn main() {}"), ("source/license_test.ts", b"throw new Error('do not execute')")):
                     member = tarfile.TarInfo(name)
                     member.size = len(data)
                     stream.addfile(member, io.BytesIO(data))
