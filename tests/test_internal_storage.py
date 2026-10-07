@@ -13,6 +13,29 @@ from ksi_local.workspace_selection import change_workspace
 
 
 class InternalStorageTests(unittest.TestCase):
+    def test_database_environment_cannot_reintroduce_external_disk(self):
+        from ksi_local.job_store import default_database_path
+        with patch.dict(os.environ, {"KSI_STATE_DIRECTORY": "/Volumes/unmounted-fixture/KSI-State"}):
+            with self.assertRaises(RuntimeError):
+                default_database_path()
+
+    def test_relative_database_environment_is_rejected(self):
+        from ksi_local.job_store import default_database_path
+        with patch.dict(os.environ, {"KSI_STATE_DIRECTORY": "relative-state-fixture"}):
+            with self.assertRaises(RuntimeError):
+                default_database_path()
+
+    def test_database_state_link_cannot_redirect_writes(self):
+        from ksi_local.job_store import default_database_path
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary).resolve()
+            (base / "original").mkdir()
+            (base / "link").symlink_to(base / "original", target_is_directory=True)
+            with patch.dict(os.environ, {"KSI_STATE_DIRECTORY": str(base / "link" / "state")}):
+                with self.assertRaises(RuntimeError):
+                    default_database_path()
+            self.assertFalse((base / "original/state").exists())
+
     def test_external_path_is_rejected_even_when_disk_is_missing(self):
         with self.assertRaises(RuntimeError):
             validate_internal_path(Path("/Volumes/unmounted-fixture/KSI-Workspace"))

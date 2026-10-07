@@ -125,7 +125,12 @@ def default_database_path() -> Path:
         if override
         else Path.home() / "Library/Application Support" / STATE_DIRECTORY
     )
-    return root / "jobs.sqlite3"
+    # Validate before GUI/CLI/MCP creates its state directory or SQLite file.
+    # A leftover environment override must not reintroduce external storage.
+    from ksi_local.internal_storage import validate_internal_path
+    if not root.is_absolute():
+        raise RuntimeError("KSI veri klasörü mutlak bir dahili disk yolu olmalıdır.")
+    return validate_internal_path(root) / "jobs.sqlite3"
 
 
 def _now() -> str:
