@@ -24,6 +24,37 @@ from ksi_local.distribution_notices import validate_notice_inventory
 from ksi_local.native_processor import require_native_build_process
 
 
+_MACHO_MAGICS = {b"\xcf\xfa\xed\xfe", b"\xfe\xed\xfa\xcf", b"\xce\xfa\xed\xfe", b"\xfe\xed\xfa\xce",
+    b"\xca\xfe\xba\xbe", b"\xbe\xba\xfe\xca", b"\xca\xfe\xba\xbf", b"\xbf\xba\xfe\xca"}
+
+
+def sign_native_payload(resources: Path, architecture: str) -> int:
+    """Check every actual native member before signing any staged binary."""
+    if architecture not in {"arm64", "x86_64"} or resources.is_symlink() or not resources.is_dir():
+        raise ValueError("Native payload architecture/root is invalid.")
+    binaries = []
+    for path in sorted(resources.rglob("*")):
+        if path.is_symlink():
+            raise ValueError("Native payload cannot contain unresolved symbolic links.")
+        if not path.is_file():
+            continue
+        with path.open("rb") as stream:
+            magic = stream.read(4)
+        if magic not in _MACHO_MAGICS:
+            continue
+        actual = subprocess.run(["/usr/bin/lipo", "-archs", str(path)], check=True,
+            capture_output=True, text=True, timeout=30).stdout.split()
+        if architecture not in actual:
+            raise ValueError("Native payload member lacks its claimed architecture: " + path.relative_to(resources).as_posix())
+        binaries.append(path)
+    if not binaries:
+        raise ValueError("Native payload contains no actual Mach-O runtime.")
+    for path in binaries:
+        subprocess.run(["/usr/bin/codesign", "--force", "--sign", "-", "--timestamp=none", str(path)],
+            check=True, capture_output=True, timeout=120)
+    return len(binaries)
+
+
 def copy_clean_tree(source: Path, destination: Path) -> None:
     """Materialize only internal symlinks and keep APFS clones independent."""
     if source.is_symlink() or not source.is_dir() or destination.exists():
@@ -199,13 +230,7 @@ def assemble_app(repository: Path, runtime: Path, components: Path, specificatio
     atomic_write_json(resources / "component-provenance.json", {"schema_version": 1, "architecture": architecture, "files": component_records}, mode=0o644)
     # Sign inner Mach-O files first. Their post-signing digests, not the original
     # downloaded binary digests, belong in the final runtime integrity manifest.
-    for path in sorted(resources.rglob("*")):
-        if not path.is_file():
-            continue
-        with path.open("rb") as stream:
-            magic = stream.read(4)
-        if magic in {b"\xcf\xfa\xed\xfe", b"\xfe\xed\xfa\xcf", b"\xce\xfa\xed\xfe", b"\xfe\xed\xfa\xce", b"\xca\xfe\xba\xbe", b"\xbe\xba\xfe\xca", b"\xca\xfe\xba\xbf", b"\xbf\xba\xfe\xca"}:
-            subprocess.run(["/usr/bin/codesign", "--force", "--sign", "-", "--timestamp=none", str(path)], check=True, capture_output=True, timeout=120)
+    native_files = sign_native_payload(resources, architecture)
     native_inputs = json.loads((repository / "config/native-sources.json").read_text())["inputs"]
     bind_signed_tool_manifest(resources, spec, source_inputs=native_inputs)
     represented = {row["path"] for row in spec["files"]}
@@ -223,4 +248,4 @@ def assemble_app(repository: Path, runtime: Path, components: Path, specificatio
     sealed = seal_offline_payload(resources, spec)
     subprocess.run(["/usr/bin/codesign", "--force", "--sign", "-", "--timestamp=none", str(destination)], check=True, capture_output=True, timeout=120)
     subprocess.run(["/usr/bin/codesign", "--verify", "--deep", "--strict", str(destination)], check=True, capture_output=True, timeout=120)
-    return dict(sealed, source_commit=commit, acceptance_tested=False)
+    return dict(sealed, source_commit=commit, native_files=native_files, acceptance_tested=False)

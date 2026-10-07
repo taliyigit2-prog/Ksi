@@ -41,6 +41,8 @@ def collect(archive: Path, sha256: str, destination: Path, *, members: tuple[str
             # tutorial code, not legal notices. Do not mistake names for text.
             if Path(name).suffix.casefold() in {".png", ".jpg", ".jpeg", ".gif", ".ico", ".svg", ".webp", ".cpp", ".c", ".h", ".hpp", ".cxx", ".cc", ".py", ".qml", ".ui", ".qrc", ".rs", ".go", ".js", ".jsx", ".ts", ".tsx", ".java", ".kt", ".cs", ".swift", ".m", ".mm", ".sh", ".cmake"}:
                 wanted = False
+            if Path(name).suffix.casefold() in {".a", ".lib", ".o", ".obj", ".rlib", ".dll", ".so", ".dylib", ".exe", ".wasm", ".bin", ".class", ".jar", ".pdf", ".gz", ".zip"}:
+                wanted = False
             if requested:
                 wanted = wanted and name in requested
             if not wanted or row.isdir():

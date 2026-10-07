@@ -58,6 +58,7 @@ class CargoSourceNoticeTests(unittest.TestCase):
             inventory = json.loads((destination / "licenses/cargo/workspace-source-inventory.json").read_text())
             self.assertEqual(inventory["coverage"], "locked-workspace-source-superset")
             self.assertEqual(inventory["packages"][0]["declared_license"], "MIT")
+            self.assertEqual(inventory["missing_package_root_notice_texts"], [])
 
     def test_missing_original_license_is_reported_not_invented(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -65,6 +66,7 @@ class CargoSourceNoticeTests(unittest.TestCase):
             repo, source, cache, _ = self.fixture(root, with_notice=False)
             result = stage(repo, source, cache, root / "stage", "x86_64")
             self.assertEqual(result["missing_original_notice_texts"], ["synthetic@1.0.0"])
+            self.assertEqual(result["missing_package_root_notice_count"], 1)
 
     def test_changed_archive_or_lock_fails_before_destination_creation(self):
         for change_lock in (False, True):

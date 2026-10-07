@@ -1,6 +1,32 @@
 {
   "schema_version": 1,
   "inputs": {
+    "ollama-mlx-c-source": {
+      "type": "git", "revision": "fba4470b89073180056c9ea46c443051375f7399",
+      "commit": "fba4470b89073180056c9ea46c443051375f7399",
+      "url": "https://github.com/ml-explore/mlx-c.git", "license": "MIT",
+      "notice_source_only": true, "revision_source": "Ollama 0.24.0 MLX_C_VERSION"
+    },
+    "ollama-mlx-source": {
+      "type": "git", "revision": "e8ebdebeeb655feaa85a51f6b24ece5b6d5518d1",
+      "commit": "e8ebdebeeb655feaa85a51f6b24ece5b6d5518d1",
+      "url": "https://github.com/ml-explore/mlx.git", "license": "MIT; incorporated dependencies retain their own licenses",
+      "notice_source_only": true, "revision_source": "Ollama 0.24.0 MLX_VERSION"
+    },
+    "v8-embedded-source": {
+      "type": "git", "version": "15.0.245.2", "revision": "ac1e23989121713ca642f6650b34deff7b686896",
+      "commit": "ac1e23989121713ca642f6650b34deff7b686896",
+      "url": "https://github.com/denoland/v8.git", "license": "BSD-3-Clause; incorporated dependencies retain their own licenses",
+      "notice_source_only": true,
+      "revision_source": "Official Rusty V8 150.4.0 Git tree v8 submodule; version matches the locked crate header"
+    },
+    "rusty-v8-source": {
+      "type": "git", "version": "150.4.0", "revision": "v150.4.0",
+      "commit": "5c15a6995c9bb4bacd3e341b59fff32c909c80bf",
+      "url": "https://github.com/denoland/rusty_v8.git", "license": "MIT; embedded V8 and dependencies retain their own licenses",
+      "notice_source_only": true,
+      "revision_source": "Locked v8 150.4.0 crate .cargo_vcs_info.json and official release tag"
+    },
     "ollama-source": {
       "type": "git", "version": "0.24.0", "revision": "v0.24.0",
       "commit": "c28ddc0a7b273cd286b680a6db0bef0c17bc0ec0",

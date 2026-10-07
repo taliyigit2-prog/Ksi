@@ -1,13 +1,38 @@
 import hashlib
 import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from ksi_local.app_assembly import bind_signed_tool_manifest, copy_clean_tree, normalize_build_shebangs
+from ksi_local.app_assembly import bind_signed_tool_manifest, copy_clean_tree, normalize_build_shebangs, sign_native_payload
 
 
 class CleanTreeTests(unittest.TestCase):
+    def test_native_architecture_is_checked_before_any_binary_is_signed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for name in ("first", "second"):
+                (root / name).write_bytes(b"\xcf\xfa\xed\xfe" + b"synthetic, not executable")
+            def inspect(command, **kwargs):
+                if command[0] != "/usr/bin/lipo":
+                    self.fail("No binary may be signed before the whole inventory passes")
+                return subprocess.CompletedProcess(command, 0, stdout="arm64" if Path(command[-1]).name == "first" else "x86_64")
+            with patch("ksi_local.app_assembly.subprocess.run", side_effect=inspect), self.assertRaises(ValueError):
+                sign_native_payload(root, "arm64")
+
+    def test_native_universal_members_are_signed_after_full_inventory(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "runtime").write_bytes(b"\xca\xfe\xba\xbe" + b"synthetic, not executable")
+            (root / "data").write_bytes(b"not a binary")
+            def command_result(command, **kwargs):
+                return subprocess.CompletedProcess(command, 0, stdout="arm64 x86_64" if command[0] == "/usr/bin/lipo" else "")
+            with patch("ksi_local.app_assembly.subprocess.run", side_effect=command_result) as commands:
+                self.assertEqual(sign_native_payload(root, "x86_64"), 1)
+                self.assertEqual([call.args[0][0] for call in commands.call_args_list], ["/usr/bin/lipo", "/usr/bin/codesign"])
+
     def test_all_isolated_interpreter_scripts_lose_private_build_prefix(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()

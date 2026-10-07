@@ -86,7 +86,7 @@ def stage(repository: Path, source: Path, cache: Path, destination: Path, archit
             raise ValueError("Cargo package metadata differs from the locked archive identity.")
         plan.append((package, archive, metadata))
     destination.mkdir(parents=True, mode=0o700)
-    rows, inventory, missing = [], [], []
+    rows, inventory, missing, missing_root = [], [], [], []
     for package, archive, metadata in plan:
         identifier = hashlib.sha256((package["name"] + "@" + package["version"]).encode()).hexdigest()[:24]
         relative = "sources/cargo/" + archive.name
@@ -107,22 +107,27 @@ def stage(repository: Path, source: Path, cache: Path, destination: Path, archit
                 raise
             result = {"files": []}
             missing.append(package["name"] + "@" + package["version"])
-        notice_ids = []
+        notice_ids, root_notice_ids = [], []
         for notice in result["files"]:
             notice_id = "cargo-notice-" + hashlib.sha256((identifier + "/" + notice["path"]).encode()).hexdigest()[:24]
             notice_ids.append(notice_id)
+            if Path(notice["path"]).parent.as_posix() == package["name"] + "-" + package["version"]:
+                root_notice_ids.append(notice_id)
             rows.append(dict(path="licenses/cargo/" + identifier + "/" + notice["path"],
                 role="license", identifier=notice_id, sha256=notice["sha256"], size=notice["size"]))
         if result["files"]:
             notice_manifest = notice_root / "source-licenses.json"
             rows.append(dict(path=notice_manifest.relative_to(destination).as_posix(), role="support",
                 identifier="cargo-notice-inventory-" + identifier, sha256=digest_file(notice_manifest), size=notice_manifest.stat().st_size))
+        if not root_notice_ids:
+            missing_root.append(package["name"] + "@" + package["version"])
         inventory.append(dict(name=package["name"], version=package["version"], checksum=package["checksum"],
             declared_license=metadata.get("license"), declared_license_file=metadata.get("license-file"),
-            source_archive="cargo-source-" + identifier, notices=notice_ids))
+            source_archive="cargo-source-" + identifier, notices=notice_ids, root_notices=root_notice_ids))
     summary = destination / "licenses/cargo/workspace-source-inventory.json"
     atomic_write_json(summary, {"schema_version": 1, "source_commit": revision, "cargo_lock_sha256": lock_sha256,
         "coverage": "locked-workspace-source-superset", "packages": inventory, "missing_original_notice_texts": missing,
+        "missing_package_root_notice_texts": missing_root,
         "shipped_binary_dependency_closure_complete": False, "redistribution_review_complete": False})
     rows.append(dict(path=summary.relative_to(destination).as_posix(), role="support",
         identifier="cargo-workspace-source-inventory", sha256=digest_file(summary), size=summary.stat().st_size))
@@ -130,6 +135,7 @@ def stage(repository: Path, source: Path, cache: Path, destination: Path, archit
         "architecture": architecture, "files": rows})
     return {"architecture": architecture, "packages": len(inventory), "files": len(rows),
         "missing_original_notice_texts": missing, "shipped_binary_dependency_closure_complete": False,
+        "missing_package_root_notice_count": len(missing_root),
         "redistribution_review_complete": False, "acceptance_tested": False}
 
 

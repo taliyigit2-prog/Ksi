@@ -35,7 +35,7 @@ class SourceLicenseTextTests(unittest.TestCase):
             root = Path(temporary)
             archive = root / "source.tar.gz"
             with tarfile.open(archive, "w:gz") as stream:
-                for name, data in (("source/LICENSE", b"Synthetic license"), ("source/licensewizard.png", b"\x89PNG\xff"), ("source/program.py", b"raise RuntimeError()"), ("source/license_command.rs", b"fn main() {}"), ("source/license_test.ts", b"throw new Error('do not execute')")):
+                for name, data in (("source/LICENSE", b"Synthetic license"), ("source/licensewizard.png", b"\x89PNG\xff"), ("source/program.py", b"raise RuntimeError()"), ("source/license_command.rs", b"fn main() {}"), ("source/license_test.ts", b"throw new Error('do not execute')"), ("source/libwinapi_oemlicense.a", b"!<arch>\n\x00\xff")):
                     member = tarfile.TarInfo(name)
                     member.size = len(data)
                     stream.addfile(member, io.BytesIO(data))

@@ -32,10 +32,10 @@ def fetch_git_source(url: str, *, tag: str, commit: str, destination: Path, noti
         environment = {"HOME": str(private), "PATH": "/usr/bin:/bin", "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_TERMINAL_PROMPT": "0"}
         if tag == commit:
             subprocess.run(["git", "init", "--quiet", str(checkout)], env=environment, check=True, timeout=30)
-            subprocess.run(["git", "fetch", "--depth", "1", url, commit], cwd=checkout, env=environment, check=True, timeout=600)
+            subprocess.run(["git", "-c", "http.version=HTTP/1.1", "fetch", "--depth", "1", url, commit], cwd=checkout, env=environment, check=True, timeout=600)
             reference = "FETCH_HEAD"
         else:
-            subprocess.run(["git", "clone", "--depth", "1", "--branch", tag, "--no-checkout", url, str(checkout)], env=environment, check=True, timeout=600)
+            subprocess.run(["git", "-c", "http.version=HTTP/1.1", "clone", "--depth", "1", "--branch", tag, "--no-checkout", url, str(checkout)], env=environment, check=True, timeout=600)
             reference = "HEAD"
         actual = subprocess.run(["git", "rev-parse", reference], cwd=checkout, env=environment, check=True, capture_output=True, text=True).stdout.strip()
         if actual != commit:

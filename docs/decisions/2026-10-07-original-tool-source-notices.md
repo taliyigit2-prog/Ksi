@@ -32,3 +32,17 @@ a workspace-source superset: build/test-only crates are not automatically
 declared to be linked into the shipped executable. Missing legal text is listed
 as a gap, never replaced with an invented upstream grant. Changed archives,
 changed locks, other registries and unsafe notice members fail closed.
+
+A nested dependency copyright file is not counted as the crate's missing root
+license. Root and nested notice identifiers are recorded separately. When a
+published crate omits root texts, `fetch_cargo_root_notices.py` collects original
+texts only from the repository and full Git commit recorded inside that exact
+checksum-verified crate. Every retained text has its exact public URL, hash and
+size; missing provenance, 404s and download failures remain explicit gaps.
+This collection does not decide whether a root grant covers every incorporated
+dependency. Rusty V8's incorporated V8 commit and Ollama's MLX/MLX-C commits are
+therefore independently pinned and retained as original source inputs.
+
+App assembly checks the architecture of every actual Mach-O member before
+signing any native member. A component specification's architecture label alone
+does not establish that all its native dependencies can run on that CPU.
