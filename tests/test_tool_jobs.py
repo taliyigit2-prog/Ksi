@@ -31,6 +31,17 @@ class ToolJobTests(unittest.TestCase):
         identifier = self.service.submit_media(self.request)
         self.assertEqual(JobStore(self.store.path).get_job(identifier).job_kind, JobKind.MEDIA)
 
+    def test_invalid_request_fails_before_claim_without_remaining_queued(self):
+        identifier = self.service.submit_media(self.request)
+        record = self.store.get_job(identifier)
+        (Path(record.job_directory) / "tool-request.json").write_text("{invalid")
+        with patch("ksi_local.tool_jobs.process_media") as engine:
+            with self.assertRaises(ValueError):
+                self.service.execute(identifier)
+        engine.assert_not_called()
+        self.assertEqual(self.store.get_job(identifier).status, JobStatus.FAILED)
+        self.assertEqual(self.source.read_bytes(), b"synthetic media")
+
     def test_cancel_during_cached_output_hash_is_persisted_before_claim(self):
         identifier = self.service.submit_media(self.request)
         def render(request, **options):

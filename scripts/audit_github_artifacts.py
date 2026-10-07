@@ -24,10 +24,11 @@ PATTERNS = {
     "api-key": rb"\bsk-(?:proj-|ant-)?[A-Za-z0-9_-]{20,}\b",
     "aws-key": rb"\b(?:AKIA|ASIA)[0-9A-Z]{16}\b",
     "huggingface-token": rb"\bhf_[A-Za-z0-9]{25,}\b",
-    "private-key": rb"-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----",
+    "private-key": rb"-----BEGIN (?:RSA |EC |DSA |OPENSSH |ENCRYPTED )?PRIVATE KEY-----\r?\n(?:Proc-Type:[^\n]+\nDEK-Info:[^\n]+\n\r?\n)?[A-Za-z0-9+/=\r\n]{64,16384}-----END (?:RSA |EC |DSA |OPENSSH |ENCRYPTED )?PRIVATE KEY-----",
     "credential-url": rb"https?://[^\s/:]+:[^\s/@]+@",
     "personal-home": b"/" + rb"Users/(?!runner(?:/|\b)|you(?:/|\b)|USER(?:/|\b))[^/\s]+/",
 }
+PATTERNS["current-host-home"] = re.escape(str(Path.home()).encode()) + rb"/"
 COMPILED = {name: re.compile(pattern) for name, pattern in PATTERNS.items()}
 
 
@@ -47,7 +48,7 @@ def scan_stream(stream, name, findings):
                     found.add(key)
                     findings.append({"member": name, "rule": rule, "byte_offset": position})
         offset += len(block)
-        tail = data[-512:]
+        tail = data[-32768:]
     return total
 
 

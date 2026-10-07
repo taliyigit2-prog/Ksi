@@ -19,5 +19,11 @@ This decision supersedes external runtime choices in earlier desktop notes.
   user jobs and final outputs stay protected. No new features are added.
 
 This source checkpoint is not final product acceptance. Archive privacy review,
-legacy job-path migration, complete native apps, installation media and actual
+unfinished legacy job-path migration, complete native apps, installation media and actual
 cross-architecture automatic acceptance still need recorded evidence.
+
+Completed legacy jobs may be imported non-destructively after source identity,
+free-space, database-backup and actual copied-file hash verification. Original
+documents/checkpoints are not rewritten. Unfinished or unavailable old jobs
+remain in history and are paused outside the active workspace; they are never
+automatically replayed using old absolute checkpoint paths.

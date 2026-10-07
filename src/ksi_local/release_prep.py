@@ -53,6 +53,8 @@ PUBLIC_DOCUMENTS = (
 PUBLIC_SCRIPTS = (
     "scripts/audit_github_artifacts.py",
     "scripts/cleanup_obsolete_stages.py",
+    "scripts/stage_auxiliary_tools.py",
+    "scripts/stage_transitive_notices.py",
     "scripts/build_app_icon.sh",
     "scripts/build_ocr_helper.sh",
     "scripts/build_personal_dmg.sh",

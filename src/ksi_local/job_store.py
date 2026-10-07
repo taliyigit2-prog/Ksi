@@ -47,7 +47,7 @@ class StageStatus(StrEnum):
 
 
 _JOB_TRANSITIONS = {
-    JobStatus.QUEUED: {JobStatus.RUNNING, JobStatus.WAITING_FOR_SSD, JobStatus.CANCELLED},
+    JobStatus.QUEUED: {JobStatus.RUNNING, JobStatus.WAITING_FOR_SSD, JobStatus.CANCELLED, JobStatus.FAILED},
     JobStatus.RUNNING: {
         JobStatus.COMPLETED,
         JobStatus.FAILED,
@@ -556,6 +556,24 @@ class JobStore:
                 (JobStatus.QUEUED, _now(), JobStatus.WAITING_FOR_SSD),
             )
         return int(cursor.rowcount)
+
+    def pause_archived_jobs(self, workspace_root: Path) -> int:
+        """Keep legacy history, but do not auto-run jobs outside active storage."""
+        jobs = workspace_root.resolve() / "jobs"
+        count = 0
+        with self._connect() as connection:
+            rows = connection.execute("SELECT id, job_directory, status FROM jobs").fetchall()
+            for row in rows:
+                if row["status"] not in {JobStatus.QUEUED, JobStatus.RUNNING, JobStatus.WAITING_FOR_SSD}:
+                    continue
+                if Path(row["job_directory"]).resolve().is_relative_to(jobs):
+                    continue
+                connection.execute("UPDATE jobs SET status = ?, current_stage = NULL, updated_at = ? WHERE id = ?",
+                                   (JobStatus.PAUSED, _now(), row["id"]))
+                connection.execute("UPDATE stages SET status = ? WHERE job_id = ? AND status = ?",
+                                   (StageStatus.PENDING, row["id"], StageStatus.RUNNING))
+                count += 1
+        return count
 
     def retry_job(self, job_id: str) -> JobRecord:
         current = self.get_job(job_id)

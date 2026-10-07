@@ -2359,6 +2359,7 @@ class MainWindow(QMainWindow):
         was_missing = self.workspace is None
         self.workspace = resolved
         self.core.set_workspace(resolved)
+        self.store.pause_archived_jobs(resolved.root)
         if recover_interrupted or was_missing:
             self.model_controller.refresh()
         if recover_interrupted:
@@ -2406,6 +2407,8 @@ class MainWindow(QMainWindow):
         except KeyError:
             return
         if record.status is not JobStatus.QUEUED:
+            return
+        if not Path(record.job_directory).resolve().is_relative_to(self.workspace.jobs.resolve()):
             return
         if record.job_kind in {JobKind.MEDIA, JobKind.IMAGE}:
             self.tool_controller.resume(record.id)
@@ -2687,10 +2690,9 @@ class MainWindow(QMainWindow):
             if record.source_language == AUTO_LANGUAGE
             else source_language_name(record.source_language, self.preferences.ui_language)
         )
-        storage = Path(record.job_directory).anchor.rstrip("/") or self._jt("external_ssd")
-        if "/Volumes/" in record.job_directory:
-            parts = Path(record.job_directory).parts
-            storage = f"SSD: {parts[2]}" if len(parts) > 2 else "SSD"
+        storage = self._jt("external_ssd")
+        if self.workspace is None or not Path(record.job_directory).resolve().is_relative_to(self.workspace.jobs.resolve()):
+            storage = self._jt("paused")
         self.job_context_label.setText(
             f"{kind} • {self._jt('language')}: {language} • "
             f"{self._jt('output')}: {self._job_output_label(record)} • "
@@ -2796,6 +2798,9 @@ class MainWindow(QMainWindow):
             self.export_kind.setCurrentIndex(self.export_kind.findData("all"))
         self._update_job_context(record)
         idle = not self._process_is_running() and not self.maintenance_pending
+        active_record = bool(record and self.workspace and
+                             Path(record.job_directory).resolve().is_relative_to(self.workspace.jobs.resolve()))
+        idle = idle and active_record
         has_document_translation = bool(
             record
             and record.job_kind is JobKind.DOCUMENT

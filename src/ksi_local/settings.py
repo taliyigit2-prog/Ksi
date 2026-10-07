@@ -71,7 +71,10 @@ def _resolve_workspace(*, initialize: bool = False) -> WorkspacePaths:
         selection = None
     if selection is not None:
         validate_internal_path(Path(selection.workspace_root))
-        return _selected_paths(Path(selection.workspace_root), selection.workspace_id)
+        paths = _selected_paths(Path(selection.workspace_root), selection.workspace_id)
+        if initialize:
+            _import_legacy_completed_jobs(paths.root)
+        return paths
     if initialize or (not identity_file().exists() and not os.environ.get("KSI_IDENTITY_FILE")):
         if not initialize:
             raise RuntimeError("KSI çalışma alanı henüz kurulmadı; uygulamayı açarak ilk kurulumu tamamlayın.")
@@ -91,8 +94,37 @@ def _resolve_workspace(*, initialize: bool = False) -> WorkspacePaths:
         # Persist before model copying: an interrupted install resumes this same
         # workspace rather than generating a new identity over existing files.
         save_selection(selection)
-        return _selected_paths(root, selection.workspace_id)
+        paths = _selected_paths(root, selection.workspace_id)
+        _import_legacy_completed_jobs(root)
+        return paths
     raise RuntimeError("Eski depolama kaydı korunuyor; dahili kurulumu uygulamadan tamamlayın.")
+
+
+def _import_legacy_completed_jobs(destination: Path) -> None:
+    import sqlite3
+
+    from ksi_local.job_store import default_database_path
+    from ksi_local.workspace_management import selection_path
+    from ksi_local.workspace_job_migration import import_completed_jobs
+
+    archive = selection_path().parent / "legacy-external-workspace.local.json"
+    if not archive.is_file() or archive.is_symlink() or archive.stat().st_size > 65536:
+        return
+    try:
+        previous = json.loads(archive.read_text(encoding="utf-8"))
+        if (not isinstance(previous, dict) or previous.get("workspace_location") != "external"
+                or not isinstance(previous.get("workspace_root"), str)
+                or not Path(previous["workspace_root"]).is_absolute()
+                or not isinstance(previous.get("workspace_id"), str)):
+            raise ValueError("Eski çalışma alanı kaydı geçersiz; kaynak korunmuştur.")
+        import_completed_jobs(default_database_path(), Path(previous["workspace_root"]), destination,
+                              workspace_id=previous["workspace_id"])
+    except (OSError, RuntimeError, ValueError, TypeError, KeyError, sqlite3.Error) as error:
+        # An unavailable legacy archive must not block the approved internal
+        # app. Keep diagnostics private and never claim that import succeeded.
+        atomic_write_json(archive.parent / "internal-job-migration-error.local.json",
+                          {"schema_version": 1, "source_preserved": True,
+                           "completed": False, "error_type": type(error).__name__}, mode=0o600)
 
 
 def _selected_paths(root: Path, workspace_id: str) -> WorkspacePaths:

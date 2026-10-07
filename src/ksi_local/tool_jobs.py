@@ -117,6 +117,17 @@ class ToolJobService:
                     self.store.transition_job(identifier, JobStatus.CANCELLED, error=str(error))
                 raise
 
+            except (OSError, ValueError, RuntimeError, KeyError) as error:
+                # Validation can fail before claiming QUEUED -> RUNNING. Do
+                # not leave a broken request eligible for automatic retry.
+                # A job belonging to a different workspace is not ours to edit.
+                record = self.store.get_job(identifier)
+                if (record.job_kind in {JobKind.MEDIA, JobKind.IMAGE}
+                        and record.status is JobStatus.QUEUED
+                        and Path(record.job_directory).resolve().parent == self.workspace.jobs.resolve()):
+                    self.store.transition_job(identifier, JobStatus.FAILED, error=str(error))
+                raise
+
     def _execute_owned(
         self, identifier: str, *, cancel: threading.Event | None = None,
         on_progress: Callable[[float], None] | None = None,
