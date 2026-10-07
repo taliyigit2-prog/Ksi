@@ -389,7 +389,7 @@ def main(argv: list[str] | None = None) -> int:
         with local_only_socket_guard():
             synthesize(args)
         return 0
-    except (OSError, RuntimeError, ValueError) as error:
+    except (OSError, RuntimeError, ValueError, ImportError, TypeError) as error:
         _emit(WorkerEvent("error", "tts", message=redact_sensitive_text(str(error))))
         return 1
 

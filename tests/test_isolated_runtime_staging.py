@@ -55,3 +55,33 @@ class IsolatedRuntimeStagingTests(unittest.TestCase):
             runtime, lock, python, _ = self.fixture(Path(temporary))
             with self.assertRaises(ValueError):
                 validate_runtime(runtime, lock, python, {}, "chatterbox")
+
+    def test_exact_source_overrides_include_antlr_and_detect_tampering(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            runtime, _, _, _ = self.fixture(root)
+            lock = json.loads((repository / "config/python-chatterbox-wheels-arm64.json").read_text())
+            python = json.loads((repository / "config/runtime-sources.json").read_text())["inputs"]["python-arm64"]
+            inputs = json.loads((repository / "config/native-sources.json").read_text())["inputs"]
+            packages = runtime / "python/lib/python3.12/site-packages"
+            def source_files(names):
+                rows = []
+                for name in names:
+                    target = packages / name
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(b"Explicit synthetic source/notice fixture")
+                    rows.append(dict(path=name, sha256=hashlib.sha256(target.read_bytes()).hexdigest()))
+                return rows
+            chatterbox = inputs["chatterbox-source"]
+            antlr, notice = inputs["antlr-python-source"], inputs["antlr-python-license"]
+            overrides = [dict(name="chatterbox-tts", version=chatterbox["version"], commit=chatterbox["commit"], source_url=chatterbox["url"], files=source_files(["chatterbox/__init__.py"])),
+                dict(name=antlr["name"], version=antlr["version"], source_url=antlr["url"], source_archive_sha256=antlr["sha256"], license_sha256=notice["sha256"], files=source_files(["antlr4/__init__.py", "antlr4_python3_runtime-4.9.3.dist-info/METADATA", "antlr4_python3_runtime-4.9.3.dist-info/LICENSE.txt"]))]
+            provenance = dict(schema_version=1, architecture="arm64", python_version=python["version"], python_source_sha256=python["sha256"], wheel_lock_sha256=hashlib.sha256(json.dumps(lock, sort_keys=True, separators=(",", ":")).encode()).hexdigest(), source_overrides=overrides)
+            (runtime / "runtime-provenance.json").write_text(json.dumps(provenance))
+            stage(runtime, lock, python, inputs, "chatterbox", root / "stage")
+            spec = json.loads((root / "stage/component-specification.json").read_text())
+            grant = next(row for row in spec["files"] if row["identifier"] == "chatterbox-antlr-original-notice")
+            self.assertEqual(grant["role"], "license")
+            (packages / "antlr4/__init__.py").write_bytes(b"Changed source")
+            with self.assertRaises(ValueError):
+                validate_runtime(runtime, lock, python, inputs, "chatterbox")

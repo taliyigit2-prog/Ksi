@@ -18,6 +18,11 @@ NAV = {
 LANG_ORDER = SUPPORTED_UI_LANGUAGES
 # Column order: tr, ru, en, es, de, fr, it, zh.
 COPY = {
+    "model_local": ("Tam model paketi dahildir; ilk açılışta indirme gerekmez.", "Полный пакет модели включён; загрузка при первом запуске не нужна.", "Complete model included; no first-launch download required.", "Modelo completo incluido; no requiere descarga al iniciar.", "Vollständiges Modell enthalten; kein Download beim ersten Start.", "Modèle complet inclus ; aucun téléchargement au premier lancement.", "Modello completo incluso; nessun download al primo avvio.", "包含完整模型，首次启动无需下载。"),
+    "model_asr": ("Ses ve videoları yerel olarak yazıya döker.", "Локальная расшифровка аудио и видео.", "Transcribes audio and video locally.", "Transcribe audio y vídeo localmente.", "Transkribiert Audio und Video lokal.", "Transcrit les fichiers audio et vidéo localement.", "Trascrive audio e video localmente.", "在本地转录音频和视频。"),
+    "model_tts": ("Dahili Türkçe anlatıcı; kişisel referans sesi kullanılmaz.", "Встроенный турецкий голос; личные образцы голоса не используются.", "Built-in Turkish narrator; no personal reference voice is used.", "Narrador turco incluido; no utiliza muestras de voz personales.", "Integrierte türkische Stimme; keine persönlichen Stimmproben.", "Voix turque intégrée ; aucun échantillon vocal personnel utilisé.", "Voce turca inclusa; nessun campione vocale personale utilizzato.", "内置土耳其语旁白，不使用个人参考声音。"),
+    "model_background": ("Görsellerin ve kısa videoların arka planını yerel olarak ayırır.", "Локальное удаление фона изображений и коротких видео.", "Removes image and short-video backgrounds locally.", "Elimina localmente fondos de imágenes y vídeos cortos.", "Entfernt Hintergründe von Bildern und kurzen Videos lokal.", "Supprime localement les arrière-plans d’images et de courtes vidéos.", "Rimuove localmente lo sfondo di immagini e brevi video.", "在本地移除图片和短视频背景。"),
+    "model_argos": ("İngilizce ve Türkçe arasında doğrudan çevrimdışı çeviri.", "Прямой офлайн-перевод между английским и турецким.", "Direct offline translation between English and Turkish.", "Traducción directa sin conexión entre inglés y turco.", "Direkte Offline-Übersetzung zwischen Englisch und Türkisch.", "Traduction directe hors ligne entre l’anglais et le turc.", "Traduzione diretta offline tra inglese e turco.", "英语与土耳其语之间的直接离线翻译。"),
     "model_license": ("Lisans ve koşullar", "Лицензия и условия", "License and terms", "Licencia y condiciones", "Lizenz und Bedingungen", "Licence et conditions", "Licenza e condizioni", "许可证与条款"),
     "local": ("Tamamen yerel medya stüdyosu", "Локальная медиастудия", "Fully local media studio", "Estudio multimedia local", "Lokales Medienstudio", "Studio multimédia local", "Studio multimediale locale", "完全本地的媒体工作室"),
     "drop": ("Dosyayı buraya sürükle ve bırak", "Перетащите файл сюда", "Drop a file here", "Arrastra un archivo aquí", "Datei hier ablegen", "Déposez un fichier ici", "Trascina un file qui", "将文件拖放到此处"),
@@ -94,3 +99,13 @@ def validate_catalog() -> None:
         raise ValueError("Eksik native gezinme çevirisi.")
     if any(len(values) != len(LANG_ORDER) for values in COPY.values()):
         raise ValueError("Eksik native ekran çevirisi.")
+
+
+def model_description(identifier: str, fallback: str, locale: str) -> str:
+    keys = {
+        "translategemma": "model_local", "qwen3.5": "model_local",
+        "whisper": "model_asr", "chatterbox": "model_tts", "piper": "model_tts",
+        "u2netp": "model_background", "argos-en-tr": "model_argos", "argos-tr-en": "model_argos",
+    }
+    key = keys.get(identifier)
+    return text(key, locale) if key else fallback

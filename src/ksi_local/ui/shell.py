@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 
 from ksi_local import __version__
 from ksi_local.ui.components import Card, ModelRow
-from ksi_local.ui.strings import text as studio_text
+from ksi_local.ui.strings import model_description, text as studio_text
 from ksi_local.preferences import save_preferences
 
 
@@ -251,6 +251,8 @@ class StudioShell:
         self.description.setText(labels[9])
         self.advanced.setText(labels[10])
         self.model_status.setText(self.window._t("system.waiting"))
+        if getattr(self, "_model_rows", ()):
+            self._models_ready(self._model_rows)
 
     def _translation_engine_changed(self):
         selected = self.translation_engine.currentData()
@@ -263,6 +265,8 @@ class StudioShell:
         save_preferences(self.window.preferences)
 
     def _models_ready(self, rows):
+        self._model_rows = tuple(rows)
+        rows = self._model_rows
         while self.model_list.count():
             item = self.model_list.takeAt(0)
             if item.widget() and item.widget() is not self.model_status:
@@ -280,7 +284,8 @@ class StudioShell:
         }.get(language, ("Installed", "Verified", "Missing", "Corrupt", "Verify", "Install from bundle"))
         indices = {"installed": 0, "verified": 1, "missing": 2, "corrupt": 3}
         for model in rows:
-            row = ModelRow(model.identifier, model.title, model.description + "\n" + model.license)
+            description = model_description(model.identifier, model.description, language)
+            row = ModelRow(model.identifier, model.title, description + "\n" + model.license)
             row.license_button.setText(studio_text("model_license", language))
             row.license_button.show()
             row.licenseRequested.connect(self._show_model_license)

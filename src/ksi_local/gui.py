@@ -2237,7 +2237,7 @@ class MainWindow(QMainWindow):
         # Capture only jobs that were actively running when the previous app
         # process disappeared. Ordinary queued jobs must remain under the
         # user's control, while interrupted work should continue from its
-        # checkpoint after the SSD has been verified.
+        # checkpoint after the internal workspace has been verified.
         self.startup_interrupted_job_ids = tuple(
             record.id
             for record in self.store.list_jobs()
@@ -2257,7 +2257,7 @@ class MainWindow(QMainWindow):
         self.workspace_thread = threading.Thread(
             target=self._resolve_workspace_in_background,
             args=(recover_interrupted,),
-            name="KSI Local Studio-SSD-Denetimi",
+            name="KSI Local Studio-Workspace-Check",
             daemon=True,
         )
         self.workspace_thread.start()
@@ -2279,7 +2279,7 @@ class MainWindow(QMainWindow):
                 recover_interrupted,
             )
         except RuntimeError:
-            # The window may have closed while the removable disk was blocked.
+            # The window may have closed while workspace access was blocked.
             return
 
     def _workspace_resolution_finished(

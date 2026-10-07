@@ -16,6 +16,7 @@ import shutil
 from pathlib import Path
 
 from ksi_local.app_assembly import copy_clean_tree
+from ksi_local.antlr_source import install_source
 from ksi_local.atomic_files import atomic_write_json, atomic_write_text
 from ksi_local.bundle_runtime import digest_file
 from ksi_local.native_build import _stage_native_source
@@ -26,9 +27,12 @@ def main():
     parser.add_argument("runtime", type=Path)
     parser.add_argument("source", type=Path)
     parser.add_argument("destination", type=Path)
+    parser.add_argument("--antlr-source", type=Path, required=True)
+    parser.add_argument("--antlr-license", type=Path, required=True)
     args = parser.parse_args()
     repository = Path(__file__).resolve().parents[1]
-    source_pin = json.loads((repository / "config/native-sources.json").read_text())["inputs"]["chatterbox-source"]
+    inputs = json.loads((repository / "config/native-sources.json").read_text())["inputs"]
+    source_pin = inputs["chatterbox-source"]
     destination = args.destination.absolute()
     if destination.exists() or destination.is_symlink():
         raise FileExistsError("Source-bound speech runtime requires new staging.")
@@ -72,7 +76,9 @@ def main():
     buffer = io.StringIO(newline="")
     csv.writer(buffer).writerows(rows)
     atomic_write_text(record, buffer.getvalue(), mode=0o644)
-    provenance["source_overrides"] = [override]
+    antlr = install_source(args.antlr_source.absolute(), args.antlr_license.absolute(), packages,
+                           inputs["antlr-python-source"], inputs["antlr-python-license"])
+    provenance["source_overrides"] = [override, antlr]
     atomic_write_json(destination / "runtime-provenance.json", provenance, mode=0o644)
     print(json.dumps({"architecture": "arm64", "source_commit": source_pin["commit"],
         "upstream_files": len(override["files"]), "acceptance_tested": False}))

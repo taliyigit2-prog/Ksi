@@ -40,6 +40,20 @@ license texts, and the final binary SPDX inventory must include their complete
 contents. The primary GUI uses PySide6-Essentials plus Shiboken rather than the
 unused PySide6-Addons distribution.
 
+The selected upstream Chatterbox V3 Git source additionally requires OmegaConf
+2.3.0. Its official wheel is locked with the speech environment. OmegaConf's
+ANTLR Python 4.9.3 dependency has no official wheel: the build preserves its
+exact official PyPI source, original package metadata and the original BSD
+notice from the matching ANTLR Git commit. The explicit source overlay runs no
+setup script and is not described as an official wheel. Both the Chatterbox Git
+override and ANTLR source override are hash-bound and rechecked before staging.
+This does not certify the final binary dependency inventory or model quality.
+
+Only the isolated speech lock retains setuptools 80.9.0 for the original Perth
+watermark package's `pkg_resources` API. The main GUI/build-tool environments
+are unaffected. Perth's watermark is not replaced by a dummy implementation
+or silently disabled to work around a failed import.
+
 Matching Qt/PySide 6.11.2 sources have a separate official-checksum inventory in
 `config/qt-corresponding-sources.json`. The selected wheel also contains QML,
 SVG, tool, image-format and timeline runtime modules even though KSI's own GUI

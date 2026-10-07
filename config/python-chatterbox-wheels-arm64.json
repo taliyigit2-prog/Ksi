@@ -5,6 +5,15 @@
   "schema_version": 1,
   "wheels": [
     {
+      "filename": "omegaconf-2.3.0-py3-none-any.whl",
+      "license": "NOASSERTION",
+      "name": "omegaconf",
+      "sha256": "7b4df175cdb08ba400f45cae3bdcae7ba8365db4d165fc65fd04b050ab63b46b",
+      "size": 79500,
+      "url": "https://files.pythonhosted.org/packages/e3/94/1843518e420fa3ed6919835845df698c7e27e183cb997394e4a670973a65/omegaconf-2.3.0-py3-none-any.whl",
+      "version": "2.3.0"
+    },
+    {
       "filename": "annotated_doc-0.0.5-py3-none-any.whl",
       "license": "MIT",
       "name": "annotated-doc",
@@ -545,13 +554,13 @@
       "version": "1.17.1"
     },
     {
-      "filename": "setuptools-84.0.0-py3-none-any.whl",
+      "filename": "setuptools-80.9.0-py3-none-any.whl",
       "license": "MIT",
       "name": "setuptools",
-      "sha256": "51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670",
-      "size": 818216,
-      "url": "https://files.pythonhosted.org/packages/95/9c/c510029fc6ef33a6275cd2c5d3cecd6613dfd6aa401d57c54f1c18852ccf/setuptools-84.0.0-py3-none-any.whl",
-      "version": "84.0.0"
+      "sha256": "062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922",
+      "size": 1201486,
+      "url": "https://files.pythonhosted.org/packages/a3/dc/17031897dae0efacfea57dfd3a82fdd2a2aeb58e0ff71b77b87e44edc772/setuptools-80.9.0-py3-none-any.whl",
+      "version": "80.9.0"
     },
     {
       "filename": "shellingham-1.5.4-py2.py3-none-any.whl",

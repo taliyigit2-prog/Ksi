@@ -184,6 +184,14 @@ including checkpoint-only resumes. All five required upstream files must match
 the sealed payload; checkpoint identity includes their combined hashes so a
 model revision cannot reuse audio from another revision. The isolated ARM speech
 runtime has its own official PyPI lock, independent of the GUI's NumPy/Torch.
+The V3 source-bound stage requires `--antlr-source` and `--antlr-license`,
+pointing to the exact `antlr-python-source` and `antlr-python-license` inputs.
+OmegaConf 2.3.0 is in the official wheel lock; ANTLR 4.9.3 is installed as an
+explicit original pure-Python source overlay because PyPI has no official wheel.
+Original metadata, source hashes and the matching BSD notice are retained;
+no source setup script runs. Only this isolated runtime pins setuptools 80.9.0
+for Perth's original `pkg_resources` API. Watermark imports and actual synthesis
+must pass; a successful Chatterbox class import is insufficient acceptance.
 The Intel Whisper GGML input is pinned to the official LFS SHA-256 and revision;
 neither this pin nor successful input downloads constitute inference acceptance.
 
