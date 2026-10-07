@@ -24,7 +24,8 @@ def _name(value: str) -> str:
     return re.sub(r"[-_.]+", "-", value).lower()
 
 
-def validate_notice_inventory(resources: Path, specification: dict, lock: dict, *, scope: str) -> None:
+def validate_notice_inventory(resources: Path, specification: dict, lock: dict, *, scope: str,
+                             corresponding_sources: dict[str, str] | None = None) -> None:
     """Require complete notice coverage inside the actual staged application."""
     identifier = "python-notice-inventory-" + scope
     matches = [row for row in specification["files"] if row["role"] == "support" and row["identifier"] == identifier]
@@ -61,6 +62,35 @@ def validate_notice_inventory(resources: Path, specification: dict, lock: dict, 
             original = safe_member(resources, notice["target"])
             if not original.is_file() or original.stat().st_size != bound["size"] or digest_file(original) != bound["sha256"]:
                 raise ValueError("App Python notice/source integrity failed.")
+    if scope == "piper" and "piper-tts" in locked:
+        validate_piper_source_binding(resources, specification, corresponding_sources)
+
+
+def validate_piper_source_binding(resources: Path, specification: dict,
+                                 corresponding_sources: dict[str, str] | None) -> None:
+    """A nested g2pW Apache notice cannot stand in for Piper's own GPL grant."""
+    required = {"piper-corresponding-source", "piper-espeak-source"}
+    if not isinstance(corresponding_sources, dict) or set(corresponding_sources) != required:
+        raise ValueError("Piper requires its exact corresponding engine and embedded eSpeak source pins.")
+    entries = {(row["role"], row["identifier"]): row for row in specification["files"]}
+    if len(entries) != len(specification["files"]):
+        raise ValueError("Piper source/notice identifiers are duplicated.")
+    for identifier, pin in corresponding_sources.items():
+        source = entries.get(("support", identifier))
+        if source is None or source["sha256"] != pin:
+            raise ValueError("Piper corresponding source is missing or differs from its public pin.")
+        path = safe_member(resources, source["path"])
+        if not path.is_file() or path.stat().st_size != source["size"] or digest_file(path) != pin:
+            raise ValueError("Piper corresponding source changed inside the application.")
+    primary = entries.get(("license", "piper-engine-original-notice"))
+    originals = [row for row in specification["files"] if row["role"] == "license"
+        and row["path"] == "licenses/tools/piper-corresponding/COPYING"]
+    if primary is None or len(originals) != 1 or any(primary[key] != originals[0][key] for key in ("size", "sha256")):
+        raise ValueError("Piper's installed GPL text is not bound to its original source notice.")
+    for row in (primary, originals[0]):
+        path = safe_member(resources, row["path"])
+        if not path.is_file() or path.stat().st_size != row["size"] or digest_file(path) != row["sha256"]:
+            raise ValueError("Piper original GPL notice changed inside the application.")
 
 
 def stage_distribution_notices(lock: dict, wheel_report: dict, wheel_directory: Path,

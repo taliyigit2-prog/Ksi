@@ -79,3 +79,9 @@ Public payload manifests and model catalogs use read-only-to-other-users 0644
 permissions, not private-state 0600 defaults. This permits a different macOS
 account to read an installed application without running it as administrator;
 user preferences, jobs and acceptance data keep their private-state policy.
+
+Piper's installed GPL COPYING must match the separately retained original
+Piper source COPYING byte-for-byte. App assembly additionally requires the
+matching Piper and embedded eSpeak archive digests from the committed public
+source pins. A nested g2pW Apache notice in the wheel does not satisfy Piper's
+primary GPL notice/source obligation.

@@ -254,8 +254,13 @@ def assemble_app(repository: Path, runtime: Path, components: Path, specificatio
     isolated_tools = {row["identifier"] for row in spec["files"] if row["role"] == "tool"}
     for scope in ("piper", "chatterbox"):
         if scope + "-python" in isolated_tools:
-            isolated_lock = json.loads((repository / f"config/python-{scope}-wheels-{architecture}.json").read_text())
-            validate_notice_inventory(resources, spec, isolated_lock, scope=scope)
+            isolated_lock = json.loads(committed_file(repository, commit, f"config/python-{scope}-wheels-{architecture}.json")[0])
+            source_pins = None
+            if scope == "piper":
+                notice_sources = json.loads(committed_file(repository, commit, "config/tool-source-notices.json")[0])["sources"]
+                source_pins = {name: notice_sources[name]["source_archive_sha256"]
+                    for name in ("piper-corresponding-source", "piper-espeak-source")}
+            validate_notice_inventory(resources, spec, isolated_lock, scope=scope, corresponding_sources=source_pins)
     launcher = contents / "MacOS/KSI-Local-Studio"
     launcher_bytes, _ = committed_file(repository, commit, "packaging/KSI-Local-Studio-portable-launcher")
     atomic_write_bytes(launcher, launcher_bytes, mode=0o755)

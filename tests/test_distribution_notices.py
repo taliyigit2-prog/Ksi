@@ -4,10 +4,38 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from ksi_local.distribution_notices import stage_distribution_notices, validate_notice_inventory
+from ksi_local.distribution_notices import stage_distribution_notices, validate_notice_inventory, validate_piper_source_binding
 
 
 class DistributionNoticeTests(unittest.TestCase):
+    def test_piper_requires_its_primary_gpl_notice_and_both_matching_source_archives(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            rows, pins = [], {}
+            for name, role, identifier, content in (
+                    ("engines/piper/python/COPYING", "license", "piper-engine-original-notice", b"Synthetic GPL fixture"),
+                    ("licenses/tools/piper-corresponding/COPYING", "license", "original-copying", b"Synthetic GPL fixture"),
+                    ("sources/piper.tar", "support", "piper-corresponding-source", b"Synthetic Piper source fixture"),
+                    ("sources/espeak.tar", "support", "piper-espeak-source", b"Synthetic eSpeak source fixture")):
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(content)
+                row = {"path": name, "role": role, "identifier": identifier,
+                    "sha256": hashlib.sha256(content).hexdigest(), "size": len(content)}
+                rows.append(row)
+                if role == "support":
+                    pins[identifier] = row["sha256"]
+            validate_piper_source_binding(root, {"files": rows}, pins)
+            with self.assertRaises(ValueError):
+                validate_piper_source_binding(root, {"files": rows}, None)
+            with self.assertRaises(ValueError):
+                validate_piper_source_binding(root, {"files": rows[:-1]}, pins)
+            with self.assertRaises(ValueError):
+                validate_piper_source_binding(root, {"files": rows + [rows[0]]}, pins)
+            (root / rows[0]["path"]).write_bytes(b"Synthetic nested dependency notice instead")
+            with self.assertRaises(ValueError):
+                validate_piper_source_binding(root, {"files": rows}, pins)
+
     def fixture(self, root, *, present=True):
         source = root / "original"
         source.mkdir()
