@@ -55,3 +55,29 @@ class SourceLicenseTextTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 collect(archive, hashlib.sha256(archive.read_bytes()).hexdigest(), destination)
             self.assertFalse(destination.exists())
+
+    def archive(self, root):
+        path = root / "fixture.tar"
+        with tarfile.open(path, "w") as stream:
+            for name in ("LICENSE", "ACKNOWLEDGMENTS.md", "unrelated.md"):
+                data = b"Synthetic upstream text fixture, not a legal grant\n"
+                member = tarfile.TarInfo(name)
+                member.size = len(data)
+                stream.addfile(member, io.BytesIO(data))
+        return path, hashlib.sha256(path.read_bytes()).hexdigest()
+
+    def test_original_legal_acknowledgement_requires_explicit_selection(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            archive, digest = self.archive(root)
+            result = collect(archive, digest, root / "selected", members=("LICENSE", "ACKNOWLEDGMENTS.md"))
+            self.assertEqual({row["path"] for row in result["files"]}, {"LICENSE", "ACKNOWLEDGMENTS.md"})
+            result = collect(archive, digest, root / "default")
+            self.assertEqual({row["path"] for row in result["files"]}, {"LICENSE"})
+
+    def test_arbitrary_document_is_not_a_license_by_explicit_selection_alone(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            archive, digest = self.archive(root)
+            with self.assertRaises(ValueError):
+                collect(archive, digest, root / "unrelated", members=("unrelated.md",))

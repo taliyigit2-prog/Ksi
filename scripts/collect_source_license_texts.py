@@ -37,6 +37,11 @@ def collect(archive: Path, sha256: str, destination: Path, *, members: tuple[str
             safe_member(destination, name)
             basename = Path(name).name.casefold()
             wanted = "license" in basename or "licence" in basename or basename.startswith(("copying", "copyright", "notice")) or "/LICENSES/" in name
+            # MLX publishes incorporated PocketFFT/metal-cpp grants in this
+            # original legal acknowledgement. Require explicit selection so
+            # generic contributor lists are not mistaken for license grants.
+            if requested and name in requested and basename in {"acknowledgments.md", "acknowledgements.md"}:
+                wanted = True
             # Qt's "licensewizard" examples include images and executable
             # tutorial code, not legal notices. Do not mistake names for text.
             if Path(name).suffix.casefold() in {".png", ".jpg", ".jpeg", ".gif", ".ico", ".svg", ".webp", ".cpp", ".c", ".h", ".hpp", ".cxx", ".cc", ".py", ".qml", ".ui", ".qrc", ".rs", ".go", ".js", ".jsx", ".ts", ".tsx", ".java", ".kt", ".cs", ".swift", ".m", ".mm", ".sh", ".cmake"}:

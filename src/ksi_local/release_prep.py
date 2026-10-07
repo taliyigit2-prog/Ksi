@@ -57,6 +57,7 @@ PUBLIC_SCRIPTS = (
     "scripts/stage_transitive_notices.py",
     "scripts/stage_v8_embedded_notices.py",
     "scripts/native_acceptance_preflight.py",
+    "scripts/inspect_frozen_python.py",
     "scripts/build_app_icon.sh",
     "scripts/build_ocr_helper.sh",
     "scripts/build_public_source.py",

@@ -40,7 +40,7 @@
     },
     "ollama-mlx-source": {
       "source_archive_sha256": "feff23109962b6f847db88683ed261d1a3b072ecd34c9479d2ab9f93d1191c7a",
-      "members": ["LICENSE"],
+      "members": ["LICENSE", "ACKNOWLEDGMENTS.md"],
       "pending_closure": ["MLX Metal C++ and nlohmann/json original notices", "Actual release configuration"]
     },
     "ollama-source": {
