@@ -22,8 +22,11 @@ from typing import Callable
 from ksi_local.copy_on_write import clone_file
 
 
-MAX_MANIFEST_BYTES = 16 * 1024 * 1024
-MAX_PAYLOAD_FILES = 50000
+# The ARM offline package has two independently isolated Python prefixes.
+# Their measured inventories already exceed 50,000 files before model/source
+# notices. Keep one bounded limit shared by producer, merger and reader.
+MAX_MANIFEST_BYTES = 32 * 1024 * 1024
+MAX_PAYLOAD_FILES = 100000
 ARCHITECTURES = {"arm64", "x86_64"}
 _MODEL_INSTALL_CACHE: dict[tuple[str, str], tuple] = {}
 _MODEL_INSTALL_LOCK = threading.Lock()

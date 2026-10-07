@@ -46,3 +46,25 @@ therefore independently pinned and retained as original source inputs.
 App assembly checks the architecture of every actual Mach-O member before
 signing any native member. A component specification's architecture label alone
 does not establish that all its native dependencies can run on that CPU.
+
+`stage_isolated_runtime.py` materializes an explicit clean speech prefix after
+checking its Python input digest, architecture, wheel lock and any reviewed
+Chatterbox source override. The original CPython legal text is
+`python/lib/python3.12/LICENSE.txt`. Piper's wheel installs a separate GPL
+`python/COPYING`; that file must not be mislabelled as Python's license. The
+Piper and matching embedded eSpeak complete source archives are retained as
+separate corresponding-source inputs. Python-package notice inventories and
+final binary-source binding remain independent mandatory checks.
+
+The measured ARM main and isolated speech prefixes contain 26,113 and 26,153
+files respectively, before other components. Payload producer, component merger
+and runtime reader therefore share a bounded 100,000-file / 32-MiB manifest
+limit. The producer reserves one entry for its generated model catalog. These
+larger bounded limits do not bypass per-file hash, architecture or path checks.
+
+App source, launcher, icon, Info.plist and native input configuration are read
+from bounded ordinary Git blobs at the recorded full source commit, rather than
+copied from potentially changed working-tree files. Copied component bytes are
+rechecked against their approved input hashes before shebang normalization or
+signing may alter build output. Isolated speech provenance and source overrides
+are revalidated after materialization as well as before it.

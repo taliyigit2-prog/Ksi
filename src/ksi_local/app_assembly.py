@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 import plistlib
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -26,6 +27,31 @@ from ksi_local.native_processor import require_native_build_process
 
 _MACHO_MAGICS = {b"\xcf\xfa\xed\xfe", b"\xfe\xed\xfa\xcf", b"\xce\xfa\xed\xfe", b"\xfe\xed\xfa\xce",
     b"\xca\xfe\xba\xbe", b"\xbe\xba\xfe\xca", b"\xca\xfe\xba\xbf", b"\xbf\xba\xfe\xca"}
+
+
+def committed_file(repository: Path, commit: str, name: str) -> tuple[bytes, int]:
+    """Read bounded ordinary Git blobs, never mutable working-tree content."""
+    if not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise ValueError("App source needs an immutable full Git commit.")
+    safe_member(repository, name)
+    listing = subprocess.run(["git", "ls-tree", "-z", commit, "--", name], cwd=repository,
+        check=True, capture_output=True, timeout=30).stdout.split(b"\0")
+    listing = [row for row in listing if row]
+    if len(listing) != 1:
+        raise ValueError("App source is missing or is not one ordinary committed file.")
+    description, filename = listing[0].split(b"\t", 1)
+    mode, kind, blob = description.decode("ascii").split()
+    if filename.decode("utf-8") != name or mode not in {"100644", "100755"} or kind != "blob" or not re.fullmatch(r"[0-9a-f]{40}", blob):
+        raise ValueError("App source is linked, ambiguous or not an ordinary Git blob.")
+    size = int(subprocess.run(["git", "cat-file", "-s", blob], cwd=repository,
+        check=True, capture_output=True, timeout=30).stdout)
+    if not 0 <= size <= 16 * 1024**2:
+        raise ValueError("Committed app source exceeds its file-size bound.")
+    content = subprocess.run(["git", "cat-file", "blob", blob], cwd=repository,
+        check=True, capture_output=True, timeout=30).stdout
+    if len(content) != size:
+        raise ValueError("Committed app source is incomplete.")
+    return content, 0o755 if mode == "100755" else 0o644
 
 
 def sign_native_payload(resources: Path, architecture: str) -> int:
@@ -185,12 +211,12 @@ def assemble_app(repository: Path, runtime: Path, components: Path, specificatio
             content = script.read_bytes()
             atomic_write_bytes(script, b"#!/usr/bin/env python3.12\n" + content.split(b"\n", 1)[1], mode=0o755)
     for name in approved:
-        source = safe_member(repository, name)
         target = resources / "runtime" / name
         target.parent.mkdir(parents=True, exist_ok=True)
         if target.exists():
             raise ValueError("Source would replace a runtime member.")
-        shutil.copy2(source, target)
+        content, mode = committed_file(repository, commit, name)
+        atomic_write_bytes(target, content, mode=mode)
     profile = resources / "runtime/config/voice-profile.json"
     voice = json.loads(profile.read_text(encoding="utf-8"))
     voice.update(status="local-default", accepted_at=None)
@@ -205,6 +231,8 @@ def assemble_app(repository: Path, runtime: Path, components: Path, specificatio
             raise FileExistsError("Component staging would overwrite an existing member.")
         if not clone_file(origin, target):
             shutil.copy2(origin, target)
+        if target.stat().st_size != row["size"] or digest_file(target) != row["sha256"]:
+            raise ValueError("Component changed between input validation and copying.")
         # Isolated runtime support includes executable helpers as well as data.
         # Removing their execute bits breaks subprocess entry points even when
         # the top-level interpreter was declared as a verified tool.
@@ -218,10 +246,11 @@ def assemble_app(repository: Path, runtime: Path, components: Path, specificatio
             isolated_lock = json.loads((repository / f"config/python-{scope}-wheels-{architecture}.json").read_text())
             validate_notice_inventory(resources, spec, isolated_lock, scope=scope)
     launcher = contents / "MacOS/KSI-Local-Studio"
-    shutil.copy2(repository / "packaging/KSI-Local-Studio-portable-launcher", launcher)
-    launcher.chmod(0o755)
-    shutil.copy2(repository / "packaging/KSI-Local-Studio.icns", resources / "KSI-Local-Studio.icns")
-    info = plistlib.loads((repository / "packaging/Info.plist").read_bytes())
+    launcher_bytes, _ = committed_file(repository, commit, "packaging/KSI-Local-Studio-portable-launcher")
+    atomic_write_bytes(launcher, launcher_bytes, mode=0o755)
+    icon_bytes, _ = committed_file(repository, commit, "packaging/KSI-Local-Studio.icns")
+    atomic_write_bytes(resources / "KSI-Local-Studio.icns", icon_bytes, mode=0o644)
+    info = plistlib.loads(committed_file(repository, commit, "packaging/Info.plist")[0])
     info.update(KSIArchitecture=architecture, KSISourceCommit=commit,
                 LSArchitecturePriority=[architecture], CFBundleVersion="200")
     atomic_write_bytes(contents / "Info.plist", plistlib.dumps(info), mode=0o644)
@@ -231,7 +260,7 @@ def assemble_app(repository: Path, runtime: Path, components: Path, specificatio
     # Sign inner Mach-O files first. Their post-signing digests, not the original
     # downloaded binary digests, belong in the final runtime integrity manifest.
     native_files = sign_native_payload(resources, architecture)
-    native_inputs = json.loads((repository / "config/native-sources.json").read_text())["inputs"]
+    native_inputs = json.loads(committed_file(repository, commit, "config/native-sources.json")[0])["inputs"]
     bind_signed_tool_manifest(resources, spec, source_inputs=native_inputs)
     represented = {row["path"] for row in spec["files"]}
     for row in spec["files"]:

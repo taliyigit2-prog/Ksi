@@ -35,13 +35,12 @@ class SourceLicenseTextTests(unittest.TestCase):
             root = Path(temporary)
             archive = root / "source.tar.gz"
             with tarfile.open(archive, "w:gz") as stream:
-                for name, data in (("source/LICENSE", b"Synthetic license"), ("source/licensewizard.png", b"\x89PNG\xff"), ("source/program.py", b"raise RuntimeError()"), ("source/license_command.rs", b"fn main() {}"), ("source/license_test.ts", b"throw new Error('do not execute')"), ("source/libwinapi_oemlicense.a", b"!<arch>\n\x00\xff")):
+                for name, data in (("source/LICENSE", b"Synthetic license"), ("source/COPYING.LIB", b"Synthetic legal-text fixture"), ("source/licensewizard.png", b"\x89PNG\xff"), ("source/program.py", b"raise RuntimeError()"), ("source/license_command.rs", b"fn main() {}"), ("source/license_test.ts", b"throw new Error('do not execute')"), ("source/libwinapi_oemlicense.a", b"!<arch>\n\x00\xff")):
                     member = tarfile.TarInfo(name)
                     member.size = len(data)
                     stream.addfile(member, io.BytesIO(data))
             result = collect(archive, hashlib.sha256(archive.read_bytes()).hexdigest(), root / "notices")
-            self.assertEqual(len(result["files"]), 1)
-            self.assertEqual(result["files"][0]["path"], "source/LICENSE")
+            self.assertEqual({row["path"] for row in result["files"]}, {"source/LICENSE", "source/COPYING.LIB"})
             self.assertFalse(result["redistribution_review_complete"])
 
     def test_escape_is_rejected_before_any_notice_is_written(self):

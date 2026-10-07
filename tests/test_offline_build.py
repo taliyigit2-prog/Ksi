@@ -4,12 +4,29 @@ import hashlib
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
+
+from ksi_local.bundle_runtime import MAX_PAYLOAD_FILES
 
 from ksi_local.offline_build import seal_offline_payload
 from ksi_local.model_manager import ModelManager
 
 
 class OfflineBuildTests(unittest.TestCase):
+    def test_catalog_entry_is_reserved_under_the_shared_file_limit(self):
+        self.assertEqual(seal_offline_payload.__globals__["MAX_PAYLOAD_FILES"], MAX_PAYLOAD_FILES)
+        with patch("ksi_local.offline_build.MAX_PAYLOAD_FILES", len(self.specification["files"])):
+            with self.assertRaisesRegex(ValueError, "sayısı"):
+                seal_offline_payload(self.resources, self.specification)
+        self.assertFalse((self.resources / "offline-manifest.json").exists())
+        self.assertFalse((self.resources / "model-catalog.json").exists())
+
+    def test_actual_serialized_manifest_size_is_bounded(self):
+        with patch("ksi_local.offline_build.MAX_MANIFEST_BYTES", 1):
+            with self.assertRaisesRegex(ValueError, "boyut"):
+                seal_offline_payload(self.resources, self.specification)
+        self.assertFalse((self.resources / "offline-manifest.json").exists())
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)

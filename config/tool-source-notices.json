@@ -2,6 +2,37 @@
   "schema_version": 1,
   "redistribution_review_complete": false,
   "sources": {
+    "piper-corresponding-source": {
+      "source_archive_sha256": "70d062c1e80b0967b311f53e6036d9c78e146a6065d7444f3cec4a2fe85d2ea5",
+      "members": ["COPYING", "src/piper/tashkeel/LICENSE", "src/piper/hebrew/LICENSE", "licenses/LICENSE.g2pW-Apache-2.0"],
+      "pending_closure": ["Actual Piper executable package/source binding and binary redistribution inventory"]
+    },
+    "piper-espeak-source": {
+      "source_directory": "espeak-piper-python-pristine",
+      "source_archive_sha256": "190890316717c0550aeffb0a1a6b3266ce6da96acfc9818bf68de1313d8f7cf0",
+      "members": ["COPYING", "src/ucd-tools/COPYING"],
+      "pending_closure": ["Exact isolated Piper engine binding and release build provenance"]
+    },
+    "rusty-v8-source": {
+      "source_archive_sha256": "9c0e6e64f4dd0479d1c27df7310ee79e00120891da3cf89bb12a9e3130a60185",
+      "members": ["LICENSE"],
+      "pending_closure": ["Separately retained incorporated V8 and Chromium dependency notices"]
+    },
+    "v8-embedded-source": {
+      "source_archive_sha256": "597bd79abf86bec9200f0073a5e6f4df47ad9dd73d9d9eee4e143f483b3e4f9a",
+      "members": ["LICENSE", "LICENSE.fdlibm", "LICENSE.strongtalk", "LICENSE.v8", "third_party/colorama/LICENSE", "third_party/fp16/LICENSE", "third_party/glibc/LICENSE", "third_party/highway/LICENSE", "third_party/inspector_protocol/LICENSE", "third_party/jsoncpp/LICENSE", "third_party/rapidhash-v8/LICENSE", "third_party/re2/LICENSE", "third_party/siphash/LICENSE", "third_party/utf8-decoder/LICENSE", "third_party/v8/builtins/LICENSE", "third_party/v8/codegen/LICENSE", "third_party/valgrind/LICENSE", "third_party/vtune/LICENSE", "third_party/wasm-api/LICENSE"],
+      "pending_closure": ["Rusty V8 external Chromium/ICU submodule original notices", "Actual release dependency applicability"]
+    },
+    "ollama-mlx-c-source": {
+      "source_archive_sha256": "f4283776b2350b828e479b733c920d9d7a4fe908f536089a7086dd60ebc13325",
+      "members": ["LICENSE"],
+      "pending_closure": ["Separately retained MLX and selected release dependencies"]
+    },
+    "ollama-mlx-source": {
+      "source_archive_sha256": "feff23109962b6f847db88683ed261d1a3b072ecd34c9479d2ab9f93d1191c7a",
+      "members": ["LICENSE"],
+      "pending_closure": ["MLX Metal C++ and nlohmann/json original notices", "Actual release configuration"]
+    },
     "ollama-source": {
       "source_archive_sha256": "d16a34c9ace344987acd06eae07ab83cb313be868cbca7bd8035b6bb4abee3b1",
       "members": ["LICENSE", "llama/llama.cpp/LICENSE", "ml/backend/ggml/ggml/LICENSE"],

@@ -6,7 +6,7 @@ import shutil
 from pathlib import Path
 
 from ksi_local.atomic_files import atomic_write_json
-from ksi_local.bundle_runtime import digest_file, safe_member
+from ksi_local.bundle_runtime import MAX_MANIFEST_BYTES, MAX_PAYLOAD_FILES, digest_file, safe_member
 from ksi_local.copy_on_write import clone_file
 
 
@@ -20,13 +20,13 @@ def merge_components(pieces: tuple[Path, ...], destination: Path, *, architectur
         if piece.is_symlink() or not piece.is_dir():
             raise ValueError("Component stage must be a normal explicit directory.")
         manifest = safe_member(piece, "component-specification.json")
-        if not manifest.is_file() or manifest.stat().st_size > 16 * 1024**2:
+        if not manifest.is_file() or manifest.stat().st_size > MAX_MANIFEST_BYTES:
             raise ValueError("Component specification is missing or oversized.")
         spec = json.loads(manifest.read_text(encoding="utf-8"))
         if spec.get("schema_version") != 1 or spec.get("architecture") != architecture:
             raise ValueError("Component stage uses another architecture/version.")
         entries = spec.get("files")
-        if not isinstance(entries, list) or not entries or len(entries) > 50000:
+        if not isinstance(entries, list) or not entries or len(entries) >= MAX_PAYLOAD_FILES:
             raise ValueError("Component stage inventory is invalid.")
         for row in entries:
             relative = row["path"]
@@ -47,7 +47,7 @@ def merge_components(pieces: tuple[Path, ...], destination: Path, *, architectur
             by_path[path_key] = row
             by_id[id_key] = relative
             plan.append((origin, relative))
-            if len(by_path) > 50000:
+            if len(by_path) >= MAX_PAYLOAD_FILES:
                 raise ValueError("Merged component inventory exceeds its bound.")
         for model in spec.get("models", []):
             if model["id"] in model_ids:

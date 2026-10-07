@@ -12,8 +12,8 @@ from dataclasses import asdict
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from ksi_local.atomic_files import atomic_write_json
-from ksi_local.bundle_runtime import ARCHITECTURES, MAX_MANIFEST_BYTES, OfflinePayload, PayloadFile, digest_file, safe_member
+from ksi_local.atomic_files import atomic_write_bytes
+from ksi_local.bundle_runtime import ARCHITECTURES, MAX_MANIFEST_BYTES, MAX_PAYLOAD_FILES, OfflinePayload, PayloadFile, digest_file, safe_member
 
 
 def seal_offline_payload(resources: Path, specification: dict) -> dict:
@@ -25,7 +25,7 @@ def seal_offline_payload(resources: Path, specification: dict) -> dict:
     if architecture not in ARCHITECTURES:
         raise ValueError("Paket mimarisi açıkça arm64 veya x86_64 olmalıdır.")
     rows = specification.get("files")
-    if not isinstance(rows, list) or not 1 <= len(rows) <= 50000:
+    if not isinstance(rows, list) or not 1 <= len(rows) < MAX_PAYLOAD_FILES:
         raise ValueError("Sabitlenmiş paket dosya sayısı geçersiz.")
     entries, records, seen = [], {}, set()
     for row in rows:
@@ -103,19 +103,20 @@ def seal_offline_payload(resources: Path, specification: dict) -> dict:
     if ("support", "model-catalog") in records or "model-catalog.json" in seen:
         raise ValueError("Model kataloğunu mühürleyici üretir; tanım girdisi olamaz.")
     catalog_data = {"schema_version": 1, "models": models}
-    encoded_catalog = json.dumps(catalog_data, ensure_ascii=False).encode("utf-8")
+    encoded_catalog = (json.dumps(catalog_data, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
     if len(encoded_catalog) > 256 * 1024:
         raise ValueError("Model katalog boyutu sınırı aşıyor.")
     catalog = safe_member(resources, "model-catalog.json")
     manifest = safe_member(resources, "offline-manifest.json")
     if catalog.exists() or manifest.exists():
         raise FileExistsError("Mühürlenmiş paket dosyaları yeniden yazılmaz.")
-    atomic_write_json(catalog, catalog_data)
+    atomic_write_bytes(catalog, encoded_catalog)
     entries.append(PayloadFile("model-catalog.json", digest_file(catalog), catalog.stat().st_size, "support", "model-catalog"))
     data = {"schema_version": 1, "architecture": architecture, "files": [asdict(entry) for entry in entries]}
-    if len(json.dumps(data, ensure_ascii=False).encode("utf-8")) > MAX_MANIFEST_BYTES:
+    encoded_manifest = (json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    if len(encoded_manifest) > MAX_MANIFEST_BYTES:
         raise ValueError("Paket manifesti boyut sınırı aşıyor.")
-    atomic_write_json(manifest, data)
+    atomic_write_bytes(manifest, encoded_manifest)
     verified = OfflinePayload.load(resources, architecture=architecture)
     for entry in verified.files:
         verified.verify(entry)

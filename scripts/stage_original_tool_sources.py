@@ -32,7 +32,7 @@ def stage(repository: Path, source_root: Path, destination: Path, architecture: 
     plan = []
     for identifier, pin in pins["sources"].items():
         tool = identifier.removesuffix("-source")
-        origin = safe_member(source_root, tool + "-notices-pristine")
+        origin = safe_member(source_root, pin.get("source_directory", tool + "-notices-pristine"))
         provenance_file = safe_member(origin, "ksi-source-provenance.json")
         if not provenance_file.is_file() or provenance_file.stat().st_size > 16 * 1024**2:
             raise ValueError("Original tool source provenance is missing or oversized.")
@@ -67,7 +67,7 @@ def stage(repository: Path, source_root: Path, destination: Path, architecture: 
         target.chmod(0o644)
         rows.append(dict(path=relative, role="support", identifier=identifier,
             size=target.stat().st_size, sha256=pin["source_archive_sha256"]))
-        reviews.append(dict(identifier=tool, version=expected["version"], revision=expected["commit"],
+        reviews.append(dict(identifier=tool, version=expected.get("version", expected["commit"]), revision=expected["commit"],
             source_url=expected["url"], source_archive_sha256=pin["source_archive_sha256"],
             original_notices=pin["members"], pending_closure=pin["pending_closure"],
             redistribution_review_complete=False))

@@ -16,7 +16,7 @@ def main():
     source = actions.add_parser("fetch-whisper-source")
     source.add_argument("destination", type=Path)
     generic = actions.add_parser("fetch-source")
-    generic.add_argument("identifier", choices=["whisper-source", "ffmpeg-source", "imagemagick-source", "piper-source", "piper-espeak-source", "chatterbox-source", "ollama-source", "deno-source", "yt-dlp-source", "rusty-v8-source", "v8-embedded-source", "ollama-mlx-c-source", "ollama-mlx-source"])
+    generic.add_argument("identifier", choices=["whisper-source", "ffmpeg-source", "imagemagick-source", "piper-source", "piper-corresponding-source", "piper-espeak-source", "chatterbox-source", "ollama-source", "deno-source", "yt-dlp-source", "rusty-v8-source", "v8-embedded-source", "ollama-mlx-c-source", "ollama-mlx-source"])
     generic.add_argument("destination", type=Path)
     raster = actions.add_parser("build-engine")
     raster.add_argument("engine", choices=["ffmpeg", "imagemagick"])

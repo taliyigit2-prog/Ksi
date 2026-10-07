@@ -6,10 +6,37 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from ksi_local.app_assembly import bind_signed_tool_manifest, copy_clean_tree, normalize_build_shebangs, sign_native_payload
+from ksi_local.app_assembly import bind_signed_tool_manifest, committed_file, copy_clean_tree, normalize_build_shebangs, sign_native_payload
 
 
 class CleanTreeTests(unittest.TestCase):
+    def test_source_is_read_from_the_named_commit_not_the_working_tree(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "source.py").write_bytes(b"changed working-tree bytes")
+            original = b"committed synthetic fixture"
+            results = [subprocess.CompletedProcess([], 0, stdout=b"100644 blob " + b"b" * 40 + b"\tsource.py\0"),
+                subprocess.CompletedProcess([], 0, stdout=str(len(original)).encode()),
+                subprocess.CompletedProcess([], 0, stdout=original)]
+            with patch("ksi_local.app_assembly.subprocess.run", side_effect=results):
+                content, mode = committed_file(root, "a" * 40, "source.py")
+            self.assertEqual(content, original)
+            self.assertEqual(mode, 0o644)
+            self.assertEqual((root / "source.py").read_bytes(), b"changed working-tree bytes")
+
+    def test_linked_git_objects_and_oversized_source_fail_before_blob_read(self):
+        for linked in (True, False):
+            with self.subTest(linked=linked), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                mode = b"120000" if linked else b"100644"
+                results = [subprocess.CompletedProcess([], 0, stdout=mode + b" blob " + b"b" * 40 + b"\tsource.py\0")]
+                if not linked:
+                    results.append(subprocess.CompletedProcess([], 0, stdout=str(16 * 1024**2 + 1).encode()))
+                with patch("ksi_local.app_assembly.subprocess.run", side_effect=results) as commands:
+                    with self.assertRaises(ValueError):
+                        committed_file(root, "a" * 40, "source.py")
+                    self.assertEqual(commands.call_count, 1 if linked else 2)
+
     def test_native_architecture_is_checked_before_any_binary_is_signed(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
