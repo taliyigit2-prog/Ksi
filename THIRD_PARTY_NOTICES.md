@@ -52,6 +52,16 @@ inventory. Main and isolated speech package inventories are independently bound
 to their exact wheel hashes. App assembly rejects omitted or changed notices
 and corresponding-source members. These inventories explicitly do not promote
 text completeness into redistribution approval or product acceptance.
+
+Original Ollama 0.24.0, Deno 2.9.6 and yt-dlp 2026.08.19 source commits,
+archive digests and selected original notices are recorded in
+`config/native-sources.json` and `config/tool-source-notices.json`. The latter
+also records unresolved binary dependency closure; root project licenses do
+not replace transitive notices. Architecture-specific Ollama Go dependency
+inventories are derived from the actual native executable build information
+and checked against the original commit-bound `go.sum`. Collection is not a
+final binary-license approval. See the
+[source notice decision](docs/decisions/2026-10-07-original-tool-source-notices.md).
 # Desktop engine additions (implementation candidates)
 
 The following adapters do not copy complete third-party applications. Exact
