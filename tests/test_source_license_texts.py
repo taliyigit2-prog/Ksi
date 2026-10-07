@@ -1,0 +1,39 @@
+import hashlib
+import io
+import runpy
+import tarfile
+import tempfile
+import unittest
+from pathlib import Path
+
+
+collect = runpy.run_path(str(Path(__file__).resolve().parents[1] / "scripts/collect_source_license_texts.py"))["collect"]
+
+
+class SourceLicenseTextTests(unittest.TestCase):
+    def test_images_named_license_are_not_mistaken_for_notices(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            archive = root / "source.tar.gz"
+            with tarfile.open(archive, "w:gz") as stream:
+                for name, data in (("source/LICENSE", b"Synthetic license"), ("source/licensewizard.png", b"\x89PNG\xff"), ("source/program.py", b"raise RuntimeError()")):
+                    member = tarfile.TarInfo(name)
+                    member.size = len(data)
+                    stream.addfile(member, io.BytesIO(data))
+            result = collect(archive, hashlib.sha256(archive.read_bytes()).hexdigest(), root / "notices")
+            self.assertEqual(len(result["files"]), 1)
+            self.assertEqual(result["files"][0]["path"], "source/LICENSE")
+            self.assertFalse(result["redistribution_review_complete"])
+
+    def test_escape_is_rejected_before_any_notice_is_written(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            archive = root / "source.tar.gz"
+            with tarfile.open(archive, "w:gz") as stream:
+                member = tarfile.TarInfo("../LICENSE")
+                member.size = 1
+                stream.addfile(member, io.BytesIO(b"x"))
+            destination = root / "notices"
+            with self.assertRaises(ValueError):
+                collect(archive, hashlib.sha256(archive.read_bytes()).hexdigest(), destination)
+            self.assertFalse(destination.exists())

@@ -44,7 +44,12 @@ def managed_ollama(
         yield False
         return
 
-    models = Path(models_directory).expanduser().resolve()
+    raw_models = Path(models_directory).expanduser()
+    resources = bundle_root()
+    if resources is not None:
+        from ksi_local.installed_model_integrity import verify_ollama_store
+        verify_ollama_store(raw_models, resources)
+    models = raw_models.resolve()
     if not models.is_dir():
         raise ValueError("Ollama model klasörü bulunamadı.")
     host = base_url.removeprefix("http://").removeprefix("https://")

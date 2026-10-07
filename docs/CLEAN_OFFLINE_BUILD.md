@@ -243,3 +243,17 @@ label without a text file is reported as missing, not approved. This preserves
 transitive upstream notices without importing packages or copying a user's
 installed environment. Final review must resolve every missing text from the
 matching public source and build a final package-level license inventory.
+
+Missing wheel license texts are collected from exact public source distributions
+or pinned upstream license files in `config/python-notice-sources.json`. The MLX
+license snapshot is explicitly license-only, not a claim that its current Git
+commit reproduces the older wheel. The source notice collector keeps full source
+archives intact and extracts original inert notice text, excluding tutorial
+images/code whose names happen to include “license”. Neither text collection nor
+the presence of a source archive is automatic legal-review approval.
+
+MLX Whisper verifies installed config/weights before loading its model. Owned
+Ollama startup verifies both pinned tag manifests and every installed layer and
+rejects manifest references not covered by the sealed payload. Packaged clients
+cannot send text to arbitrary unverified model tags. These checks supplement
+first-install integrity and prevent subsequent silent model changes.

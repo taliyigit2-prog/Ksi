@@ -106,6 +106,13 @@ def transcribe_media(
             source, Path(output_srt).expanduser().resolve(), model=model,
             language=language, duration_seconds=duration_seconds, initial_prompt=initial_prompt,
         )
+    from ksi_local.bundle_runtime import bundle_root
+    resources = bundle_root()
+    if resources is not None:
+        from ksi_local.installed_model_integrity import verify_model_tree
+        verify_model_tree(Path(model).expanduser(), resources,
+            prefix="models/whisper/large-v3-turbo-8bit/",
+            required=frozenset({"config.json", "weights.safetensors"}))
     try:
         import mlx_whisper
     except ImportError as error:

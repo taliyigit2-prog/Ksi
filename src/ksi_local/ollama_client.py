@@ -54,6 +54,9 @@ class OllamaClient:
         keep_alive: int | str = 0,
         max_tokens: int | None = None,
     ) -> str:
+        from ksi_local.bundle_runtime import bundle_root
+        if bundle_root() is not None and model not in {"translategemma:4b-it-q8_0", "qwen3.5:4b"}:
+            raise ValueError("Paketlenmiş uygulama yalnız doğrulanmış yerel model etiketlerini kullanabilir.")
         if max_tokens is not None and not 1 <= max_tokens <= 4096:
             raise ValueError("Model çıktı sınırı 1–4096 token arasında olmalıdır.")
         if json_mode and json_schema is not None:

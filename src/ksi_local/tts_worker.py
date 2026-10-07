@@ -164,7 +164,10 @@ def synthesize(args: argparse.Namespace) -> dict[str, object]:
     output = Path(args.output_wav).expanduser().resolve()
     report_path = Path(args.report).expanduser().resolve()
     segment_directory = Path(args.segments_directory).expanduser().resolve()
-    model_directory = Path(args.model_directory).expanduser().resolve()
+    raw_model_directory = Path(args.model_directory).expanduser()
+    if raw_model_directory.is_symlink():
+        raise ValueError("Ses modeli klasörü sembolik bağlantı olamaz.")
+    model_directory = raw_model_directory.resolve()
     cpu = getattr(args, "engine", "chatterbox") == "piper"
     if cpu:
         from ksi_local.piper_backend import verified_voice

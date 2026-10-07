@@ -65,6 +65,7 @@ PUBLIC_SCRIPTS = (
     "scripts/bootstrap_build_environment.py",
     "scripts/collect_native_notices.py",
     "scripts/collect_wheel_notices.py",
+    "scripts/collect_source_license_texts.py",
     "scripts/fetch_corresponding_source.py",
     "scripts/fetch_ollama_models.py",
     "scripts/import_native_artifact.py",
@@ -82,6 +83,7 @@ PUBLIC_SCRIPTS = (
     "scripts/stage_ollama_input.py",
     "scripts/snapshot_model_terms.py",
     "scripts/fetch_qt_sources.py",
+    "scripts/fetch_python_notice_sources.py",
     "scripts/stage_native_engines.py",
     "scripts/stage_portable_font.py",
 )
@@ -226,6 +228,9 @@ def _iter_public_inputs(source: Path) -> Iterable[tuple[Path, Path]]:
     qt_sources = source / "config/qt-corresponding-sources.json"
     if qt_sources.is_file():
         yield qt_sources, Path("config/qt-corresponding-sources.json")
+    python_notices = source / "config/python-notice-sources.json"
+    if python_notices.is_file():
+        yield python_notices, Path("config/python-notice-sources.json")
 
 
 def _sanitized_configuration(source: Path, destination: Path) -> None:

@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "redistribution_review_complete": false,
+  "inputs": {
+    "ctranslate2-license": {
+      "url": "https://raw.githubusercontent.com/OpenNMT/CTranslate2/d44d2d069eb88c7b7804da864c10c201501cb4a9/LICENSE",
+      "revision": "d44d2d069eb88c7b7804da864c10c201501cb4a9",
+      "size": 1115,
+      "sha256": "54aa79d9fe3c09e67a16dcd95b9e88676405a6ec174efda31036983cf7672ecb",
+      "license": "MIT",
+      "type": "license",
+      "package": "ctranslate2",
+      "package_version": "4.8.2"
+    },
+    "flatbuffers-license": {
+      "url": "https://raw.githubusercontent.com/google/flatbuffers/7e163021e59cca4f8e1e35a7c828b5c6b7915953/LICENSE",
+      "revision": "7e163021e59cca4f8e1e35a7c828b5c6b7915953",
+      "size": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "license": "Apache-2.0",
+      "type": "license",
+      "package": "flatbuffers",
+      "package_version": "25.12.19"
+    },
+    "mlx-whisper-license": {
+      "url": "https://raw.githubusercontent.com/ml-explore/mlx-examples/796f5b53cab69a3d48a44233ce21aae889e94a08/LICENSE",
+      "revision": "796f5b53cab69a3d48a44233ce21aae889e94a08",
+      "size": 1066,
+      "sha256": "ccfab7ccb2ea306f71531c8ca77bb55507606cd90768b1e32b8b52ab5b48cf01",
+      "license": "MIT",
+      "type": "license",
+      "package": "mlx-whisper",
+      "package_version": "0.4.3",
+      "purpose": "Official repository MIT license snapshot only, not a claim that this commit reproduces the wheel"
+    },
+    "sentencepiece-source": {
+      "url": "https://files.pythonhosted.org/packages/cc/33/ea3cb3839607eb175da835244a798f797f478c5ddf0e8ecdf57ea85a4c70/sentencepiece-0.2.2.tar.gz",
+      "size": 8218435,
+      "sha256": "3d2b5e824b5622038dc7b490897efe05ebbbb9e7350fc142f3ecc8789ef9bdf6",
+      "type": "sdist",
+      "package": "sentencepiece",
+      "package_version": "0.2.2",
+      "digest_source": "Official PyPI sdist digest"
+    },
+    "safetensors-source": {
+      "url": "https://files.pythonhosted.org/packages/71/7e/2d5d6ee7b40c0682315367ec7475693d110f512922d582fef1bd4a63adc3/safetensors-0.5.3.tar.gz",
+      "size": 67210,
+      "sha256": "b6b0d6ecacec39a4fdd99cc19f4576f5219ce858e6fd8dbe7609df0b8dc56965",
+      "type": "sdist",
+      "package": "safetensors",
+      "package_version": "0.5.3",
+      "digest_source": "Official PyPI sdist digest"
+    },
+    "tokenizers-source": {
+      "url": "https://files.pythonhosted.org/packages/73/6f/f80cfef4a312e1fb34baf7d85c72d4411afde10978d4657f8cdd811d3ccc/tokenizers-0.22.2.tar.gz",
+      "size": 372115,
+      "sha256": "473b83b915e547aa366d1eee11806deaf419e17be16310ac0a14077f1e28f917",
+      "type": "sdist",
+      "package": "tokenizers",
+      "package_version": "0.22.2",
+      "digest_source": "Official PyPI sdist digest"
+    }
+  }
+}
