@@ -45,7 +45,7 @@ class PhaseTwentyFourCatalogTests(unittest.TestCase):
             self.assertEqual(load_preferences(target).ui_language, "tr")
             save_preferences(UserPreferences(ui_language="ru"), target)
             payload = json.loads(target.read_text(encoding="utf-8"))
-            self.assertEqual(payload["schema_version"], 6)
+            self.assertEqual(payload["schema_version"], 7)
             self.assertEqual(load_preferences(target).ui_language, "ru")
 
     def test_language_order_and_new_catalogs_are_real_translations(self) -> None:
@@ -168,6 +168,7 @@ class PhaseTwentyFourGuiTests(unittest.TestCase):
                 exists=True,
                 signed=True,
                 native_arm64_only=True,
+                native_architecture_matches_host=True,
             ),
         )
         dialog = FirstRunWizard(report, language="ru")
@@ -213,7 +214,7 @@ class PhaseTwentyFourGuiTests(unittest.TestCase):
             workspace="/Volumes/Test/KSI-Workspace",
             workspace_free_bytes=64 * 1024**3,
             tool_integrity_ok=True,
-            app_bundle=SimpleNamespace(signed=True, native_arm64_only=True),
+            app_bundle=SimpleNamespace(signed=True, native_arm64_only=True, native_architecture_matches_host=True),
             models=(
                 SimpleNamespace(
                     key="qwen3.5:4b",
@@ -246,8 +247,8 @@ class PhaseTwentyFourGuiTests(unittest.TestCase):
                 window._show_system_status()
                 information.assert_called_once_with(
                     window,
-                    "Требуется хранилище",
-                    "Подключите хранилище KSI Local Studio, чтобы увидеть состояние системы и моделей.",
+                    ui_text("health.storage_title", "ru"),
+                    ui_text("health.storage_body", "ru"),
                 )
                 window.close()
 
@@ -316,6 +317,7 @@ class PhaseTwentyFourGuiTests(unittest.TestCase):
                 exists=True,
                 signed=True,
                 native_arm64_only=True,
+                native_architecture_matches_host=True,
             ),
         )
         for language in ("es", "de", "fr", "it", "zh"):

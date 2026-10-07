@@ -76,7 +76,7 @@ class PhaseTwelveAcceptance:
         return asdict(self)
 
 
-def run_phase12_acceptance(project_root: str | Path) -> PhaseTwelveAcceptance:
+def run_phase12_acceptance(project_root: str | Path, *, media_fixture: str | Path | None = None) -> PhaseTwelveAcceptance:
     root = Path(project_root).expanduser().resolve()
     client = _OfflineAcceptanceClient()
     source_srt = parse_srt_text(
@@ -111,7 +111,7 @@ def run_phase12_acceptance(project_root: str | Path) -> PhaseTwelveAcceptance:
     )
     summary_ok = bool(summary.quality["passed"]) and "[00:00:00]" in summary.markdown
 
-    fixture = root / ".phase1/fixtures/local-smoke.mp4"
+    fixture = Path(media_fixture).resolve() if media_fixture is not None else root / ".phase1/fixtures/local-smoke.mp4"
     ffprobe = shutil.which("ffprobe")
     video_ok = False
     if fixture.is_file() and ffprobe:

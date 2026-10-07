@@ -17,6 +17,7 @@ import sys
 import threading
 import uuid
 from dataclasses import dataclass
+from collections import OrderedDict
 from pathlib import Path, PurePosixPath
 from typing import Callable
 from ksi_local.copy_on_write import clone_file
@@ -30,6 +31,8 @@ MAX_PAYLOAD_FILES = 100000
 ARCHITECTURES = {"arm64", "x86_64"}
 _MODEL_INSTALL_CACHE: dict[tuple[str, str], tuple] = {}
 _MODEL_INSTALL_LOCK = threading.Lock()
+_RUNTIME_METADATA_CACHE = OrderedDict()
+_RUNTIME_METADATA_LOCK = threading.Lock()
 
 
 def host_architecture(machine: str | None = None) -> str:
@@ -54,16 +57,21 @@ def bundle_root() -> Path | None:
     return None
 
 
-def safe_member(root: Path, value: str) -> Path:
+def _member_parts(value: str) -> tuple[str, ...]:
     if not isinstance(value, str) or not value or "\\" in value or "\x00" in value:
         raise ValueError("Geçersiz paket dosyası yolu.")
     parts = PurePosixPath(value)
     if parts.is_absolute() or any(part in {"", ".", ".."} for part in value.split("/")):
         raise ValueError("Paket dosyası yolu kaynak kökünü aşamaz.")
+    return parts.parts
+
+
+def safe_member(root: Path, value: str) -> Path:
+    parts = _member_parts(value)
     base = root.resolve()
-    candidate = base.joinpath(*parts.parts)
+    candidate = base.joinpath(*parts)
     current = base
-    for part in parts.parts:
+    for part in parts:
         current /= part
         if current.is_symlink():
             raise ValueError("Paket verisinde sembolik bağlantıya izin verilmez.")
@@ -104,7 +112,7 @@ class OfflinePayload:
             raise ValueError("Paket kökü sembolik bağlantı olamaz.")
         base = root.resolve()
         manifest = safe_member(base, "offline-manifest.json")
-        if manifest.stat().st_size > MAX_MANIFEST_BYTES:
+        if not manifest.is_file() or manifest.stat().st_size > MAX_MANIFEST_BYTES:
             raise ValueError("Paket manifesti boyut sınırını aşıyor.")
         data = json.loads(manifest.read_text(encoding="utf-8"))
         if not isinstance(data, dict) or data.get("schema_version") != 1:
@@ -116,6 +124,7 @@ class OfflinePayload:
         if not isinstance(rows, list) or not rows or len(rows) > MAX_PAYLOAD_FILES:
             raise ValueError("Paket dosya listesi geçersiz.")
         result: list[PayloadFile] = []
+        checked_paths = {base}
         seen: set[str] = set()
         identifiers: set[str] = set()
         for row in rows:
@@ -125,7 +134,17 @@ class OfflinePayload:
                 entry = PayloadFile(**{key: row[key] for key in PayloadFile.__annotations__})
             except (KeyError, TypeError) as error:
                 raise ValueError("Paket dosya kaydı eksik.") from error
-            safe_member(base, entry.path)
+            # A 58k-file manifest used to resolve the same long parent paths
+            # hundreds of thousands of times on the GUI thread. Validate each
+            # unique ancestor once within this load only. Every actual file
+            # access still uses fresh safe_member + SHA-256 in verify().
+            current = base
+            for part in _member_parts(entry.path):
+                current /= part
+                if current not in checked_paths:
+                    if current.is_symlink():
+                        raise ValueError("Paket verisinde sembolik bağlantıya izin verilmez.")
+                    checked_paths.add(current)
             if entry.path in seen or entry.path.casefold() in seen:
                 raise ValueError("Paket dosya listesinde çakışma var.")
             seen.update((entry.path, entry.path.casefold()))
@@ -256,12 +275,47 @@ class OfflinePayload:
                     temporary.unlink(missing_ok=True)
 
 
+def runtime_payload(root: Path, *, architecture: str | None = None) -> OfflinePayload:
+    """Reuse validated metadata only; actual component access always rechecks.
+
+    Strict load() remains uncached for distribution audits. The GUI avoids
+    rescanning all 58k paths for each button while every tool/model/notice use
+    retains fresh path and content verification. Manifest bytes are hash-bound
+    on each lookup, and root/manifest replacement invalidates the bounded cache.
+    """
+    if root.is_symlink():
+        raise ValueError("Paket kökü sembolik bağlantı olamaz.")
+    base = root.resolve()
+    target = host_architecture(architecture)
+    manifest = safe_member(base, "offline-manifest.json")
+    if not manifest.is_file() or manifest.stat().st_size > MAX_MANIFEST_BYTES:
+        raise ValueError("Paket manifesti normal ve boyut sınırı içinde olmalıdır.")
+    root_stat, stat = base.stat(), manifest.stat()
+    stamp = (root_stat.st_dev, root_stat.st_ino, stat.st_dev, stat.st_ino,
+             stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns, digest_file(manifest))
+    key = (str(base), target)
+    with _RUNTIME_METADATA_LOCK:
+        previous = _RUNTIME_METADATA_CACHE.get(key)
+        if previous is not None and previous[0] == stamp:
+            _RUNTIME_METADATA_CACHE.move_to_end(key)
+            return previous[1]
+        payload = OfflinePayload.load(base, architecture=target)
+        after = manifest.stat()
+        if (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns) != stamp[2:7]:
+            raise RuntimeError("Paket manifesti okunurken değiştirildi.")
+        _RUNTIME_METADATA_CACHE[key] = (stamp, payload)
+        _RUNTIME_METADATA_CACHE.move_to_end(key)
+        while len(_RUNTIME_METADATA_CACHE) > 4:
+            _RUNTIME_METADATA_CACHE.popitem(last=False)
+        return payload
+
+
 def tool_path(name: str, *, required: bool = True) -> str | None:
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", name):
         raise ValueError("Geçersiz araç adı.")
     root = bundle_root()
     if root is not None:
-        candidate = OfflinePayload.load(root).component("tool", name)
+        candidate = runtime_payload(root).component("tool", name)
         if not os.access(candidate, os.X_OK):
             raise RuntimeError("Paket aracı çalıştırılabilir değil.")
         return str(candidate)

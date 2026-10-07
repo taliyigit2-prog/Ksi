@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -82,13 +83,16 @@ class PhaseSevenCoreTests(unittest.TestCase):
             ):
                 _prepare_numba_cache()
 
-    def test_accepted_voice_profile_is_the_selected_male_voice(self) -> None:
-        profile = load_voice_profile(VOICE_PROFILE)
-        self.assertEqual(profile.engine, "chatterbox-multilingual-v3")
-        self.assertEqual(profile.description, "Düşük tonlu erkek anlatıcı")
-        self.assertEqual(profile.seed, 23)
-        self.assertEqual(profile.language, "tr")
-        self.assertEqual(profile.device, "mps")
+    def test_public_voice_template_never_claims_human_acceptance(self) -> None:
+        with self.assertRaisesRegex(ValueError, "kabul edilmemiş"):
+            load_voice_profile(VOICE_PROFILE)
+        payload = json.loads(VOICE_PROFILE.read_text())
+        self.assertEqual(payload["status"], "template")
+        self.assertIsNone(payload["accepted_at"])
+        self.assertEqual(payload["engine"], "chatterbox-multilingual-v3")
+        self.assertEqual(payload["voice"]["seed"], 23)
+        self.assertEqual(payload["voice"]["language"], "tr")
+        self.assertEqual(payload["runtime"]["device"], "mps")
 
     def test_speed_policy_and_ffmpeg_chain_cover_bounds(self) -> None:
         self.assertEqual(speed_status(1.0), "normal")
@@ -356,6 +360,7 @@ class PhaseSevenGuiTests(unittest.TestCase):
             with (
                 patch.dict(os.environ, {"KSI_STATE_DIRECTORY": str(root / "state")}),
                 patch("ksi_local.gui.resolve_workspace", return_value=workspace),
+                patch("ksi_local.gui._chatterbox_python_path", return_value=Path(sys.executable)),
                 patch(
                     "ksi_local.language_detection.detect_text_language",
                     return_value=SimpleNamespace(code="en"),

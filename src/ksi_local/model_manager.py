@@ -6,7 +6,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from ksi_local.bundle_runtime import OfflinePayload, digest_file, safe_member
+from ksi_local.bundle_runtime import digest_file, runtime_payload, safe_member
 
 
 @dataclass(frozen=True)
@@ -24,7 +24,7 @@ class ModelManager:
     def __init__(self, resources: Path, installed: Path):
         if resources.is_symlink() or installed.is_symlink():
             raise ValueError("Model kaynak ve hedef kökleri symlink olamaz.")
-        self.payload = OfflinePayload.load(resources)
+        self.payload = runtime_payload(resources)
         self.installed = installed
         catalog = self.payload.component("support", "model-catalog")
         if catalog.stat().st_size > 256 * 1024:

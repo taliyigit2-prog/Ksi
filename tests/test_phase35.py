@@ -80,7 +80,7 @@ class Phase35Tests(unittest.TestCase):
 
     def test_mcp_advertises_required_tools_and_annotations(self) -> None:
         names = {item["name"] for item in TOOLS}
-        self.assertEqual(names, {"ksi_preflight", "ksi_job_create", "ksi_job_status", "ksi_job_stop", "ksi_job_resume", "ksi_results_list", "ksi_export"})
+        self.assertEqual(names, {"ksi_preflight", "ksi_job_create", "ksi_job_status", "ksi_job_stop", "ksi_job_resume", "ksi_results_list", "ksi_export", "ksi_tool_job_execute", "ksi_image_tool_submit", "ksi_media_tool_submit"})
         stop = next(item for item in TOOLS if item["name"] == "ksi_job_stop")
         self.assertTrue(stop["annotations"]["destructiveHint"])
         self.assertIn("confirm", stop["inputSchema"]["required"])

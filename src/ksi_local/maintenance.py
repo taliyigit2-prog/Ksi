@@ -348,7 +348,7 @@ def build_acceptance_report(
     app_ok = (
         app_bundle.exists
         and app_bundle.signed
-        and app_bundle.native_arm64_only
+        and app_bundle.native_architecture_matches_host
         and app_bundle.version == __version__
     )
     passed = bool(

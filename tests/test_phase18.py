@@ -16,6 +16,8 @@ from PySide6.QtWidgets import QApplication, QScrollArea
 
 from ksi_local.gui import DropLineEdit, MainWindow, _actionable_message
 from ksi_local.job_store import JobKind
+from ksi_local.ui.theme import studio_palette, studio_stylesheet
+from PySide6.QtGui import QPalette
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -70,7 +72,7 @@ class PhaseEighteenGuiTests(unittest.TestCase):
         self.assertTrue(event.isAccepted())
         self.assertEqual(field.text(), "/tmp/ksi_local-surukle-birak.txt")
 
-    def test_small_window_scrolls_and_standard_window_does_not_overflow_horizontally(self) -> None:
+    def test_supported_window_size_does_not_overflow_horizontally(self) -> None:
         scroll = self.window.centralWidget()
         assert isinstance(scroll, QScrollArea)
         self.window.resize(820, 860)
@@ -80,7 +82,9 @@ class PhaseEighteenGuiTests(unittest.TestCase):
 
         self.window.resize(620, 560)
         TEST_APP.processEvents()
-        self.assertGreater(scroll.verticalScrollBar().maximum(), 0)
+        self.assertGreaterEqual(self.window.width(), self.window.minimumWidth())
+        self.assertGreaterEqual(self.window.height(), self.window.minimumHeight())
+        self.assertEqual(scroll.horizontalScrollBar().maximum(), 0)
 
     def test_accessibility_focus_and_palette_aware_colors(self) -> None:
         required = (
@@ -97,7 +101,10 @@ class PhaseEighteenGuiTests(unittest.TestCase):
         self.assertIs(self.window.video_card.nextInFocusChain(), self.window.document_card)
         style = self.window.styleSheet()
         self.assertIn("palette(alternate-base)", style)
-        self.assertIn("palette(midlight)", style)
+        self.assertEqual(style, studio_stylesheet(True))
+        dark, light = studio_palette(True), studio_palette(False)
+        self.assertNotEqual(dark.color(QPalette.ColorRole.Window), light.color(QPalette.ColorRole.Window))
+        self.assertNotEqual(dark.color(QPalette.ColorRole.Text), dark.color(QPalette.ColorRole.Base))
         self.assertNotIn("#9a6700", style)
         self.assertNotIn("#b42318", style)
 
@@ -127,7 +134,7 @@ class PhaseEighteenGuiTests(unittest.TestCase):
         )
         self.window._refresh_history()
         self.assertEqual(self.window.history.columnCount(), 6)
-        self.assertEqual(self.window.history.item(0, 2).text(), "Belge · İspanyolca · SSD")
+        self.assertEqual(self.window.history.item(0, 2).text(), "Belge · İspanyolca")
         self.assertEqual(self.window.history.item(0, 3).text(), "Çeviri, Özet")
         self.assertEqual(self.window.history.item(0, 4).text(), "Kuyrukta")
         self.assertIn("Depolama:", self.window.job_context_label.text())

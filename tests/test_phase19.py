@@ -41,6 +41,7 @@ def ready_report(*, passed: bool = True) -> SimpleNamespace:
             exists=True,
             signed=True,
             native_arm64_only=True,
+            native_architecture_matches_host=True,
         ),
     )
 
@@ -68,14 +69,15 @@ class PhaseNineteenFirstRunTests(unittest.TestCase):
             )
             save_preferences(completed, target)
             payload = json.loads(target.read_text(encoding="utf-8"))
-            self.assertEqual(payload["schema_version"], 6)
+            self.assertEqual(payload["schema_version"], 7)
             self.assertEqual(load_preferences(target), completed)
 
     def test_first_run_wizard_is_local_simple_and_accessible(self) -> None:
         dialog = FirstRunWizard(ready_report())
         labels = "\n".join(label.text() for label in dialog.findChildren(QLabel))
         self.assertIn("KSI Local Studio kullanıma hazır", labels)
-        self.assertIn("Harici SSD", labels)
+        self.assertIn("Dahili disk", labels)
+        self.assertNotIn("Harici SSD", labels)
         self.assertIn("FFmpeg, Ollama, yt-dlp ve Deno", labels)
         self.assertIn("Yapay zekâ modeli çalıştırılmadı", labels)
         self.assertIn("Codex/ChatGPT gerekmez", labels)

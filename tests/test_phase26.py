@@ -22,10 +22,10 @@ class Phase26Tests(unittest.TestCase):
             path = Path(directory) / "selection.json"
             selection = WorkspaceSelection(
                 ApplicationLocation.USER_APPLICATIONS,
-                WorkspaceLocation.EXTERNAL,
-                "/Volumes/Test/KSI-Workspace",
+                WorkspaceLocation.INTERNAL,
+                str(Path(directory).resolve() / "KSI-Workspace"),
                 "workspace-test",
-                "volume-test",
+                None,
             )
             save_selection(selection, path)
             self.assertEqual(load_selection(path), selection)

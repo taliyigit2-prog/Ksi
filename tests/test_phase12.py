@@ -159,13 +159,16 @@ class LocalityAcceptanceTests(unittest.TestCase):
     def test_deterministic_offline_video_srt_and_txt_flow(self) -> None:
         root = Path(__file__).resolve().parents[1]
         with (
+            tempfile.TemporaryDirectory() as temporary,
             patch("ksi_local.phase12_acceptance.shutil.which", return_value="/ffprobe"),
             patch(
                 "ksi_local.phase12_acceptance.verify_media_file",
                 return_value={"sha256": "a" * 64},
             ),
         ):
-            report = run_phase12_acceptance(root)
+            fixture = Path(temporary) / "synthetic-video.mp4"
+            fixture.write_bytes(b"Synthetic file-presence fixture; media verifier is explicitly mocked")
+            report = run_phase12_acceptance(root, media_fixture=fixture)
         self.assertTrue(report.passed, report.to_dict())
 
 

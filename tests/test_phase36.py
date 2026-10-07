@@ -83,11 +83,11 @@ class Phase36Tests(unittest.TestCase):
             sbom = json.loads((target / "SBOM.spdx.json").read_text())
             paths = {item["path"] for item in source_manifest["files"]}
             self.assertIn("src/ksi_local/gui.py", paths)
-            self.assertNotIn("models", "\n".join(paths))
+            self.assertFalse(any("models" in Path(path).parts for path in paths))
             self.assertEqual(sbom["spdxVersion"], "SPDX-2.3")
             names = {item["name"] for item in sbom["packages"]}
             self.assertIn("ksi-local-studio", names)
-            self.assertIn("PySide6", names)
+            self.assertIn("PySide6_Essentials", names)
 
     def test_fixture_allowlist_does_not_exempt_other_values_in_same_file(self) -> None:
         from ksi_local.release_prep import _synthetic_test_match
@@ -111,7 +111,7 @@ class Phase36Tests(unittest.TestCase):
             self.assertIn("symlink", rules)
 
     def test_public_readme_and_community_templates_cover_release_basics(self) -> None:
-        readme = (ROOT / "docs/public/README.md").read_text()
+        readme = (ROOT / "README.md").read_text()
         self.assertIn("Feature matrix", readme)
         self.assertIn("docs/assets/interface-light.png", readme)
         self.assertIn("docs/assets/workflow.gif", readme)

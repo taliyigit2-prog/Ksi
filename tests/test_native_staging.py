@@ -12,7 +12,7 @@ class NativeStagingTests(unittest.TestCase):
             (root / "lib").mkdir(parents=True)
             library = root / "lib/libexample.dylib"
             library.write_bytes(b"fixture")
-            self.assertEqual(staged_dependency("@loader_path/lib/libexample.dylib", origin=root / "tool", root=root), library)
+            self.assertEqual(staged_dependency("@loader_path/lib/libexample.dylib", origin=root / "tool", root=root), library.resolve())
             for value in ("@rpath/libexample.dylib", "@loader_path/lib/missing.dylib", "@loader_path/../../outside.dylib"):
                 with self.subTest(value=value), self.assertRaises((ValueError, FileNotFoundError)):
                     staged_dependency(value, origin=root / "tool", root=root)

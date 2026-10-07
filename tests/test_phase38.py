@@ -128,11 +128,13 @@ class PhaseThirtyEightAcceptanceTests(unittest.TestCase):
                 patch.object(MainWindow, "_initialize_workspace", return_value=None),
             ):
                 window = MainWindow()
-                self.assertEqual(window.tabs.count(), 5)
+                self.assertEqual(window.tabs.count(), 8)
                 self.assertEqual(
-                    [window.tabs.tabText(index) for index in range(window.tabs.count())],
+                    [window.tabs.tabText(index) for index in range(5)],
                     ["Yeni İş", "İşlem", "Geçmiş", "Sistem", "Yardım"],
                 )
+                self.assertEqual(set(window.studio_shell.routes),
+                                 {"download", "video", "document", "images", "queue", "history", "library", "help", "settings"})
                 self.assertEqual(len(window.help_labels), 5)
                 window.video_card.click()
                 self.assertTrue(window.video_card.isChecked())

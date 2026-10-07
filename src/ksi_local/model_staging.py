@@ -19,6 +19,7 @@ def stage_argos(archive: Path, destination: Path, specification: dict, *, pair: 
         raise ValueError("Argos source archive differs from its reviewed public digest.")
     if not destination.is_absolute() or destination.exists() or destination.is_symlink():
         raise FileExistsError("Argos staging requires a new explicit directory.")
+    destination = destination.resolve()
     records = []
     with zipfile.ZipFile(archive) as source:
         members = source.infolist()

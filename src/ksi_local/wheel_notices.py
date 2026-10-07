@@ -16,6 +16,7 @@ def collect_wheel_notices(lock: dict, wheelhouse: Path, destination: Path) -> di
     rows = validate_wheel_lock(lock)
     if not destination.is_absolute() or destination.exists() or destination.is_symlink():
         raise FileExistsError("Wheel notice collection requires new explicit staging.")
+    destination = destination.resolve()
     destination.mkdir(parents=True, mode=0o700)
     packages = []
     for row in rows:

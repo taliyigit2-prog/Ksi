@@ -62,7 +62,7 @@ def stage(repository: Path, source: Path, cache: Path, destination: Path, archit
     collect = runpy.run_path(str(repository / "scripts/collect_source_license_texts.py"))["collect"]
     archives = {}
     for path in cache.glob("registry/cache/*/*.crate"):
-        if path.is_symlink() or not path.is_file() or not path.resolve().is_relative_to(cache):
+        if path.is_symlink() or not path.is_file() or not path.resolve().is_relative_to(cache.resolve()):
             raise ValueError("Cargo registry archive escaped its dedicated public cache.")
         if path.name in archives:
             raise ValueError("Different registries collide at a Cargo archive name.")

@@ -1067,6 +1067,7 @@ class ImageToolsDialog(QDialog):
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
         self.setWindowTitle("KSI Local Studio")
         self.resize(1180, 820)
         self.setMinimumSize(860, 600)
@@ -1101,6 +1102,7 @@ class MainWindow(QMainWindow):
         self.preflight_thread: threading.Thread | None = None
         self.preflight_existing_job: JobRecord | None = None
         self.maintenance_pending = False
+        self.health_status_pending = False
         self.document_import_bridge = DocumentImportBridge(self)
         self.document_import_bridge.finished.connect(self._document_import_finished)
         self.document_import_thread: threading.Thread | None = None
@@ -6113,6 +6115,7 @@ class MainWindow(QMainWindow):
             "first_run" if _first_run else "inline" if _inline else "system"
         )
         self.maintenance_pending = True
+        self.health_status_pending = True
         self.system_status_button.setEnabled(False)
         self.start_button.setEnabled(False)
         self.status.setText(
@@ -6155,6 +6158,10 @@ class MainWindow(QMainWindow):
     def _system_status_finished(
         self, report: AcceptanceReport | None, error: RuntimeError | None
     ) -> None:
+        self.health_status_pending = False
+        if self.closing:
+            self.maintenance_pending = False
+            return
         dialog_mode = self.health_dialog_mode
         self.health_dialog_mode = "system"
         self.maintenance_pending = False
@@ -6230,13 +6237,16 @@ class MainWindow(QMainWindow):
             event.ignore()
             QTimer.singleShot(200, self.close)
             return
-        if self.maintenance_pending:
-            QMessageBox.information(
-                self,
-                self._t("window.busy_title"),
-                self._t("window.busy_body"),
-            )
+        if self.maintenance_pending and not self.health_status_pending:
+            # Mutating import/export/cleanup work must finish safely. A modal
+            # message here traps closing and headless automation; defer closing
+            # while the normal signal loop completes the owned operation.
+            self.status.setText(self._t("window.busy_body"))
+            importer = getattr(self, "document_import_thread", None)
+            if importer is not None and importer.is_alive():
+                self.document_import_cancel.set()
             event.ignore()
+            QTimer.singleShot(200, self.close)
             return
         self.closing = True
         self.workspace_timer.stop()

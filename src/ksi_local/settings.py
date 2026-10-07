@@ -9,7 +9,7 @@ from pathlib import Path
 
 from ksi_local.atomic_files import atomic_write_json
 from ksi_local.internal_storage import validate_internal_path
-from ksi_local.bundle_runtime import OfflinePayload, bundle_root, host_architecture, safe_member, tool_path
+from ksi_local.bundle_runtime import bundle_root, host_architecture, safe_member, tool_path
 from ksi_local.workspace_management import (
     WorkspaceLocation, load_selection, new_internal_selection, save_selection,
 )
@@ -146,7 +146,9 @@ def _selected_paths(root: Path, workspace_id: str) -> WorkspacePaths:
         safe_member(root, relative).mkdir(parents=True, exist_ok=True, mode=0o700)
     resources = bundle_root()
     if resources is not None:
-        payload = OfflinePayload.load(resources)
+        from ksi_local.bundle_runtime import runtime_payload
+
+        payload = runtime_payload(resources)
         # Model installation is a first-run background task, never a download.
         payload.install_models(safe_member(root, "models"))
         yt_dlp = Path(payload.component("tool", "yt-dlp"))

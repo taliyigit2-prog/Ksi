@@ -49,7 +49,7 @@ class CoreService:
         allowed_roots: tuple[str | Path, ...] = (),
         network_allowed: bool = False,
     ) -> None:
-        self.store = store or JobStore()
+        self.store = store if store is not None else JobStore()
         self.workspace = workspace
         roots = [Path(item).expanduser().resolve() for item in allowed_roots]
         if workspace is not None:

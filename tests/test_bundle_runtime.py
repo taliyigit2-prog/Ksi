@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from ksi_local.bundle_runtime import OfflinePayload, host_architecture, safe_member, tool_path
+from ksi_local.bundle_runtime import OfflinePayload, host_architecture, runtime_payload, safe_member, tool_path
 
 
 class BundleRuntimeTests(unittest.TestCase):
@@ -62,6 +62,34 @@ class BundleRuntimeTests(unittest.TestCase):
         self.write_manifest([self.entry, dict(self.entry, path="Models/example.bin", identifier="other")])
         with self.assertRaises(ValueError):
             self.load()
+
+    def test_load_still_rejects_linked_manifest_members(self):
+        linked = self.payload / "models/example.bin"
+        linked.unlink()
+        linked.symlink_to(self.root / "outside.bin")
+        with self.assertRaises(ValueError):
+            self.load()
+
+    def test_component_revalidates_paths_after_manifest_loading(self):
+        payload = self.load()
+        linked = self.payload / "models/example.bin"
+        linked.unlink()
+        linked.symlink_to(self.root / "outside.bin")
+        with self.assertRaises(ValueError):
+            payload.component("model", "example")
+
+    def test_runtime_metadata_cache_never_caches_component_verification(self):
+        payload = runtime_payload(self.payload, architecture="arm64")
+        self.assertIs(payload, runtime_payload(self.payload, architecture="arm64"))
+        (self.payload / self.entry["path"]).write_bytes(b"changed content")
+        with self.assertRaises(RuntimeError):
+            runtime_payload(self.payload, architecture="arm64").component("model", "example")
+
+    def test_changed_manifest_invalidates_runtime_metadata(self):
+        runtime_payload(self.payload, architecture="arm64")
+        self.write_manifest([dict(self.entry, sha256="invalid")])
+        with self.assertRaises(ValueError):
+            runtime_payload(self.payload, architecture="arm64")
 
     def test_install_without_network_and_idempotent(self):
         destination = self.root / "installed"

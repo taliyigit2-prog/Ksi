@@ -388,7 +388,7 @@ class PhaseThirteenGuiTests(unittest.TestCase):
         self.assertEqual(dialog.windowTitle(), "Belge güvenlik ön incelemesi")
         self.assertEqual(
             dialog.buttons.button(QDialogButtonBox.StandardButton.Ok).text(),
-            "Onayla ve SSD'ye Al",
+                "Onayla ve diske Al",
         )
         self.assertTrue(dialog.buttons.button(QDialogButtonBox.StandardButton.Ok).isEnabled())
         dialog.close()
