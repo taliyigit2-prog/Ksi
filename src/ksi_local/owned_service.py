@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import os
+import json
 import selectors
 import signal
 import subprocess
 import sys
 
 
-def supervise(command: list[str]) -> int:
+def supervise(command: list[str], *, report_pid: bool = False) -> int:
     stopped = False
 
     def stop(_signal, _frame):
@@ -24,6 +25,8 @@ def supervise(command: list[str]) -> int:
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         start_new_session=True, close_fds=True)
     try:
+        if report_pid:
+            print(json.dumps({"pid": child.pid}), flush=True)
         with selectors.DefaultSelector() as selector:
             selector.register(sys.stdin.buffer, selectors.EVENT_READ)
             while not stopped and child.poll() is None:
@@ -51,9 +54,9 @@ def supervise(command: list[str]) -> int:
 
 
 def main() -> int:
-    if len(sys.argv) != 3 or sys.argv[2] != "serve" or not os.path.isabs(sys.argv[1]):
+    if len(sys.argv) not in {3, 4} or sys.argv[2] != "serve" or not os.path.isabs(sys.argv[1]) or (len(sys.argv) == 4 and sys.argv[3] != "--report-pid"):
         raise ValueError("Owned service requires one explicit server executable.")
-    return supervise(sys.argv[1:])
+    return supervise(sys.argv[1:3], report_pid=len(sys.argv) == 4)
 
 
 if __name__ == "__main__":

@@ -28,8 +28,14 @@ class OllamaClient:
             headers={"Content-Type": "application/json"},
             method="POST",
         )
+        from ksi_local.bundle_runtime import bundle_root
+        if bundle_root() is not None:
+            from ksi_local.owned_ollama import open_owned_loopback
+            transport = open_owned_loopback
+        else:
+            transport = urlopen
         try:
-            with urlopen(request, timeout=self.timeout_seconds) as response:
+            with transport(request, timeout=self.timeout_seconds) as response:
                 content = response.read(4 * 1024**2 + 1)
                 if len(content) > 4 * 1024**2:
                     raise RuntimeError("Yerel model API yanıtı boyut sınırını aşıyor.")

@@ -308,3 +308,18 @@ license approval; those remain separate final binary gates.
 Explicitly licensed support libraries pass the same notice/provenance and
 GPL/LGPL corresponding-source checks as tools and models. A library cannot
 bypass that boundary merely because its payload role is `support`.
+
+`stage_native_library_components.py` preserves only the actual dependency
+graph's original notices and recipes/patches. Copyleft library source archives
+must match `config/native-corresponding-sources.json`, the exact package version
+and a source digest present in the locked original recipe. Each library's
+component record binds its notice and corresponding source explicitly. Source
+coverage remains distinct from final binary redistribution approval.
+
+The Ollama supervisor reports its actual child PID over a bounded private pipe.
+Packaged readiness requires that PID to own the listening port. Each model
+request then connects and verifies the exact established reverse TCP tuple
+against that PID before sending HTTP headers/body. A foreign listener racing
+startup or replacing a dead server cannot receive text through an earlier
+readiness result. Process-inspection failures close the request; development
+daemon reuse remains separate from the sealed-app path.

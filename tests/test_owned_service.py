@@ -1,4 +1,5 @@
 import signal
+import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -9,6 +10,24 @@ from ksi_local.ollama_runtime import managed_ollama
 
 
 class OwnedServiceTests(unittest.TestCase):
+    def test_foreign_server_racing_owned_startup_is_not_accepted(self):
+        process = MagicMock()
+        process.poll.return_value = None
+        with tempfile.TemporaryDirectory() as temporary:
+            with (patch("ksi_local.ollama_runtime._is_ready", side_effect=[False, True]),
+                    patch("ksi_local.ollama_runtime.bundle_root", return_value=Path("/sealed/resources")),
+                    patch("ksi_local.installed_model_integrity.verify_ollama_store"),
+                    patch("ksi_local.ollama_runtime.subprocess.Popen", return_value=process),
+                    patch("ksi_local.ollama_runtime._read_owned_pid", return_value=12345),
+                    patch("ksi_local.ollama_runtime.owns_listener", return_value=False),
+                    patch("ksi_local.ollama_runtime.owned_server_identity") as identity):
+                with self.assertRaisesRegex(RuntimeError, "KSI sunucusuna ait değil"):
+                    with managed_ollama(executable="/verified/ollama", models_directory=temporary):
+                        self.fail("A racing foreign listener must never become the owned engine.")
+                identity.assert_not_called()
+                process.stdin.close.assert_called_once()
+                process.terminate.assert_called_once()
+
     def test_parent_pipe_eof_stops_only_the_created_service_group(self):
         child = MagicMock(pid=54321)
         child.poll.return_value = None
