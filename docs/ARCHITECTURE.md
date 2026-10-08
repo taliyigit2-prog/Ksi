@@ -65,6 +65,14 @@ The outer app code seal and strict deep verification each have a bounded
 Individual native files retain their shorter signing budget. Timeouts and
 verification errors remain build failures; no unsigned fallback is allowed.
 
+Clean builds restore standalone Python's original legal texts from its exact
+public full distribution, separately pinned to the install-only runtime input.
+macOS libarchive reads the archive without a Homebrew dependency. Every selected
+member has its own size/digest pin. The original Darwin metadata's missing
+alternative zlib-ng reference remains visible: its four affected extensions
+declare the OS-provided z library, not a shipped static zlib-ng. This notice
+restoration is not actual signed-binary attestation or complete legal approval.
+
 The old personal environment-copy installers are retired. The portable bundle
 launcher resolves its Python, tools and models relative to the application, checks
 the processor, sanitizes interpreter/plugin injection variables and does not use

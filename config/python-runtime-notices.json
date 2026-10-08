@@ -1,0 +1,266 @@
+{
+  "schema_version": 1,
+  "redistribution_review_complete": false,
+  "inputs": {
+    "arm64": {
+      "architecture": "arm64",
+      "python_version": "3.12.15",
+      "release_tag": "20261003",
+      "full_archive": {
+        "sha256": "a23a0baff73a5f10c820841cc1889a5b7fc12048fe8c0622f6a481ab82ea367b",
+        "size": 55001420,
+        "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261003/cpython-3.12.15%2B20261003-aarch64-apple-darwin-pgo%2Blto-full.tar.zst"
+      },
+      "install_only_archive": {
+        "architecture": "arm64",
+        "digest_source": "GitHub release asset digest",
+        "license": "Python-2.0",
+        "revision": "20261003",
+        "sha256": "316a463172740e71d8dca1f2730784e325f3f720941137b5d674d5801a632213",
+        "size": 25146462,
+        "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261003/cpython-3.12.15%2B20261003-aarch64-apple-darwin-install_only.tar.gz",
+        "version": "3.12.15"
+      },
+      "notices": [
+        {
+          "original_archive_member": "python/PYTHON.json",
+          "size": 118432,
+          "sha256": "2544772fd0bf749ecc97e32b14ac29402682b2236ebedac3edd827c878bd51d8"
+        },
+        {
+          "original_archive_member": "python/install/lib/python3.12/LICENSE.txt",
+          "size": 13936,
+          "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.bdb.txt",
+          "size": 7293,
+          "sha256": "3bdff06e69991c94664f2ef5c5f8096f60b7dbec071756ea6cc26b445e06ec5b"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.bzip2.txt",
+          "size": 1743,
+          "sha256": "1f38bbc7caacafd65169276d759c0d88c991b753b643ce35d0e45ea1971dd441"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.cpython.txt",
+          "size": 36164,
+          "sha256": "86e61415828a8b5b06ec8d024e6f086ce155a8b85fd0c419c0ba4dc004e74fdd"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.expat.txt",
+          "size": 1144,
+          "sha256": "122f2c27000472a201d337b9b31f7eb2b52d091b02857061a8880371612d9534"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.libX11.txt",
+          "size": 47018,
+          "sha256": "2daec087a88e7c9b8082557cdeebad5bbb8155a4137472f0b22e269cd99d0c1e"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.libXau.txt",
+          "size": 1148,
+          "sha256": "56abe29bb1d9806a9e04fa9f80fed2c0f18027594df3f098148d814aef6bddfa"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.libedit.txt",
+          "size": 1614,
+          "sha256": "29cea33c32bbc9785142386377915612a2fa786482c46843383384aded2e09b1"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.libffi.txt",
+          "size": 1132,
+          "sha256": "deaf3a42effb551a5b140fa9afefed183a27f1341c6d1bf430d106a5e6931fc0"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.liblzma.txt",
+          "size": 660,
+          "sha256": "9a4062de0a2c388a98cf35a35d348b62fa97c838a71c3c28ee1a2d7d0a565b02"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.libuuid.txt",
+          "size": 1432,
+          "sha256": "122ee1f7e258f2c3c0e538a75c037684f420454bf3850ddc74ce750bbf5fe86b"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.libxcb.txt",
+          "size": 1337,
+          "sha256": "c5ffbfeaa501071ceeb97b7de2c0d703fdaa35de01c0fb6cbac1c28453a3e9fd"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.mpdecimal.txt",
+          "size": 1284,
+          "sha256": "669512af7219f58be03a398766d7c9da11a3b3df9d3f05cb74c5ceca25c8da3b"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.ncurses.txt",
+          "size": 1447,
+          "sha256": "87a4c4442337b8968ef956031c406b74f9cb7149b7ba87311bdaba534816201c"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.openssl-1.1.txt",
+          "size": 6120,
+          "sha256": "9c04cce50c4989d5601dd8b07f6ab922c40388b66ac736c9007cb1ed9d9dd560"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.openssl-3.txt",
+          "size": 10175,
+          "sha256": "7d5450cb2d142651b8afa315b5f238efc805dad827d91ba367d8516bc9d49e7a"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.sqlite.txt",
+          "size": 1481,
+          "sha256": "38bef3d28b24f145ea293bd3b6eb4b20396982abc8303128fb493986ea5bc719"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.tcl.txt",
+          "size": 2255,
+          "sha256": "c0a69a2bfd757361ec7e6143973b103c90409316b49e9c88db26ad6388e79f16"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.tix.txt",
+          "size": 2826,
+          "sha256": "3ac5cdd0bef6c43ce34c6a7ced452081d9e5a0bf94082b9f9147d23ec9e214f5"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.zlib.txt",
+          "size": 995,
+          "sha256": "818922b2620f12801a12bf78e399644a30990e66824abd8ca8ec24d451d6f92c"
+        }
+      ],
+      "missing_original_license_paths": [
+        "licenses/LICENSE.zlib-ng.txt"
+      ]
+    },
+    "x86_64": {
+      "architecture": "x86_64",
+      "python_version": "3.12.15",
+      "release_tag": "20261003",
+      "full_archive": {
+        "sha256": "49e58a92353d51f23c1b1d6e3f391dbc7180f822e317d6568c89c959f2579ee8",
+        "size": 54742038,
+        "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261003/cpython-3.12.15%2B20261003-x86_64-apple-darwin-pgo%2Blto-full.tar.zst"
+      },
+      "install_only_archive": {
+        "architecture": "x86_64",
+        "digest_source": "GitHub release asset digest",
+        "license": "Python-2.0",
+        "revision": "20261003",
+        "sha256": "a8fd7a91852f19b6d959793ef41fad048631ccb2a334a9ecdf573255298f7978",
+        "size": 24850741,
+        "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261003/cpython-3.12.15%2B20261003-x86_64-apple-darwin-install_only.tar.gz",
+        "version": "3.12.15"
+      },
+      "notices": [
+        {
+          "original_archive_member": "python/PYTHON.json",
+          "size": 125655,
+          "sha256": "eec4168bf70f099a8786002e612f4a3d9413be57d6a5d73956401b628b4d7ded"
+        },
+        {
+          "original_archive_member": "python/install/lib/python3.12/LICENSE.txt",
+          "size": 13936,
+          "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.bdb.txt",
+          "size": 7293,
+          "sha256": "3bdff06e69991c94664f2ef5c5f8096f60b7dbec071756ea6cc26b445e06ec5b"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.bzip2.txt",
+          "size": 1743,
+          "sha256": "1f38bbc7caacafd65169276d759c0d88c991b753b643ce35d0e45ea1971dd441"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.cpython.txt",
+          "size": 36164,
+          "sha256": "86e61415828a8b5b06ec8d024e6f086ce155a8b85fd0c419c0ba4dc004e74fdd"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.expat.txt",
+          "size": 1144,
+          "sha256": "122f2c27000472a201d337b9b31f7eb2b52d091b02857061a8880371612d9534"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.libX11.txt",
+          "size": 47018,
+          "sha256": "2daec087a88e7c9b8082557cdeebad5bbb8155a4137472f0b22e269cd99d0c1e"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.libXau.txt",
+          "size": 1148,
+          "sha256": "56abe29bb1d9806a9e04fa9f80fed2c0f18027594df3f098148d814aef6bddfa"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.libedit.txt",
+          "size": 1614,
+          "sha256": "29cea33c32bbc9785142386377915612a2fa786482c46843383384aded2e09b1"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.libffi.txt",
+          "size": 1132,
+          "sha256": "deaf3a42effb551a5b140fa9afefed183a27f1341c6d1bf430d106a5e6931fc0"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.liblzma.txt",
+          "size": 660,
+          "sha256": "9a4062de0a2c388a98cf35a35d348b62fa97c838a71c3c28ee1a2d7d0a565b02"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.libuuid.txt",
+          "size": 1432,
+          "sha256": "122ee1f7e258f2c3c0e538a75c037684f420454bf3850ddc74ce750bbf5fe86b"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.libxcb.txt",
+          "size": 1337,
+          "sha256": "c5ffbfeaa501071ceeb97b7de2c0d703fdaa35de01c0fb6cbac1c28453a3e9fd"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.mpdecimal.txt",
+          "size": 1284,
+          "sha256": "669512af7219f58be03a398766d7c9da11a3b3df9d3f05cb74c5ceca25c8da3b"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.ncurses.txt",
+          "size": 1447,
+          "sha256": "87a4c4442337b8968ef956031c406b74f9cb7149b7ba87311bdaba534816201c"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.openssl-1.1.txt",
+          "size": 6120,
+          "sha256": "9c04cce50c4989d5601dd8b07f6ab922c40388b66ac736c9007cb1ed9d9dd560"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.openssl-3.txt",
+          "size": 10175,
+          "sha256": "7d5450cb2d142651b8afa315b5f238efc805dad827d91ba367d8516bc9d49e7a"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.sqlite.txt",
+          "size": 1481,
+          "sha256": "38bef3d28b24f145ea293bd3b6eb4b20396982abc8303128fb493986ea5bc719"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.tcl.txt",
+          "size": 2255,
+          "sha256": "c0a69a2bfd757361ec7e6143973b103c90409316b49e9c88db26ad6388e79f16"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.tix.txt",
+          "size": 2826,
+          "sha256": "3ac5cdd0bef6c43ce34c6a7ced452081d9e5a0bf94082b9f9147d23ec9e214f5"
+        },
+        {
+          "original_archive_member": "python/licenses/LICENSE.zlib.txt",
+          "size": 995,
+          "sha256": "818922b2620f12801a12bf78e399644a30990e66824abd8ca8ec24d451d6f92c"
+        }
+      ],
+      "missing_original_license_paths": [
+        "licenses/LICENSE.zlib-ng.txt"
+      ]
+    }
+  }
+}

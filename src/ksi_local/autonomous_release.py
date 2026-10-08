@@ -59,7 +59,7 @@ def verify_acceptance(app: Path, evidence_root: Path, source_commit: str) -> dic
     if architecture not in {"arm64", "x86_64"} or info.get("KSISourceCommit") != source_commit:
         raise ValueError("Release application does not match its architecture/source")
     subprocess.run(["/usr/bin/codesign", "--verify", "--deep", "--strict", str(app)],
-                   check=True, capture_output=True, timeout=180)
+                   check=True, capture_output=True, timeout=900)
     signature = subprocess.run(["/usr/bin/codesign", "-dv", str(app)],
                                check=True, capture_output=True, text=True, timeout=30)
     if "Signature=adhoc" not in signature.stderr:

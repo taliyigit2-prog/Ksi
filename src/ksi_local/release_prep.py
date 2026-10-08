@@ -73,6 +73,7 @@ PUBLIC_SCRIPTS = (
     "scripts/collect_wheel_notices.py",
     "scripts/collect_source_license_texts.py",
     "scripts/stage_python_notices.py",
+    "scripts/stage_python_runtime_notices.py",
     "scripts/stage_offline_models.py",
     "scripts/build_model_notice_bindings.py",
     "scripts/merge_offline_components.py",
@@ -270,7 +271,7 @@ def _iter_public_inputs(source: Path) -> Iterable[tuple[Path, Path]]:
     native_sources = source / "config/native-corresponding-sources.json"
     if native_sources.is_file():
         yield native_sources, Path("config/native-corresponding-sources.json")
-    for name in ("tool-source-notices.json", "v8-embedded-notices.json"):
+    for name in ("tool-source-notices.json", "v8-embedded-notices.json", "python-runtime-notices.json"):
         path = source / "config" / name
         if path.is_file():
             yield path, Path("config") / name

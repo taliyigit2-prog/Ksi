@@ -31,6 +31,16 @@ permission. Actual wheel license texts, native transitive library notices and
 the final binary SBOM remain mandatory before release. See
 [clean build documentation](docs/CLEAN_OFFLINE_BUILD.md).
 
+Standalone CPython 3.12.15 includes native and statically incorporated libraries
+whose original grants are not all present in the install-only download. The
+exact original full distributions and their 21 selected original legal/metadata
+members per architecture are pinned in `config/python-runtime-notices.json`.
+Clean builds preserve those bytes, including CPython, Tcl, OpenSSL, libffi,
+SQLite, ncurses and other original notices. The original metadata's absent
+alternative zlib-ng reference remains recorded, not replaced by an invented
+grant. Its affected Darwin extensions declare the system z library. Actual
+signed-binary/source binding and the final distribution SBOM remain separate.
+
 The isolated ARM Turkish speech environment is locked separately in
 `config/python-chatterbox-wheels-arm64.json` (Chatterbox 0.1.7 and its exact
 public transitive artifacts). It is rebuilt from official wheels, not a user

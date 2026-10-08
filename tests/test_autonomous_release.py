@@ -1,14 +1,33 @@
 import json
+import plistlib
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from ksi_local.autonomous_release import REQUIRED_CASES, REQUIRED_CHECKS, _document, verify_distribution, verify_release
+from ksi_local.autonomous_release import REQUIRED_CASES, REQUIRED_CHECKS, _document, verify_acceptance, verify_distribution, verify_release
 from ksi_local.bundle_runtime import digest_file
 
 
 class AutonomousReleaseTests(unittest.TestCase):
+    def test_acceptance_keeps_strict_deep_verification_with_large_offline_budget(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            app = root / "KSI Local Studio.app"
+            (app / "Contents").mkdir(parents=True)
+            (app / "Contents/Info.plist").write_bytes(plistlib.dumps({"KSIArchitecture": "arm64", "KSISourceCommit": "a" * 40}))
+            result = subprocess.CompletedProcess([], 0, stdout="", stderr="Signature=adhoc")
+            with patch("ksi_local.autonomous_release.subprocess.run", return_value=result) as commands, \
+                 patch("ksi_local.autonomous_release.OfflinePayload.load", side_effect=RuntimeError("Synthetic stop before payload checks")):
+                with self.assertRaisesRegex(RuntimeError, "Synthetic stop"):
+                    verify_acceptance(app, root, "a" * 40)
+            verification = commands.call_args_list[0]
+            self.assertIn("--strict", verification.args[0])
+            self.assertIn("--deep", verification.args[0])
+            self.assertEqual(verification.kwargs["timeout"], 900)
+            self.assertTrue(verification.kwargs["check"])
+
     def test_every_acceptance_case_has_named_objective_checks(self):
         self.assertEqual(set(REQUIRED_CHECKS), set(REQUIRED_CASES))
         self.assertEqual(len(REQUIRED_CASES), 14)

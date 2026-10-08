@@ -52,9 +52,13 @@ jobs:
         run: python3 scripts/restore_model_inputs.py build/native-inputs --allow-network
       - name: Reclassify only verified empty original source placeholders
         run: python3 scripts/normalize_source_notice_inputs.py build/native-inputs/components > build/source-notice-normalization.json
+      - name: Restore original standalone Python notices from exact public full distribution
+        run: |
+          python3 scripts/stage_python_runtime_notices.py x86_64 build/original-notice-cache build/python-original-notices --allow-network > build/python-runtime-notice-restoration.json
+          python3 scripts/merge_offline_components.py x86_64 build/complete-components build/native-inputs/components build/python-original-notices
       - name: Assemble ad-hoc candidate on actual Intel processor
         run: |
-          build/native-inputs/runtime/python/bin/python3.12 scripts/assemble_offline_app.py build/native-inputs/runtime build/native-inputs/components build/native-inputs/components/component-specification.json 'build/native-app/KSI Local Studio.app' > build/native-app-build.json
+          build/native-inputs/runtime/python/bin/python3.12 scripts/assemble_offline_app.py build/native-inputs/runtime build/complete-components build/complete-components/component-specification.json 'build/native-app/KSI Local Studio.app' > build/native-app-build.json
       - name: Verify all committed source tests on native Intel
         run: |
           # Source health/OCR tests look for the development helper. Reuse only
@@ -75,5 +79,6 @@ jobs:
             build/native-app-build.json
             build/native-unit-suite.log
             build/source-notice-normalization.json
+            build/python-runtime-notice-restoration.json
           if-no-files-found: error
           retention-days: 3
