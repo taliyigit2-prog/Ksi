@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from ksi_local.bundle_runtime import MAX_PAYLOAD_FILES
+from ksi_local.bundle_runtime import MAX_PAYLOAD_FILES, host_architecture
 
 from ksi_local.offline_build import seal_offline_payload
 from ksi_local.model_manager import ModelManager
@@ -47,7 +47,7 @@ class OfflineBuildTests(unittest.TestCase):
                 row.update(license="MIT", license_file="example-license",
                            source_url="https://example.org/model", revision="synthetic-fixture-v1")
             rows.append(row)
-        self.specification = {"schema_version": 1, "architecture": "arm64", "files": rows,
+        self.specification = {"schema_version": 1, "architecture": host_architecture(), "files": rows,
             "models": [{"id": "cpu", "title": "CPU fixture", "description": "Synthetic test only",
                         "license": "MIT", "members": ["example"]}]}
 

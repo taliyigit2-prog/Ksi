@@ -90,6 +90,7 @@ class TranscriptionTests(unittest.TestCase):
             }
             with (
                 patch.dict(sys.modules, modules),
+                patch("ksi_local.transcription.host_architecture", return_value="arm64"),
                 patch("ksi_local.transcription.probe_local_media", return_value={}),
             ):
                 result = transcribe_media(media, output, language="auto", model="local")

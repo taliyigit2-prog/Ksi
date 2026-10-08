@@ -46,6 +46,12 @@ only when their empty bytes match an exact digest-bound original archive member,
 nonempty original sibling grants remain intact, and no component or model uses
 that placeholder as its required license. The sealer still rejects empty grants.
 
+Synthetic sealing fixtures use the actual test processor rather than assuming
+ARM. MLX unit doubles explicitly select the MLX branch; separate CPU adapter
+tests validate native command construction, result parsing and model integrity.
+The native Intel source suite supplies the verified OCR development helper and
+the CPU speech queue fixture. These source tests are not real-model inference.
+
 `autonomous_release` is the approved ad-hoc boundary. Every required automatic
 case is bound to the source commit, processor and exact offline manifest; named
 objective checks and zero unresolved privacy/license findings are mandatory.

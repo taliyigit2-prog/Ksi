@@ -326,6 +326,7 @@ class PhaseSevenCoreTests(unittest.TestCase):
                     "ksi_local.transcription.probe_local_media",
                     return_value={"duration_seconds": 1.0},
                 ),
+                patch("ksi_local.transcription.host_architecture", return_value="arm64"),
                 patch.dict("sys.modules", {"mlx_whisper": fake_whisper}),
             ):
                 result = transcribe_media(media, root / "out.srt", language="tr")
@@ -344,6 +345,7 @@ class PhaseSevenGuiTests(unittest.TestCase):
             (workspace.root / "models/tts/chatterbox-multilingual-v3").mkdir(
                 parents=True
             )
+            (workspace.root / "models/tts/piper").mkdir(parents=True)
             media = root / "lesson.mp4"
             media.touch()
             write_srt(
@@ -378,6 +380,12 @@ class PhaseSevenGuiTests(unittest.TestCase):
                     ["translate", "tts", "dub_quality", "mux"],
                 )
                 self.assertIn("ksi_local.tts_worker", window.pending[1].argv)
+                from ksi_local.bundle_runtime import host_architecture
+                expected_engine = "piper" if host_architecture() == "x86_64" else "chatterbox"
+                argv = window.pending[1].argv
+                self.assertEqual(argv[argv.index("--engine") + 1], expected_engine)
+                expected_model = "piper" if expected_engine == "piper" else "chatterbox-multilingual-v3"
+                self.assertEqual(argv[argv.index("--model-directory") + 1], str(workspace.root / "models/tts" / expected_model))
                 self.assertTrue(window.store.get_job(window.current_job_id).want_dub)
                 window.close()
 
