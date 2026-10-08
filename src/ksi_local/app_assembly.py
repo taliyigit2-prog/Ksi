@@ -29,6 +29,20 @@ _MACHO_MAGICS = {b"\xcf\xfa\xed\xfe", b"\xfe\xed\xfa\xcf", b"\xce\xfa\xed\xfe", 
     b"\xca\xfe\xba\xbe", b"\xbe\xba\xfe\xca", b"\xca\xfe\xba\xbf", b"\xbf\xba\xfe\xca"}
 
 
+def sign_app_bundle(destination: Path) -> None:
+    """Seal model-bearing apps within a finite, separate large-payload budget.
+
+    Native Intel CI exceeded the individual-file 120-second budget on a 13 GB
+    app. A timeout or failed strict verification still rejects the build.
+    """
+    if not destination.is_absolute() or destination.suffix != ".app" or destination.is_symlink() or not destination.is_dir():
+        raise ValueError("Outer signing requires an explicit ordinary app directory.")
+    subprocess.run(["/usr/bin/codesign", "--force", "--sign", "-", "--timestamp=none", str(destination)],
+        check=True, capture_output=True, timeout=900)
+    subprocess.run(["/usr/bin/codesign", "--verify", "--deep", "--strict", str(destination)],
+        check=True, capture_output=True, timeout=900)
+
+
 def committed_file(repository: Path, commit: str, name: str) -> tuple[bytes, int]:
     """Read bounded ordinary Git blobs, never mutable working-tree content."""
     if not re.fullmatch(r"[0-9a-f]{40}", commit):
@@ -297,6 +311,5 @@ def assemble_app(repository: Path, runtime: Path, components: Path, specificatio
         identifier = "voice-profile" if path == profile else f"runtime-{index:05d}"
         spec["files"].append({"path": name, "sha256": digest_file(path), "size": path.stat().st_size, "role": "support", "identifier": identifier})
     sealed = seal_offline_payload(resources, spec)
-    subprocess.run(["/usr/bin/codesign", "--force", "--sign", "-", "--timestamp=none", str(destination)], check=True, capture_output=True, timeout=120)
-    subprocess.run(["/usr/bin/codesign", "--verify", "--deep", "--strict", str(destination)], check=True, capture_output=True, timeout=120)
+    sign_app_bundle(destination)
     return dict(sealed, source_commit=commit, native_files=native_files, acceptance_tested=False)

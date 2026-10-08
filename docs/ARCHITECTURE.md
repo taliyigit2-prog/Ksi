@@ -60,6 +60,11 @@ inventory including the launcher and outer code seal with the accepted app.
 Matching checksums on self-described DMG files are not sufficient. Both native
 architectures must use the same final version; development versions remain gated.
 
+The outer app code seal and strict deep verification each have a bounded
+15-minute budget because the seal covers gigabytes of offline model weights.
+Individual native files retain their shorter signing budget. Timeouts and
+verification errors remain build failures; no unsigned fallback is allowed.
+
 The old personal environment-copy installers are retired. The portable bundle
 launcher resolves its Python, tools and models relative to the application, checks
 the processor, sanitizes interpreter/plugin injection variables and does not use

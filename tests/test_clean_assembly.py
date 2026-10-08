@@ -6,10 +6,47 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from ksi_local.app_assembly import bind_signed_tool_manifest, committed_file, copy_clean_tree, normalize_build_shebangs, sign_native_payload
+from ksi_local.app_assembly import bind_signed_tool_manifest, committed_file, copy_clean_tree, normalize_build_shebangs, sign_app_bundle, sign_native_payload
 
 
 class CleanTreeTests(unittest.TestCase):
+    def test_outer_seal_has_finite_large_payload_budget_and_strict_verification(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            app = Path(temporary).resolve() / "Synthetic.app"
+            app.mkdir()
+            with patch("ksi_local.app_assembly.subprocess.run") as commands:
+                sign_app_bundle(app)
+            self.assertEqual(commands.call_count, 2)
+            self.assertIn("--timestamp=none", commands.call_args_list[0].args[0])
+            self.assertIn("--strict", commands.call_args_list[1].args[0])
+            self.assertIn("--deep", commands.call_args_list[1].args[0])
+            for call in commands.call_args_list:
+                self.assertEqual(call.kwargs["timeout"], 900)
+                self.assertTrue(call.kwargs["check"])
+
+    def test_outer_signing_failure_or_timeout_never_reaches_verification(self):
+        for failure in (subprocess.TimeoutExpired("codesign", 900), subprocess.CalledProcessError(1, "codesign")):
+            with self.subTest(failure=type(failure).__name__), tempfile.TemporaryDirectory() as temporary:
+                app = Path(temporary).resolve() / "Synthetic.app"
+                app.mkdir()
+                with patch("ksi_local.app_assembly.subprocess.run", side_effect=failure) as commands:
+                    with self.assertRaises(type(failure)):
+                        sign_app_bundle(app)
+                self.assertEqual(commands.call_count, 1)
+
+    def test_outer_signing_rejects_link_missing_or_non_app_before_process(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            app = root / "Synthetic.app"
+            app.mkdir()
+            alias = root / "Alias.app"
+            alias.symlink_to(app)
+            for target in (alias, root / "Missing.app", root, Path("Relative.app")):
+                with self.subTest(target=target.name), patch("ksi_local.app_assembly.subprocess.run") as commands:
+                    with self.assertRaises(ValueError):
+                        sign_app_bundle(target)
+                    commands.assert_not_called()
+
     def test_framework_bundle_is_signed_and_verified_after_its_native_file(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
