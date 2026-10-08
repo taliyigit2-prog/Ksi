@@ -11,6 +11,14 @@ on:
         description: Independently reviewed joined archive SHA-256
         type: string
         required: true
+      product_commit:
+        description: Immutable full product source commit; tooling does not change accepted product bytes
+        type: string
+        required: true
+      stage_reviewed_media:
+        description: Store successful privacy-reviewed final Intel media in the user-authorized unpublished draft
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -23,12 +31,13 @@ jobs:
       contents: write
     if: github.event.repository.visibility == 'public'
     runs-on: macos-15-intel
-    timeout-minutes: 180
+    timeout-minutes: 240
     env:
       PYTHONPATH: src
       PYTHONDONTWRITEBYTECODE: '1'
       KSI_INPUT_TAG: ${{ inputs.input_tag }}
       KSI_INPUT_SHA256: ${{ inputs.input_sha256 }}
+      KSI_PRODUCT_COMMIT: ${{ inputs.product_commit }}
       KSI_STATE_DIRECTORY: /private/tmp/ksi-native-intel-candidate-state
       QT_QPA_PLATFORM: offscreen
       HF_HUB_OFFLINE: '1'
@@ -37,6 +46,15 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+          ref: ${{ inputs.product_commit }}
+      - name: Validate immutable product commit
+        run: |
+          python3 -c 'import os,re,subprocess; p=os.environ["KSI_PRODUCT_COMMIT"]; assert re.fullmatch(r"[0-9a-f]{40}",p); assert subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip()==p'
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+          path: release-tools
       - name: Inspect actual native Intel processor and disk budget
         run: |
           python3 scripts/native_acceptance_preflight.py x86_64 build/preflight.json
@@ -75,7 +93,18 @@ jobs:
       - name: Build native installation media and verify an independent offline installation
         run: |
           build/native-inputs/runtime/python/bin/python3.12 scripts/build_offline_dmg.py 'build/native-app/KSI Local Studio.app' build/native-dmg > build/native-dmg-build.json
-          build/native-inputs/runtime/python/bin/python3.12 scripts/verify_native_offline_install.py 'build/native-app/KSI Local Studio.app' build/native-dmg build/native-installed
+          build/native-inputs/runtime/python/bin/python3.12 release-tools/.github/release-tools/verify_install_with_diagnostics.py . 'build/native-app/KSI Local Studio.app' build/native-dmg build/native-installed
+      - name: Audit complete actual app and read-only installation media before draft storage
+        if: inputs.stage_reviewed_media
+        run: |
+          build/native-inputs/runtime/python/bin/python3.12 release-tools/.github/release-tools/audit_installation_privacy.py . 'build/native-app/KSI Local Studio.app' build/native-dmg build/native-packaged-checks/packaged-checks.json build/native-installed/offline-install.json build/native-privacy --allow-network
+      - name: Store only authorized tested privacy-reviewed Intel installation parts in an unpublished draft
+        if: inputs.stage_reviewed_media
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SHORT_COMMIT="${KSI_PRODUCT_COMMIT:0:7}"
+          build/native-inputs/runtime/python/bin/python3.12 release-tools/.github/release-tools/stage_reviewed_intel_media.py build/native-dmg build/native-privacy/privacy.json "$GITHUB_REPOSITORY" "ksi-final-intel-${SHORT_COMMIT}-staging"
       - name: Archive only small validation evidence, not an unapproved app
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -98,8 +127,10 @@ jobs:
             build/native-packaged-checks/translation/result.local.json
             build/native-packaged-checks/tts/result.local.json
             build/native-installed/offline-install.json
+            build/native-installed/failure-diagnostic.json
             build/native-installed/installed-gui.json
             build/native-installed/installed-speech/result.local.json
             build/native-dmg/transport.json
+            build/native-privacy/privacy.json
           if-no-files-found: error
           retention-days: 3

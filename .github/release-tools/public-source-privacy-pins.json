@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "archives": {
+    "sources/frozen-runtime/cpython/corresponding-source.tar": {"sha256": "0906e3add51f2db35693052542a02246a3a798464e7842573b31c821d2b63ae0", "source_url": "https://github.com/python/cpython.git", "source_commit": "c63aec69bd59c55314c06c23f4c22c03de76fe45"},
+    "sources/frozen-runtime/openssl/corresponding-source.tar": {"sha256": "e9f1ed1dc2a10b6e54f3394c1ca526c505c889b48c57b61a92f5f72489898dd6", "source_url": "https://github.com/openssl/openssl.git", "source_commit": "8cf17aaeb4599f8af87fefd810b5b5fee90fe69e"},
+    "sources/tools/deno/corresponding-source.tar": {"sha256": "5b667301d08fd04f437f74c5c20016703aaa3ffc6efd44d2a8c390255c15df47", "source_url": "https://github.com/denoland/deno.git", "source_commit": "e518fbd66dda5debcbdefc0beb0b3756b37b64fa"},
+    "sources/tools/ffmpeg-corresponding/corresponding-source.tar": {"sha256": "4a26df901e05368cbd522dd784ddbdcaf13c2c62bd748352f6208f3e2344113a", "source_url": "https://github.com/FFmpeg/FFmpeg.git", "source_commit": "38b88335f99e76ed89ff3c93f877fdefce736c13"},
+    "sources/tools/ollama/corresponding-source.tar": {"sha256": "d16a34c9ace344987acd06eae07ab83cb313be868cbca7bd8035b6bb4abee3b1", "source_url": "https://github.com/ollama/ollama.git", "source_commit": "c28ddc0a7b273cd286b680a6db0bef0c17bc0ec0"},
+    "sources/tools/rusty-v8/corresponding-source.tar": {"sha256": "9c0e6e64f4dd0479d1c27df7310ee79e00120891da3cf89bb12a9e3130a60185", "source_url": "https://github.com/denoland/rusty_v8.git", "source_commit": "5c15a6995c9bb4bacd3e341b59fff32c909c80bf"},
+    "sources/tools/v8-embedded/corresponding-source.tar": {"sha256": "597bd79abf86bec9200f0073a5e6f4df47ad9dd73d9d9eee4e143f483b3e4f9a", "source_url": "https://github.com/denoland/v8.git", "source_commit": "ac1e23989121713ca642f6650b34deff7b686896"},
+    "sources/tools/yt-dlp/corresponding-source.tar": {"sha256": "dd71840f8a8849492b2ae2f55efba319b723b90912d31a9a180f5bc68218e7a1", "source_url": "https://github.com/yt-dlp/yt-dlp.git", "source_commit": "3a08beaf031ab68f966401ead017ac81fe8486cf"}
+  }
+}
