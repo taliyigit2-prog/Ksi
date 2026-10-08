@@ -55,7 +55,9 @@ jobs:
           build/native-inputs/runtime/python/bin/python3.12 scripts/assemble_offline_app.py build/native-inputs/runtime build/native-inputs/components build/native-inputs/components/component-specification.json 'build/native-app/KSI Local Studio.app' > build/native-app-build.json
       - name: Verify all committed source tests on native Intel
         run: |
-          export PATH="$GITHUB_WORKSPACE/build/native-inputs/components/engines/media:$PATH"
+          # Source-level command construction resolves tools through PATH.
+          # Supply the verified staging tools, never require a host Ollama install.
+          export PATH="$GITHUB_WORKSPACE/build/native-inputs/components/engines/media:$GITHUB_WORKSPACE/build/native-inputs/components/engines/ollama:$GITHUB_WORKSPACE/build/native-inputs/components/engines/download:$GITHUB_WORKSPACE/build/native-inputs/components/engines/images:$PATH"
           build/native-inputs/runtime/python/bin/python3.12 -m unittest discover -s tests -v > build/native-unit-suite.log 2>&1
       - name: Archive only small validation evidence, not an unapproved app
         if: always()

@@ -9,6 +9,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -306,6 +307,18 @@ def _sanitized_configuration(source: Path, destination: Path) -> None:
 
 
 def _spdx_document(root: Path, manifest: list[dict[str, object]]) -> dict[str, object]:
+    metadata = root / "pyproject.toml"
+    if metadata.is_symlink() or not metadata.is_file() or metadata.stat().st_size > 65536:
+        raise ValueError("Source SBOM requires bounded ordinary project metadata.")
+    try:
+        project = tomllib.loads(metadata.read_text(encoding="utf-8"))["project"]
+    except (KeyError, tomllib.TOMLDecodeError) as error:
+        raise ValueError("Source SBOM project metadata is invalid.") from error
+    version = project.get("version") if isinstance(project, dict) else None
+    if (not isinstance(project, dict) or project.get("name") != "ksi-local-studio"
+            or not isinstance(version, str)
+            or not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:\.dev[0-9]+)?", version)):
+        raise ValueError("Source SBOM project identity/version is invalid.")
     namespace_hash = hashlib.sha256(
         "\n".join(str(item["sha256"]) for item in manifest).encode("ascii")
     ).hexdigest()
@@ -313,7 +326,7 @@ def _spdx_document(root: Path, manifest: list[dict[str, object]]) -> dict[str, o
         {
             "SPDXID": "SPDXRef-Package-KSI",
             "name": "ksi-local-studio",
-            "versionInfo": "2.0.0.dev0",
+            "versionInfo": version,
             "downloadLocation": "NOASSERTION",
             "filesAnalyzed": True,
             "licenseConcluded": "Apache-2.0",

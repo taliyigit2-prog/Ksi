@@ -155,6 +155,9 @@ explicit source allow-list into a new directory, sanitizes machine-bound configu
 generates a source SPDX SBOM and SHA-256 manifest, then runs privacy, secret, symlink and
 binary gates before atomically exposing the tree. It does not initialize Git or contact
 GitHub.
+The source SBOM takes its product version from the exact staged, bounded ordinary
+`pyproject.toml`, not a hard-coded development version or the builder's imports.
+Missing, linked, oversized, malformed or foreign project metadata closes that gate.
 
 `ksi_local.update_manager` validates a local release manifest without installing it.
 The offline installer verifies every payload file before mutation and takes a verified
