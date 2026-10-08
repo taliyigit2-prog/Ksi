@@ -17,6 +17,12 @@ actual SDK manifest. Affected repository identity tests run again. This never
 reuses model or installation acceptance and explicitly records that the original
 overall workflow failed later during installation.
 
+Build-only model restoration retries transient provider outages at most four
+times with bounded delays. It calls the unchanged product downloader with the
+same official URL, size and SHA-256 pins each time. Changed hashes, unsafe URLs,
+differing existing files and permanent HTTP errors fail without retry. Already
+verified complete files remain usable; no account credentials are introduced.
+
 Draft storage is opt-in and permitted only after genuine native packaged tests,
 independent offline installation, complete application privacy scanning and
 read-only media filename/xattr scanning. Potential dependency fixtures/compiler
