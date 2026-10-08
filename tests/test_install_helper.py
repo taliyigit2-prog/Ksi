@@ -16,16 +16,17 @@ def fixture():
     return dict(ready_to_publish=True,version='2.0.0',architectures={
         architecture:dict(files=[dict(filename='KSI-Local-Studio-2.0.0-'+architecture+'.dmg',
                                     sha256=hashlib.sha256(b'x').hexdigest(),size=1)])
-        for architecture in ('arm64','x86_64')})
+        for architecture in ('arm64',)})
 
 
 class InstallHelperTests(unittest.TestCase):
     def test_gate_failure_creates_no_helper(self):
         with tempfile.TemporaryDirectory() as directory:
             output=Path(directory)/'installer.command'
-            with patch.object(HELPER,'verify_release',side_effect=ValueError('not accepted')):
+            with patch.object(HELPER,'verify_distribution',side_effect=ValueError('not accepted')) as verify:
                 with self.assertRaises(ValueError):
-                    HELPER.create({},'a'*40,output)
+                    HELPER.create({'arm64':dict(transport='/unused',application='/unused',evidence='/unused')},'a'*40,output)
+                verify.assert_called_once()
             self.assertFalse(output.exists())
 
     def test_unaccepted_or_development_report_rejected(self):
@@ -50,6 +51,8 @@ class InstallHelperTests(unittest.TestCase):
         self.assertNotIn('xattr -d',text)
         self.assertNotIn('rm -rf',text)
         self.assertNotIn('GH_TOKEN',text)
+        self.assertIn('Intel desteklenmiyor',text)
+        self.assertNotIn('x86_64)',text)
 
     def test_verify_only_checks_owned_tiny_synthetic_parts_without_network(self):
         text=HELPER.render(fixture(),dict(arm64=1,x86_64=1))

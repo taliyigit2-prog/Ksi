@@ -1,7 +1,7 @@
 # KSI Local Studio
 
-> Development notice (2026-10-07): the native sidebar redesign, Intel support
-> and model-inclusive offline installers are under implementation. There is
+> Release scope (2026-10-09): the model-inclusive offline release is now
+> Apple Silicon (ARM64) only. Intel release work has been retired. There is
 > no completed new binary release yet. See the
 > [accepted desktop scope](docs/decisions/2026-10-offline-desktop.md). Source
 > commits are checkpoints, not evidence that final engine/installation tests
@@ -47,10 +47,9 @@ Images, Queue, History and Library, with Help and Settings at the bottom.
 System information stays in its own panel instead of opening an unsolicited dialog. Interface
 language and System/Light/Dark theme are independent persisted preferences.
 
-The new development adapters add persistent FFmpeg media jobs, constrained image
-tools and explicit Gemma/Argos translation selection. Intel ASR and CPU speech
-adapters are implemented, but architecture-specific runtime/model packaging and
-real-engine verification remain prerequisites for claiming complete Intel support.
+The desktop adapters add persistent FFmpeg media jobs, constrained image tools
+and explicit Gemma/Argos translation selection. Shared CPU adapters remain for
+engine compatibility; their presence does not imply an Intel release.
 
 ## Source installation
 
@@ -111,16 +110,17 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md) and
 
 The approved distribution uses explicitly ad-hoc signing, without Apple notarization.
 macOS may require approval in Privacy & Security on first launch. The separate
-`autonomous_release` gate requires both actual native Mac architectures, immutable
-source-bound automatic test evidence, privacy/license closure, verified models,
+Apple Silicon release tooling uses the existing `autonomous_release.verify_distribution`
+gate, requiring all 14 immutable source-bound automatic cases, privacy/license closure, verified models,
 signatures and inspection of the actual application inside every DMG. Development
 candidates and manifest claims alone cannot satisfy this gate. No human scores are
-invented or required from the user. Historical human/notarized APIs remain separate.
+invented or required from the user. Historical two-architecture and human/notarized
+APIs remain separate and are not weakened.
 See `RELEASE_NOTES.md` for the candidate's current status.
 
 ## Road map
 
-The project is completing native Apple Silicon/Intel offline packaging, automatic
+The project is completing native Apple Silicon offline packaging, automatic
 acceptance, and a final privacy/license audit. Windows packaging is a separate
 portability project and does not delay macOS acceptance.
 

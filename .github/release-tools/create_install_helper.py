@@ -5,7 +5,7 @@ import re
 import subprocess
 from pathlib import Path
 from ksi_local.atomic_files import atomic_write_bytes
-from ksi_local.autonomous_release import verify_release
+from ksi_local.autonomous_release import verify_distribution
 
 
 SHELL = r'''#!/bin/bash
@@ -111,13 +111,13 @@ echo "Apple noterlemesi yoktur. İlk açılışta Sistem Ayarları > Gizlilik ve
 
 
 def render(report, storage):
-    if report.get('ready_to_publish') is not True or set(report.get('architectures',{})) != {'arm64','x86_64'}:
-        raise ValueError('Both final architecture gates must pass')
+    if report.get('ready_to_publish') is not True or set(report.get('architectures',{})) != {'arm64'}:
+        raise ValueError('The final Apple Silicon distribution gate must pass')
     version=report['version']
     if not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+',version):
         raise ValueError('Final numeric version required')
     branches=['case "$KSI_ARCH" in']
-    for architecture in ('arm64','x86_64'):
+    for architecture in ('arm64',):
         files=report['architectures'][architecture]['files']
         if not files or len(files)>100:
             raise ValueError('Missing native installer parts')
@@ -136,14 +136,20 @@ def render(report, storage):
         branches.extend([architecture+')',"KSI_NAMES=('"+"' '".join(names)+"')",
                          "KSI_HASHES=('"+"' '".join(hashes)+"')",'KSI_SIZES=('+ ' '.join(sizes)+')',
                          "KSI_PRIMARY='"+primary[0]+"'",'KSI_INSTALL_BYTES='+str(storage[architecture]),';;'])
-    branches.extend(['*) exit 1 ;;','esac'])
+    branches.extend(['*) echo "Bu sürüm yalnız Apple Silicon Mac içindir; Intel desteklenmiyor."; exit 1 ;;','esac'])
     return SHELL.replace('__PLATFORM_CASES__','\n'.join(branches)).replace('__VERSION__',version)
 
 
 def create(platforms,source_commit,output):
     if output.exists() or output.is_symlink():
         raise FileExistsError('Installer helper destination must be new')
-    report=verify_release(platforms,source_commit)
+    if set(platforms) != {'arm64'}:
+        raise ValueError('This installer is Apple Silicon only')
+    paths=platforms['arm64']
+    native=verify_distribution(Path(paths['transport']),Path(paths['application']),Path(paths['evidence']),source_commit)
+    if native['architecture'] != 'arm64':
+        raise ValueError('Apple Silicon native acceptance required')
+    report=dict(ready_to_publish=True,version=native['version'],architectures={'arm64':native})
     from ksi_local.bundle_runtime import OfflinePayload
     storage={}
     for architecture,paths in platforms.items():

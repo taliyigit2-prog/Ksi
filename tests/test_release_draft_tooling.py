@@ -17,7 +17,7 @@ def module(name):
     return result
 
 AUDIT = module('audit_installation_privacy')
-STAGE = module('stage_reviewed_intel_media')
+STAGE = module('stage_reviewed_media')
 
 class ReviewedDraftToolingTests(unittest.TestCase):
     def test_explicit_arm_media_is_bound_to_architecture_and_every_required_privacy_check(self):
@@ -36,7 +36,7 @@ class ReviewedDraftToolingTests(unittest.TestCase):
             privacy=dict(architecture='arm64',source_commit='a'*40,offline_manifest_sha256='b'*64,
                          transport_sha256=STAGE.digest_file(root/'transport.json'),unresolved_findings=[],checks=checks)
             receipt=root/'privacy.json';receipt.write_text(json.dumps(privacy))
-            with self.assertRaises(ValueError):STAGE.validated_files(root,receipt)
+            with self.assertRaises(ValueError):STAGE.validated_files(root,receipt,'x86_64')
             bound,files=STAGE.validated_files(root,receipt,'arm64')
             self.assertEqual(bound,transport);self.assertEqual(len(files),5)
             checks.pop('complete_app_bytes_scanned');receipt.write_text(json.dumps(privacy))
@@ -92,17 +92,15 @@ class ReviewedDraftToolingTests(unittest.TestCase):
             run.assert_not_called()
             read.assert_not_called()
 
-    def test_tooling_workflow_never_implicitly_publishes(self):
-        source = (ROOT / '.github/workflows/intel-candidate.yml').read_text()
-        self.assertIn('ref: ${{ inputs.product_commit }}', source)
-        self.assertIn('ref: ${{ github.sha }}', source)
-        self.assertIn('if: inputs.stage_reviewed_media', source)
-        self.assertNotIn('gh release edit', source)
-        self.assertIn("'--draft'", (TOOLS / 'stage_reviewed_intel_media.py').read_text())
+    def test_retired_intel_workflow_is_absent_and_staging_never_publishes(self):
+        self.assertFalse((ROOT / '.github/workflows/intel-candidate.yml').exists())
+        self.assertFalse((ROOT / '.github/workflows/acceptance-preflight.yml').exists())
+        self.assertNotIn('gh release edit', (TOOLS / 'stage_reviewed_media.py').read_text())
+        self.assertIn("'--draft'", (TOOLS / 'stage_reviewed_media.py').read_text())
 
     def test_existing_draft_is_read_by_id_not_public_tag_endpoint(self):
         transport = dict(source_commit='a'*40)
-        draft = dict(id=12345, tag_name='ksi-final-intel-aaaaaaa-staging', draft=True,
+        draft = dict(id=12345, tag_name='ksi-final-arm64-aaaaaaa-staging', draft=True,
                      target_commitish='a'*40, assets=[])
         with patch.object(STAGE, 'validated_files', return_value=(transport, [Path('/fixture.dmg')])), \
              patch.object(STAGE, 'digest_file', return_value='b'*64), \

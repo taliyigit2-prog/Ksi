@@ -13,9 +13,9 @@ from pathlib import Path
 from ksi_local.bundle_runtime import digest_file, safe_member
 
 
-def validated_files(media, privacy_file, architecture='x86_64'):
-    if architecture not in {'arm64', 'x86_64'}:
-        raise ValueError('Only the two requested native Mac architectures are supported')
+def validated_files(media, privacy_file, architecture='arm64'):
+    if architecture != 'arm64':
+        raise ValueError('The current release is Apple Silicon only')
     transport = json.loads((media / 'transport.json').read_bytes())
     privacy = json.loads(privacy_file.read_bytes())
     required_privacy_checks = {'all_media_filenames_and_xattrs_scanned', 'complete_app_bytes_scanned',
@@ -66,11 +66,11 @@ def validated_files(media, privacy_file, architecture='x86_64'):
     return transport, files
 
 
-def stage(media, privacy_file, repository, tag, architecture='x86_64'):
+def stage(media, privacy_file, repository, tag, architecture='arm64'):
     if repository != 'taliyigit2-prog/Ksi':
         raise ValueError('Draft authorization is repository-specific')
     transport, files = validated_files(media, privacy_file, architecture)
-    native_label = 'intel' if architecture == 'x86_64' else 'arm64'
+    native_label = 'arm64'
     expected_tag = 'ksi-final-' + native_label + '-' + transport['source_commit'][:7] + '-staging'
     if tag != expected_tag:
         raise ValueError('Draft tag must bind exact approved product source')
@@ -80,7 +80,7 @@ def stage(media, privacy_file, repository, tag, architecture='x86_64'):
     if not matches:
         subprocess.run(['gh', 'release', 'create', tag, '--repo', repository, '--draft',
                         '--target', transport['source_commit'], '--title', 'KSI ' + native_label + ' reviewed media staging',
-                        '--notes', 'Unpublished installation-media checkpoint after native tests and privacy review. Legal/two-architecture public release gates remain pending.'],
+                        '--notes', 'Unpublished Apple Silicon media checkpoint after native tests and privacy review. Final acceptance and legal release gates remain pending.'],
                        check=True, timeout=120)
         releases = [release for page in json.loads(subprocess.check_output(command, timeout=120)) for release in page]
         matches = [release for release in releases if release['tag_name'] == tag]
@@ -117,6 +117,6 @@ if __name__ == '__main__':
     parser.add_argument('privacy_file', type=Path)
     parser.add_argument('repository')
     parser.add_argument('tag')
-    parser.add_argument('--architecture', choices=('arm64', 'x86_64'), default='x86_64')
+    parser.add_argument('--architecture', choices=('arm64',), default='arm64')
     args = parser.parse_args()
     stage(args.media.absolute(), args.privacy_file.absolute(), args.repository, args.tag, args.architecture)
