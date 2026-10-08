@@ -84,6 +84,13 @@ alternative zlib-ng reference remains visible: its four affected extensions
 declare the OS-provided z library, not a shipped static zlib-ng. This notice
 restoration is not actual signed-binary attestation or complete legal approval.
 
+Background model workers configure a private, architecture-specific Numba JIT
+cache on the validated internal state disk before importing the engine. Python's
+bytecode-disable flag does not suppress Numba's separate compiled caches.
+Those caches must never be written into signed application resources. Linked,
+external, non-directory or unwritable cache locations fail before engine import;
+model hashes are also checked before cache preparation or heavy imports.
+
 The old personal environment-copy installers are retired. The portable bundle
 launcher resolves its Python, tools and models relative to the application, checks
 the processor, sanitizes interpreter/plugin injection variables and does not use

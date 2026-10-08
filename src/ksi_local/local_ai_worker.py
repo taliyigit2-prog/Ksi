@@ -26,10 +26,12 @@ def _verified_model(value: str, expected: str) -> Path:
 
 
 def _background_session(request: dict):
+    model = _verified_model(request["model"], request["model_sha256"])
+    from ksi_local.worker_caches import prepare_model_worker_cache
+    prepare_model_worker_cache()
     import onnxruntime as ort
     from rembg import remove
     from rembg.sessions.u2netp import U2netpSession
-    model = _verified_model(request["model"], request["model_sha256"])
     # A local-only session override has no code path to download weights or
     # select rembg's commercial/default/cloud model.
     class BundledSession(U2netpSession):
