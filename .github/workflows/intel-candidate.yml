@@ -19,6 +19,10 @@ on:
         description: Store successful privacy-reviewed final Intel media in the user-authorized unpublished draft
         type: boolean
         default: false
+      reuse_immutable_unit_suite:
+        description: Reuse only exact already passed native source and manifest proof, then rerun affected identity tests
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -29,6 +33,7 @@ jobs:
     # token is exposed only to the download step, never stored in input archives.
     permissions:
       contents: write
+      actions: read
     if: github.event.repository.visibility == 'public'
     runs-on: macos-15-intel
     timeout-minutes: 240
@@ -54,7 +59,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ github.sha }}
-          path: release-tools
+          path: build/release-tools
       - name: Inspect actual native Intel processor and disk budget
         run: |
           python3 scripts/native_acceptance_preflight.py x86_64 build/preflight.json
@@ -77,7 +82,11 @@ jobs:
       - name: Assemble ad-hoc candidate on actual Intel processor
         run: |
           build/native-inputs/runtime/python/bin/python3.12 scripts/assemble_offline_app.py build/native-inputs/runtime build/complete-components build/complete-components/component-specification.json 'build/native-app/KSI Local Studio.app' > build/native-app-build.json
+      - name: Diagnose actual app relocation and first voice before expensive media validation
+        run: |
+          build/native-inputs/runtime/python/bin/python3.12 build/release-tools/.github/release-tools/probe_native_relocation.py . 'build/native-app/KSI Local Studio.app' build/native-relocation-probe
       - name: Verify all committed source tests on native Intel
+        if: ${{ !inputs.reuse_immutable_unit_suite }}
         run: |
           # Source health/OCR tests look for the development helper. Reuse only
           # the architecture/hash-verified native input, not a host executable.
@@ -87,24 +96,35 @@ jobs:
           # Supply the verified staging tools, never require a host Ollama install.
           export PATH="$GITHUB_WORKSPACE/build/native-inputs/components/engines/media:$GITHUB_WORKSPACE/build/native-inputs/components/engines/ollama:$GITHUB_WORKSPACE/build/native-inputs/components/engines/download:$GITHUB_WORKSPACE/build/native-inputs/components/engines/images:$PATH"
           build/native-inputs/runtime/python/bin/python3.12 -m unittest discover -s tests -v > build/native-unit-suite.log 2>&1
+      - name: Retrieve exact previously passed immutable native source test proof
+        if: inputs.reuse_immutable_unit_suite
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/taliyigit2-prog/Ksi/actions/artifacts/11572966838/zip > build/immutable-native-unit-evidence.zip
+      - name: Verify immutable native source proof and rerun affected repository identity checks
+        if: inputs.reuse_immutable_unit_suite
+        run: |
+          build/native-inputs/runtime/python/bin/python3.12 build/release-tools/.github/release-tools/reuse_immutable_native_units.py . 'build/native-app/KSI Local Studio.app' build/immutable-native-unit-evidence.zip build/native-unit-reuse.json
+          build/native-inputs/runtime/python/bin/python3.12 -m unittest discover -s tests -p test_phase22_identity.py -v > build/native-unit-identity-recheck.log 2>&1
       - name: Run real offline packaged GUI, tools and model references
         run: |
           build/native-inputs/runtime/python/bin/python3.12 scripts/run_native_packaged_checks.py 'build/native-app/KSI Local Studio.app' build/native-packaged-checks
       - name: Build native installation media and verify an independent offline installation
         run: |
           build/native-inputs/runtime/python/bin/python3.12 scripts/build_offline_dmg.py 'build/native-app/KSI Local Studio.app' build/native-dmg > build/native-dmg-build.json
-          build/native-inputs/runtime/python/bin/python3.12 release-tools/.github/release-tools/verify_install_with_diagnostics.py . 'build/native-app/KSI Local Studio.app' build/native-dmg build/native-installed
+          build/native-inputs/runtime/python/bin/python3.12 build/release-tools/.github/release-tools/verify_install_with_diagnostics.py . 'build/native-app/KSI Local Studio.app' build/native-dmg build/native-installed
       - name: Audit complete actual app and read-only installation media before draft storage
         if: inputs.stage_reviewed_media
         run: |
-          build/native-inputs/runtime/python/bin/python3.12 release-tools/.github/release-tools/audit_installation_privacy.py . 'build/native-app/KSI Local Studio.app' build/native-dmg build/native-packaged-checks/packaged-checks.json build/native-installed/offline-install.json build/native-privacy --allow-network
+          build/native-inputs/runtime/python/bin/python3.12 build/release-tools/.github/release-tools/audit_installation_privacy.py . 'build/native-app/KSI Local Studio.app' build/native-dmg build/native-packaged-checks/packaged-checks.json build/native-installed/offline-install.json build/native-privacy --allow-network
       - name: Store only authorized tested privacy-reviewed Intel installation parts in an unpublished draft
         if: inputs.stage_reviewed_media
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           SHORT_COMMIT="${KSI_PRODUCT_COMMIT:0:7}"
-          build/native-inputs/runtime/python/bin/python3.12 release-tools/.github/release-tools/stage_reviewed_intel_media.py build/native-dmg build/native-privacy/privacy.json "$GITHUB_REPOSITORY" "ksi-final-intel-${SHORT_COMMIT}-staging"
+          build/native-inputs/runtime/python/bin/python3.12 build/release-tools/.github/release-tools/stage_reviewed_intel_media.py build/native-dmg build/native-privacy/privacy.json "$GITHUB_REPOSITORY" "ksi-final-intel-${SHORT_COMMIT}-staging"
       - name: Archive only small validation evidence, not an unapproved app
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -113,7 +133,13 @@ jobs:
           path: |
             build/preflight.json
             build/native-app-build.json
+            build/native-relocation-probe/relocation.json
+            build/native-relocation-probe/failure-diagnostic.json
+            build/native-relocation-probe/gui.json
+            build/native-relocation-probe/speech/result.local.json
             build/native-unit-suite.log
+            build/native-unit-reuse.json
+            build/native-unit-identity-recheck.log
             build/source-notice-normalization.json
             build/python-runtime-notice-restoration.json
             build/native-packaged-checks/packaged-checks.json
