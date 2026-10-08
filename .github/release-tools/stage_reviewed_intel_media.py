@@ -1,4 +1,4 @@
-"""Store only tested/privacy-reviewed Intel media in an unpublished draft.
+"""Store only tested/privacy-reviewed native media in an unpublished draft.
 
 Never publish, overwrite differing assets, upload an app/source workspace, or
 send raw diagnostics. Re-entry skips only independently checksum-matching assets.
@@ -13,32 +13,38 @@ from pathlib import Path
 from ksi_local.bundle_runtime import digest_file, safe_member
 
 
-def validated_files(media, privacy_file):
+def validated_files(media, privacy_file, architecture='x86_64'):
+    if architecture not in {'arm64', 'x86_64'}:
+        raise ValueError('Only the two requested native Mac architectures are supported')
     transport = json.loads((media / 'transport.json').read_bytes())
     privacy = json.loads(privacy_file.read_bytes())
-    if (transport['architecture'] != 'x86_64' or privacy['architecture'] != 'x86_64'
+    required_privacy_checks = {'all_media_filenames_and_xattrs_scanned', 'complete_app_bytes_scanned',
+        'every_flagged_byte_public_original_bound', 'readonly_media_exact', 'zero_unresolved_findings'}
+    if (transport['architecture'] != architecture or privacy['architecture'] != architecture
             or not re.fullmatch(r'[0-9a-f]{40}', transport['source_commit'])
             or privacy['source_commit'] != transport['source_commit']
             or privacy['offline_manifest_sha256'] != transport['offline_manifest_sha256']
             or privacy['transport_sha256'] != digest_file(media / 'transport.json')
-            or privacy['unresolved_findings'] != [] or not privacy['checks']
+            or privacy['unresolved_findings'] != [] or not required_privacy_checks.issubset(privacy['checks'])
             or not all(value is True for value in privacy['checks'].values())):
-        raise ValueError('Exact privacy-reviewed Intel media required')
+        raise ValueError('Exact privacy-reviewed native media required')
     files, names = [], set()
     for row in transport['files']:
         name = row['filename']
         if (Path(name).name != name or name in names
-                or not name.startswith('KSI-Local-Studio-2.0.0-x86_64')
-                or Path(name).suffix not in {'.dmg', '.dmgpart'}):
+                or not re.fullmatch('KSI-Local-Studio-2\\.0\\.0-' + architecture + r'(?:\.dmg|\.[0-9]{3}\.dmgpart)', name)):
             raise ValueError('Invalid media part inventory')
         path = safe_member(media, name)
-        if (path.is_symlink() or not 0 < row['size'] < 2 * 1024**3
+        if (path.is_symlink() or type(row['size']) is not int or not 0 < row['size'] < 2 * 1024**3
                 or path.stat().st_size != row['size'] or digest_file(path) != row['sha256']):
             raise ValueError('Media part checksum mismatch')
         names.add(name)
         files.append(path)
     if not files or len(files) > 100 or sum(path.suffix == '.dmg' for path in files) != 1:
         raise ValueError('Invalid primary/segment inventory')
+    stem = 'KSI-Local-Studio-2.0.0-' + architecture
+    if names != {stem + '.dmg'} | {f'{stem}.{number:03d}.dmgpart' for number in range(2, len(files) + 1)}:
+        raise ValueError('Installation segments must be complete and consecutive')
     checksums = media / 'SHA256SUMS.txt'
     expected_checksums = ''.join(row['sha256'] + '  ' + row['filename'] + '\n' for row in transport['files'])
     if checksums.read_text(encoding='utf-8') != expected_checksums:
@@ -60,11 +66,12 @@ def validated_files(media, privacy_file):
     return transport, files
 
 
-def stage(media, privacy_file, repository, tag):
+def stage(media, privacy_file, repository, tag, architecture='x86_64'):
     if repository != 'taliyigit2-prog/Ksi':
         raise ValueError('Draft authorization is repository-specific')
-    transport, files = validated_files(media, privacy_file)
-    expected_tag = 'ksi-final-intel-' + transport['source_commit'][:7] + '-staging'
+    transport, files = validated_files(media, privacy_file, architecture)
+    native_label = 'intel' if architecture == 'x86_64' else 'arm64'
+    expected_tag = 'ksi-final-' + native_label + '-' + transport['source_commit'][:7] + '-staging'
     if tag != expected_tag:
         raise ValueError('Draft tag must bind exact approved product source')
     command = ['gh', 'api', 'repos/' + repository + '/releases', '--paginate', '--slurp']
@@ -72,7 +79,7 @@ def stage(media, privacy_file, repository, tag):
     matches = [release for release in releases if release['tag_name'] == tag]
     if not matches:
         subprocess.run(['gh', 'release', 'create', tag, '--repo', repository, '--draft',
-                        '--target', transport['source_commit'], '--title', 'KSI Intel reviewed media staging',
+                        '--target', transport['source_commit'], '--title', 'KSI ' + native_label + ' reviewed media staging',
                         '--notes', 'Unpublished installation-media checkpoint after native tests and privacy review. Legal/two-architecture public release gates remain pending.'],
                        check=True, timeout=120)
         releases = [release for page in json.loads(subprocess.check_output(command, timeout=120)) for release in page]
@@ -110,5 +117,6 @@ if __name__ == '__main__':
     parser.add_argument('privacy_file', type=Path)
     parser.add_argument('repository')
     parser.add_argument('tag')
+    parser.add_argument('--architecture', choices=('arm64', 'x86_64'), default='x86_64')
     args = parser.parse_args()
-    stage(args.media.absolute(), args.privacy_file.absolute(), args.repository, args.tag)
+    stage(args.media.absolute(), args.privacy_file.absolute(), args.repository, args.tag, args.architecture)

@@ -30,6 +30,11 @@ paths are accepted only by exact original pinned public-byte comparisons.
 Public-source archive pins were independently compared to their original
 commit-bound archives; they are digest pins, not path exemptions.
 
+Intel is the staging tool's default. Explicit `--architecture arm64` stages the
+separately tested Apple Silicon package in its own source-bound unpublished
+draft. Architecture-specific filenames, complete consecutive parts, integer
+sizes and every required privacy check must match. Neither path publishes.
+
 Only checksum-verified installation segments, transport, checksums and the
 privacy receipt may be stored. The script never publishes, uploads the working
 tree, or overwrites a differing asset. Public release and legal acceptance remain

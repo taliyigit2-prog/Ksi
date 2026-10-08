@@ -2,6 +2,7 @@
 import importlib.util
 import io
 import json
+import hashlib
 import tempfile
 import unittest
 from pathlib import Path
@@ -19,6 +20,28 @@ AUDIT = module('audit_installation_privacy')
 STAGE = module('stage_reviewed_intel_media')
 
 class ReviewedDraftToolingTests(unittest.TestCase):
+    def test_explicit_arm_media_is_bound_to_architecture_and_every_required_privacy_check(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            name='KSI-Local-Studio-2.0.0-arm64.dmg'
+            (root/name).write_bytes(b'x')
+            digest=hashlib.sha256(b'x').hexdigest()
+            transport=dict(architecture='arm64',source_commit='a'*40,offline_manifest_sha256='b'*64,
+                           files=[dict(filename=name,sha256=digest,size=1)])
+            (root/'transport.json').write_text(json.dumps(transport))
+            (root/'SHA256SUMS.txt').write_text(digest+'  '+name+'\n')
+            (root/'Kurulum.txt').write_text('Synthetic installation fixture')
+            checks={key:True for key in ('all_media_filenames_and_xattrs_scanned','complete_app_bytes_scanned',
+                'every_flagged_byte_public_original_bound','readonly_media_exact','zero_unresolved_findings')}
+            privacy=dict(architecture='arm64',source_commit='a'*40,offline_manifest_sha256='b'*64,
+                         transport_sha256=STAGE.digest_file(root/'transport.json'),unresolved_findings=[],checks=checks)
+            receipt=root/'privacy.json';receipt.write_text(json.dumps(privacy))
+            with self.assertRaises(ValueError):STAGE.validated_files(root,receipt)
+            bound,files=STAGE.validated_files(root,receipt,'arm64')
+            self.assertEqual(bound,transport);self.assertEqual(len(files),5)
+            checks.pop('complete_app_bytes_scanned');receipt.write_text(json.dumps(privacy))
+            with self.assertRaises(ValueError):STAGE.validated_files(root,receipt,'arm64')
+
     def test_original_fingerprint_must_match_every_occurrence(self):
         scanner = AUDIT.load_scanner(ROOT)
         content = b'https://' + b'synthetic:fixture' + b'@example.invalid/'
