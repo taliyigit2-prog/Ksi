@@ -72,7 +72,7 @@ def verify_embedded_application(image: Path, application: Path) -> dict:
         if actual != expected:
             raise ValueError("DMG does not contain the exact accepted application")
         subprocess.run(["/usr/bin/codesign", "--verify", "--deep", "--strict", str(embedded)],
-                       check=True, capture_output=True, timeout=180)
+                       check=True, capture_output=True, timeout=900)
         shortcut = mount / "Applications"
         if not shortcut.is_symlink() or str(shortcut.readlink()) != "/Applications":
             raise ValueError("DMG is missing its standard Applications installation shortcut")

@@ -65,9 +65,17 @@ The outer app code seal and strict deep verification each have a bounded
 Individual native files retain their shorter signing budget. Timeouts and
 verification errors remain build failures; no unsigned fallback is allowed.
 
+Packaged MLX transcription decodes local audio through the exact verified
+FFmpeg into bounded 16 kHz mono float samples before calling the upstream MLX
+API. It does not let upstream resolve a bare ffmpeg through PATH, modify global
+environment variables or use Homebrew. PCM staging is internal-only and removed
+on success or failure. CPU transcription retains its native adapter.
+
 Clean builds restore standalone Python's original legal texts from its exact
 public full distribution, separately pinned to the install-only runtime input.
-macOS libarchive reads the archive without a Homebrew dependency. Every selected
+Builds can stream-decode the archive through the already reviewed, hash-verified
+Zstandard 1.5.7 native library when the host's older tar cannot read it. The
+expansion and deadline are bounded; there is no Homebrew fallback. Every selected
 member has its own size/digest pin. The original Darwin metadata's missing
 alternative zlib-ng reference remains visible: its four affected extensions
 declare the OS-provided z library, not a shipped static zlib-ng. This notice

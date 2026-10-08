@@ -41,6 +41,11 @@ alternative zlib-ng reference remains recorded, not replaced by an invented
 grant. Its affected Darwin extensions declare the system z library. Actual
 signed-binary/source binding and the final distribution SBOM remain separate.
 
+The build-only full Python archive reader can reuse the exact reviewed native
+Zstandard 1.5.7 library from the media component inventory. It adds no new
+downloaded decoder or installed-app dependency and retains the library's
+existing original notices. Expansion is streamed and bounded.
+
 The isolated ARM Turkish speech environment is locked separately in
 `config/python-chatterbox-wheels-arm64.json` (Chatterbox 0.1.7 and its exact
 public transitive artifacts). It is rebuilt from official wheels, not a user

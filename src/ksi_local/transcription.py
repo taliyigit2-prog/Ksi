@@ -128,13 +128,17 @@ def transcribe_media(
         verify_model_tree(Path(model).expanduser(), resources,
             prefix="models/whisper/large-v3-turbo-8bit/",
             required=frozenset({"config.json", "weights.safetensors"}))
+        from ksi_local.mlx_audio import decode_packaged_audio
+        audio_input = decode_packaged_audio(source, duration_seconds)
+    else:
+        audio_input = str(source)
     try:
         import mlx_whisper
     except ImportError as error:
         raise RuntimeError("mlx-whisper kurulu değil.") from error
     try:
         result = mlx_whisper.transcribe(
-            str(source),
+            audio_input,
             path_or_hf_repo=model,
             language=None if language == AUTO_LANGUAGE else language,
             word_timestamps=True,

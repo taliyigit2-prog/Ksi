@@ -1,4 +1,5 @@
 import hashlib
+import gzip
 import io
 import json
 import tarfile
@@ -13,6 +14,38 @@ from ksi_local.python_runtime_notices import stage_python_runtime_notices
 
 
 class PythonRuntimeNoticeTests(unittest.TestCase):
+    def test_stream_decoded_original_tar_preserves_the_same_member_pins(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            archive, pin, _ = self.fixture(root)
+            with patch("ksi_local.python_runtime_notices.subprocess.run") as host_tar:
+                result = stage_python_runtime_notices(archive, pin, root / "stage",
+                    original_tar=io.BytesIO(gzip.decompress(archive.read_bytes())))
+            host_tar.assert_not_called()
+            self.assertEqual(result["original_notices"], 2)
+
+    def test_stream_decoded_link_or_duplicate_members_are_rejected_before_writes(self):
+        for linked in (False, True):
+            with self.subTest(linked=linked), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve()
+                archive, pin, members = self.fixture(root)
+                decoded = io.BytesIO()
+                with tarfile.open(fileobj=decoded, mode="w") as stream:
+                    for name, data in members.items():
+                        item = tarfile.TarInfo(name)
+                        item.size = len(data)
+                        stream.addfile(item, io.BytesIO(data))
+                    item = tarfile.TarInfo("python/PYTHON.json")
+                    item.size = len(members[item.name])
+                    if linked:
+                        item.type = tarfile.SYMTYPE
+                        item.linkname = "outside"
+                    stream.addfile(item, None if linked else io.BytesIO(members[item.name]))
+                decoded.seek(0)
+                with self.assertRaises(ValueError):
+                    stage_python_runtime_notices(archive, pin, root / "stage", original_tar=decoded)
+                self.assertFalse((root / "stage").exists())
+
     def fixture(self, root, *, architecture="arm64", missing=False, static=False):
         metadata = {"python_version": "3.12.15", "target_triple": "aarch64-apple-darwin" if architecture == "arm64" else "x86_64-apple-darwin",
             "license_path": "licenses/LICENSE.cpython.txt", "build_info": {"extensions": {}}}

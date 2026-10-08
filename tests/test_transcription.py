@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import os
 import tempfile
 import types
 import unittest
@@ -11,6 +12,57 @@ from ksi_local.transcription import release_mlx_model, segments_to_cues, transcr
 
 
 class TranscriptionTests(unittest.TestCase):
+    def setUp(self):
+        self.state = tempfile.TemporaryDirectory(prefix="ksi-transcription-unit-state-")
+        self.addCleanup(self.state.cleanup)
+        environment = patch.dict(os.environ, {"KSI_STATE_DIRECTORY": self.state.name})
+        environment.start()
+        self.addCleanup(environment.stop)
+
+    def test_packaged_mlx_receives_decoded_samples_not_filename_or_path_lookup(self):
+        captured = []
+        samples = object()
+        whisper = types.ModuleType("mlx_whisper")
+        fake_mlx = types.ModuleType("mlx")
+        fake_mlx.__path__ = []
+        fake_core = types.ModuleType("mlx.core")
+        fake_core.clear_cache = lambda: None
+        fake_mlx.core = fake_core
+        def transcribe(audio, **kwargs):
+            captured.append(audio)
+            return {"language": "tr", "segments": [{"start": 0.0, "end": 1.0, "text": "Merhaba"}]}
+        whisper.transcribe = transcribe
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "synthetic.wav"
+            source.touch()
+            with patch.dict(sys.modules, {"mlx_whisper": whisper, "mlx": fake_mlx, "mlx.core": fake_core}), \
+                 patch("ksi_local.transcription.host_architecture", return_value="arm64"), \
+                 patch("ksi_local.transcription.probe_local_media", return_value={"duration_seconds": 3.0}), \
+                 patch("ksi_local.bundle_runtime.bundle_root", return_value=root), \
+                 patch("ksi_local.installed_model_integrity.verify_model_tree") as integrity, \
+                 patch("ksi_local.mlx_audio.decode_packaged_audio", return_value=samples) as decoder:
+                result = transcribe_media(source, root / "output.srt", language="tr", model=str(root / "model"))
+            integrity.assert_called_once()
+            decoder.assert_called_once_with(source.resolve(), 3.0)
+            self.assertEqual(captured, [samples])
+            self.assertEqual(result["detected_language"], "tr")
+
+    def test_changed_packaged_model_rejects_before_decode_or_inference(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "synthetic.wav"
+            source.touch()
+            with patch("ksi_local.transcription.host_architecture", return_value="arm64"), \
+                 patch("ksi_local.transcription.probe_local_media", return_value={"duration_seconds": 3.0}), \
+                 patch("ksi_local.bundle_runtime.bundle_root", return_value=root), \
+                 patch("ksi_local.installed_model_integrity.verify_model_tree", side_effect=ValueError("changed original fixture")), \
+                 patch("ksi_local.mlx_audio.decode_packaged_audio") as decoder:
+                with self.assertRaisesRegex(ValueError, "changed original"):
+                    transcribe_media(source, root / "output.srt", language="tr", model=str(root / "model"))
+                decoder.assert_not_called()
+            self.assertFalse((root / "output.srt").exists())
+
     def test_upstream_retained_model_is_released_without_importing_engines(self):
         holder = types.SimpleNamespace(model=object(), model_path="local")
         module = types.SimpleNamespace(ModelHolder=holder)

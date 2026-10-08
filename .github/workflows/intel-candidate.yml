@@ -54,7 +54,7 @@ jobs:
         run: python3 scripts/normalize_source_notice_inputs.py build/native-inputs/components > build/source-notice-normalization.json
       - name: Restore original standalone Python notices from exact public full distribution
         run: |
-          python3 scripts/stage_python_runtime_notices.py x86_64 build/original-notice-cache build/python-original-notices --allow-network > build/python-runtime-notice-restoration.json
+          python3 scripts/stage_python_runtime_notices.py x86_64 build/original-notice-cache build/python-original-notices --allow-network --verified-components build/native-inputs/components > build/python-runtime-notice-restoration.json
           python3 scripts/merge_offline_components.py x86_64 build/complete-components build/native-inputs/components build/python-original-notices
       - name: Assemble ad-hoc candidate on actual Intel processor
         run: |

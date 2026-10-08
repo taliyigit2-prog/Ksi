@@ -30,7 +30,7 @@ unset KSI_WORKSPACE_LOCK_FD
 export KSI_BUNDLE_ROOT="$KSI_RESOURCES"
 export PYTHONPATH="$KSI_RUNTIME/src"
 export PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1
-export PATH="$KSI_RESOURCES/tools:$KSI_RUNTIME/python/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+export PATH="$KSI_RUNTIME/python/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 export QT_PLUGIN_PATH="$KSI_RUNTIME/python/lib/python3.12/site-packages/PySide6/Qt/plugins"
 export OLLAMA_NO_CLOUD=true HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1 TRANSFORMERS_OFFLINE=1
 export NO_PROXY="127.0.0.1,localhost,::1"

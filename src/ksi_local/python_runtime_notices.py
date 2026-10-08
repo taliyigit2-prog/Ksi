@@ -8,6 +8,7 @@ import hashlib
 import json
 import re
 import subprocess
+import tarfile
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -35,7 +36,7 @@ def _metadata_references(value):
     return result
 
 
-def stage_python_runtime_notices(archive: Path, pin: dict, destination: Path) -> dict:
+def stage_python_runtime_notices(archive: Path, pin: dict, destination: Path, *, original_tar=None) -> dict:
     architecture = pin.get("architecture")
     triple = {"arm64": "aarch64-apple-darwin", "x86_64": "x86_64-apple-darwin"}.get(architecture)
     if triple is None or not destination.is_absolute() or destination.exists() or destination.is_symlink():
@@ -65,8 +66,17 @@ def stage_python_runtime_notices(archive: Path, pin: dict, destination: Path) ->
         # macOS libarchive reads the exact zstd archive without a Homebrew tool.
         # Each output has an independently pinned size and digest; nothing is
         # extracted or executed from the full distribution's build directories.
-        data = subprocess.run(["/usr/bin/tar", "-xOf", str(archive), name],
-            check=True, capture_output=True, timeout=30).stdout
+        if original_tar is None:
+            data = subprocess.run(["/usr/bin/tar", "-xOf", str(archive), name],
+                check=True, capture_output=True, timeout=30).stdout
+        else:
+            original_tar.seek(0)
+            with tarfile.open(fileobj=original_tar, mode="r:") as stream:
+                matches = [member for member in stream.getmembers() if member.name == name]
+                if len(matches) != 1 or not matches[0].isfile() or matches[0].size != row["size"]:
+                    raise ValueError("Original Python notice is missing, linked, duplicated or oversized.")
+                with stream.extractfile(matches[0]) as content:
+                    data = content.read(row["size"] + 1)
         if len(data) != row["size"] or hashlib.sha256(data).hexdigest() != row["sha256"]:
             raise ValueError("Original Python notice content differs from its reviewed member pin.")
         data.decode("utf-8")
