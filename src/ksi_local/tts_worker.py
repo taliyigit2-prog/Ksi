@@ -43,21 +43,12 @@ SPEECH_THRESHOLD = 0.01
 
 
 def _prepare_numba_cache() -> Path:
-    configured = os.environ.get("KSI_NUMBA_CACHE_DIRECTORY")
-    target = (
-        Path(configured).expanduser()
-        if configured
-        else Path.home() / "Library/Caches/KSI Local Studio/numba"
-    )
-    if target.is_symlink():
-        raise ValueError("Numba cache hedefi sembolik bağlantı olamaz.")
-    target.mkdir(parents=True, exist_ok=True, mode=0o700)
-    if target.is_symlink() or not target.is_dir():
-        raise ValueError("Numba cache hedefi geçerli bir klasör değildir.")
-    target.chmod(0o700)
-    resolved = target.resolve()
-    os.environ["NUMBA_CACHE_DIR"] = str(resolved)
-    return resolved
+    from ksi_local.worker_caches import prepare_model_worker_cache
+
+    # The retired external-SSD override must not redirect a dedicated worker
+    # or chmod a shared/user-owned directory. Both model engines use the same
+    # validated private internal-state boundary before importing Numba.
+    return prepare_model_worker_cache()
 
 
 def _emit(event: WorkerEvent) -> None:

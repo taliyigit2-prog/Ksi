@@ -60,13 +60,12 @@ def workspace_at(root: Path) -> WorkspacePaths:
 class PhaseSevenCoreTests(unittest.TestCase):
     def test_numba_cache_is_private_and_rejects_a_symlink_target(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            cache = root / "numba"
-            with patch.dict(
-                os.environ,
-                {"KSI_NUMBA_CACHE_DIRECTORY": str(cache)},
-                clear=False,
-            ):
+            root = Path(directory).resolve()
+            from ksi_local.bundle_runtime import host_architecture
+            state = root / "state"
+            cache = state / "cache/numba" / host_architecture()
+            with patch("ksi_local.worker_caches.default_database_path", return_value=state / "jobs.sqlite3"), \
+                 patch.dict(os.environ):
                 prepared = _prepare_numba_cache()
                 self.assertEqual(prepared, cache.resolve())
                 self.assertEqual(os.environ["NUMBA_CACHE_DIR"], str(cache.resolve()))
@@ -74,14 +73,21 @@ class PhaseSevenCoreTests(unittest.TestCase):
             cache.rmdir()
             cache.symlink_to(root / "redirect", target_is_directory=True)
             with (
-                patch.dict(
-                    os.environ,
-                    {"KSI_NUMBA_CACHE_DIRECTORY": str(cache)},
-                    clear=False,
-                ),
-                self.assertRaisesRegex(ValueError, "sembolik"),
+                patch("ksi_local.worker_caches.default_database_path", return_value=state / "jobs.sqlite3"),
+                patch.dict(os.environ),
+                self.assertRaisesRegex(RuntimeError, "dahili"),
             ):
                 _prepare_numba_cache()
+
+    def test_retired_external_tts_cache_override_is_ignored_before_any_external_write(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory).resolve() / "state"
+            with patch("ksi_local.worker_caches.default_database_path", return_value=state / "jobs.sqlite3"), \
+                 patch.dict(os.environ, {"KSI_NUMBA_CACHE_DIRECTORY": "/Volumes/retired-ssd/cache", "NUMBA_CACHE_DIR": "/Volumes/retired-ssd/cache"}):
+                prepared = _prepare_numba_cache()
+                self.assertTrue(prepared.is_relative_to(state))
+                self.assertEqual(os.environ["NUMBA_CACHE_DIR"], str(prepared))
+                self.assertEqual(list(prepared.iterdir()), [])
 
     def test_public_voice_template_never_claims_human_acceptance(self) -> None:
         with self.assertRaisesRegex(ValueError, "kabul edilmemiş"):

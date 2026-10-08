@@ -90,6 +90,10 @@ bytecode-disable flag does not suppress Numba's separate compiled caches.
 Those caches must never be written into signed application resources. Linked,
 external, non-directory or unwritable cache locations fail before engine import;
 model hashes are also checked before cache preparation or heavy imports.
+Chatterbox uses the same validated cache boundary. The retired
+`KSI_NUMBA_CACHE_DIRECTORY` override is not used; the launcher clears both
+legacy cache variables so an external SSD or shared directory cannot become
+the speech worker's cache or have its permissions changed.
 
 `scripts/run_native_packaged_checks.py` runs the same synthetic, unmocked GUI,
 media, image, OCR, lifecycle and actual model references on both native Mac
