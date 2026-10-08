@@ -16,6 +16,23 @@ from ksi_local.atomic_files import atomic_write_bytes
 from ksi_local.bundle_runtime import ARCHITECTURES, MAX_MANIFEST_BYTES, MAX_PAYLOAD_FILES, OfflinePayload, PayloadFile, digest_file, safe_member
 
 
+def _require_auxiliary_license_metadata(records: dict) -> None:
+    """Reject known stale project/aggregate labels, not grant legal approval."""
+    for identifier, license_id in (("ocr-helper", "Apache-2.0"), ("yt-dlp", "GPL-3.0-or-later")):
+        row = records.get(("tool", identifier))
+        if row is None:
+            continue
+        if row.get("license") != license_id:
+            raise ValueError("Auxiliary binary has a stale or contradictory license: " + identifier)
+        if identifier == "ocr-helper" and row.get("license_file") != "ksi-project-license":
+            raise ValueError("OCR must retain its original project license binding")
+        if identifier == "yt-dlp":
+            aggregate = records.get(("license", row.get("license_file")))
+            if (aggregate is None or aggregate.get("path") != "licenses/tools/yt-dlp/THIRD_PARTY_LICENSES.txt"
+                    or row.get("corresponding_source") != "yt-dlp-source"):
+                raise ValueError("Frozen downloader requires its original aggregate notice/source")
+
+
 def seal_offline_payload(resources: Path, specification: dict) -> dict:
     if resources.is_symlink() or not resources.is_dir():
         raise ValueError("Temiz paket sahnesi normal bir klasör olmalıdır.")
@@ -54,6 +71,7 @@ def seal_offline_payload(resources: Path, specification: dict) -> dict:
         records[key] = row
         seen.add(entry.path.casefold())
         entries.append(entry)
+    _require_auxiliary_license_metadata(records)
     for entry in entries:
         row = records[(entry.role, entry.identifier)]
         # Native shared libraries are support files, not top-level tools.

@@ -91,7 +91,7 @@ def stage(repository, architecture, destination):
     # the component inventory along with the actual CI-produced executable.
     helper_source, _ = committed_file(repository, commit, "native/KSIOCR.swift")
     extra.append((helper_source, "sources/ksi/KSIOCR.swift", "support", "ocr-original-source"))
-    plan.append((ocr, "engines/ocr/KSIOCR", "tool", "ocr-helper", dict(license="MIT", license_file="ksi-project-license",
+    plan.append((ocr, "engines/ocr/KSIOCR", "tool", "ocr-helper", dict(license="Apache-2.0", license_file="ksi-project-license",
                  source_url="https://github.com/taliyigit2-prog/Ksi", revision=commit)))
     font = build / "portable-font-arm64-v2"
     font_record = json.loads((font / "font-staging.json").read_text())

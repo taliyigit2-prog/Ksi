@@ -35,6 +35,11 @@ requires autonomous acceptance instead of invented human scores. New binary
 release evidence is not yet available; do not interpret source checkpoints as
 successful cross-architecture, model-quality or installation verification.
 
+The offline producer rejects stale OCR MIT metadata when binding the project's
+Apache-2.0 grant, and rejects source-only Unlicense metadata for the GPLv3+
+PyInstaller downloader. Its original aggregate notice and corresponding source
+must be retained; label consistency alone does not approve redistribution.
+
 `autonomous_release` is the approved ad-hoc boundary. Every required automatic
 case is bound to the source commit, processor and exact offline manifest; named
 objective checks and zero unresolved privacy/license findings are mandatory.
