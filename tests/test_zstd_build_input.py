@@ -51,6 +51,23 @@ class ZstandardBuildInputTests(unittest.TestCase):
                         decompress_build_archive(archive, path, digest, io.BytesIO())
                     loader.assert_not_called()
 
+    def test_complete_frame_with_exactly_full_output_buffer_needs_no_extra_decode(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            archive, library, native = self.fixture(Path(temporary))
+            payload = b"x" * (128 * 1024)
+            def aligned_frame(_stream, output, incoming):
+                ctypes.memmove(output._obj.destination, payload, len(payload))
+                output._obj.position = len(payload)
+                incoming._obj.position = incoming._obj.size
+                return 0
+            native.ZSTD_decompressStream.side_effect = aligned_frame
+            output = io.BytesIO()
+            with patch("ksi_local.zstd_build_input.ctypes.CDLL", return_value=native):
+                self.assertEqual(decompress_build_archive(archive, library, digest_file(library), output), len(payload))
+            self.assertEqual(output.getvalue(), payload)
+            native.ZSTD_decompressStream.assert_called_once()
+            native.ZSTD_freeDStream.assert_called_once_with(1234)
+
     def test_corrupt_truncated_oversized_and_no_progress_streams_fail_and_free(self):
         for mode in ("corrupt", "truncated", "oversized", "no-progress"):
             with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temporary:

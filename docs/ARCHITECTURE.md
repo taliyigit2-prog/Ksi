@@ -75,7 +75,10 @@ Clean builds restore standalone Python's original legal texts from its exact
 public full distribution, separately pinned to the install-only runtime input.
 Builds can stream-decode the archive through the already reviewed, hash-verified
 Zstandard 1.5.7 native library when the host's older tar cannot read it. The
-expansion and deadline are bounded; there is no Homebrew fallback. Every selected
+Expansion and deadline are bounded; there is no Homebrew fallback.
+Completed frames also terminate correctly when their final output exactly fills
+the stream buffer; no extra decode call can turn that boundary into a false
+truncation failure. Every selected
 member has its own size/digest pin. The original Darwin metadata's missing
 alternative zlib-ng reference remains visible: its four affected extensions
 declare the OS-provided z library, not a shipped static zlib-ng. This notice

@@ -68,7 +68,7 @@ def decompress_build_archive(archive: Path, library: Path, library_sha256: str, 
                         raise ValueError("Original archive exceeds its bounded expansion budget.")
                     if output_buffer.position:
                         output.write(target.raw[:output_buffer.position])
-                    if input_buffer.position == input_buffer.size and output_buffer.position < len(target):
+                    if input_buffer.position == input_buffer.size and (remaining == 0 or output_buffer.position < len(target)):
                         break
                     if previous == input_buffer.position and not output_buffer.position:
                         raise ValueError("Original archive decoder made no progress.")
