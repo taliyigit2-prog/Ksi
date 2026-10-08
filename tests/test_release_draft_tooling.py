@@ -43,6 +43,10 @@ class ReviewedDraftToolingTests(unittest.TestCase):
         self.assertEqual(AUDIT.wheel_candidates('sklearn/utils/a.py', pins), pins[:1])
         self.assertEqual(AUDIT.wheel_candidates('PySide6/Qt/file', pins), pins[2:])
         self.assertEqual(AUDIT.wheel_candidates('unknown/module.py', pins), [])
+        self.assertEqual(AUDIT.wheel_candidates('torio/lib/module.so', [dict(name='torchaudio')]),
+                         [dict(name='torchaudio')])
+        self.assertEqual(AUDIT.wheel_candidates('_cffi_backend.cpython-312.so', [dict(name='cffi')]),
+                         [dict(name='cffi')])
 
     def test_no_gh_action_outside_authorized_repository(self):
         with patch.object(STAGE.subprocess, 'run') as run, patch.object(STAGE.subprocess, 'check_output') as read:

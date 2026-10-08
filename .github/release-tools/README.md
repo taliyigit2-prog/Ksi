@@ -16,3 +16,13 @@ Only checksum-verified installation segments, transport, checksums and the
 privacy receipt may be stored. The script never publishes, uploads the working
 tree, or overwrites a differing asset. Public release and legal acceptance remain
 separate gates. Original notices and corresponding sources remain in the app.
+
+The final installer helper is generated only by calling the strict two-native-
+architecture release verifier. It selects the physical Mac processor, downloads
+only immutable checksum-pinned public release parts using stock macOS tools,
+verifies every size/SHA-256, checks the internal-data filesystem and opens the
+verified DMG for the standard Applications drag-and-drop installation. It never
+overwrites differing existing files, installs Homebrew/Python, asks for an
+account token, or silently bypasses Gatekeeper. A lost connection preserves
+already verified complete segments. Its verification-only mode is tested on
+owned synthetic files and is not substituted for real installation acceptance.

@@ -51,8 +51,9 @@ def original_matches(scanner, content, findings, original):
 
 def wheel_candidates(member, pins):
     package = member.split('/', 1)[0].split('.dist-info', 1)[0]
-    normalized = re.sub(r'[-_.]+', '-', package).lower()
-    aliases = {'sklearn': 'scikit-learn', 'pil': 'pillow', 'yaml': 'pyyaml'}
+    normalized = re.sub(r'[-_.]+', '-', package).lower().lstrip('-')
+    aliases = {'sklearn': 'scikit-learn', 'pil': 'pillow', 'yaml': 'pyyaml',
+               'torio': 'torchaudio'}
     normalized = aliases.get(normalized, normalized)
     return [pin for pin in pins if normalized == re.sub(r'[-_.]+', '-', pin['name']).lower()
             or normalized.startswith(re.sub(r'[-_.]+', '-', pin['name']).lower() + '-')
@@ -86,7 +87,7 @@ def read_attributes(path):
     return results
 
 
-def audit(repository, app, media, packaged_receipt, installation_receipt, destination, allow_network=False):
+def audit(repository, app, media, packaged_receipt, installation_receipt, destination, allow_network=False, original_cache=None):
     repository, app, media, destination = [path.absolute() for path in (repository, app, media, destination)]
     if destination.exists() or destination.is_symlink():
         raise FileExistsError('Privacy evidence requires a new destination')
@@ -114,7 +115,8 @@ def audit(repository, app, media, packaged_receipt, installation_receipt, destin
                 total += scanner.scan_stream(stream, path.relative_to(app).as_posix(), findings)
             count += 1
     destination.mkdir(parents=True, mode=0o700)
-    atomic_write_json(destination / 'raw.local.json', dict(potential_findings=findings, files_scanned=count, bytes_scanned=total))
+    atomic_write_json(destination / 'raw.local.json', dict(potential_findings=findings, files_scanned=count, bytes_scanned=total,
+                      source_commit=provenance['source_commit'], offline_manifest_sha256=manifest, application_tree_sha256=tree))
     # Source pins are reviewed exact public tar bytes, not filename exceptions.
     archive_pins = json.loads((Path(__file__).parent / 'public-source-privacy-pins.json').read_bytes())['archives']
     architecture = provenance['architecture']
@@ -127,7 +129,10 @@ def audit(repository, app, media, packaged_receipt, installation_receipt, destin
         groups[finding['member']].append(finding)
     proofs = []
     def fetch(pin):
-        cache = destination / 'original-cache' / pin['sha256']
+        cache_root = original_cache.absolute() if original_cache is not None else destination / 'original-cache'
+        if cache_root.is_symlink():
+            raise ValueError('Original cache cannot be linked')
+        cache = cache_root / pin['sha256']
         if not allow_network and not cache.exists():
             raise ValueError('Original verification needs explicitly authorized build-only network access')
         return fetch_pinned_input(pin, cache)
@@ -159,6 +164,8 @@ def audit(repository, app, media, packaged_receipt, installation_receipt, destin
                             if original_matches(scanner, content, rows, source.read()):
                                 origin = dict(kind='exact_original_public_python', sha256=python_pin['sha256'], source_url=python_pin['url'])
         if origin is None:
+            atomic_write_json(destination / 'unresolved.local.json', dict(member=member,
+                              rules=sorted({row['rule'] for row in rows})))
             raise ValueError('Unresolved packaged privacy finding; draft upload forbidden')
         proofs.append(dict(member=member, findings=len(rows), **origin))
     transport = json.loads((media / 'transport.json').read_bytes())
@@ -218,5 +225,6 @@ if __name__ == '__main__':
     for name in ('repository', 'application', 'media', 'packaged_receipt', 'installation_receipt', 'destination'):
         parser.add_argument(name, type=Path)
     parser.add_argument('--allow-network', action='store_true')
+    parser.add_argument('--original-cache', type=Path)
     args = parser.parse_args()
-    audit(args.repository, args.application, args.media, args.packaged_receipt, args.installation_receipt, args.destination, args.allow_network)
+    audit(args.repository, args.application, args.media, args.packaged_receipt, args.installation_receipt, args.destination, args.allow_network, args.original_cache)
