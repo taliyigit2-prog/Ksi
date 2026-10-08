@@ -119,12 +119,14 @@ class LocalNetworkPolicyTests(unittest.TestCase):
                 "PATH": "/usr/bin",
                 "OPENAI_API_KEY": "secret",
                 "HTTPS_PROXY": "http://proxy.invalid",
+                "ORT_DISABLE_TELEMETRY": "0",
             }
         )
         self.assertNotIn("OPENAI_API_KEY", environment)
         self.assertNotIn("HTTPS_PROXY", environment)
         self.assertEqual(environment["OLLAMA_NO_CLOUD"], "true")
         self.assertEqual(environment["TRANSFORMERS_OFFLINE"], "1")
+        self.assertEqual(environment["ORT_DISABLE_TELEMETRY"], "1")
 
     def test_managed_ollama_always_receives_no_cloud_environment(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

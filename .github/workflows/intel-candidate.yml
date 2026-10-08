@@ -23,7 +23,7 @@ jobs:
       contents: write
     if: github.event.repository.visibility == 'public'
     runs-on: macos-15-intel
-    timeout-minutes: 90
+    timeout-minutes: 180
     env:
       PYTHONPATH: src
       PYTHONDONTWRITEBYTECODE: '1'
@@ -69,6 +69,13 @@ jobs:
           # Supply the verified staging tools, never require a host Ollama install.
           export PATH="$GITHUB_WORKSPACE/build/native-inputs/components/engines/media:$GITHUB_WORKSPACE/build/native-inputs/components/engines/ollama:$GITHUB_WORKSPACE/build/native-inputs/components/engines/download:$GITHUB_WORKSPACE/build/native-inputs/components/engines/images:$PATH"
           build/native-inputs/runtime/python/bin/python3.12 -m unittest discover -s tests -v > build/native-unit-suite.log 2>&1
+      - name: Run real offline packaged GUI, tools and model references
+        run: |
+          build/native-inputs/runtime/python/bin/python3.12 scripts/run_native_packaged_checks.py 'build/native-app/KSI Local Studio.app' build/native-packaged-checks
+      - name: Build native installation media and verify an independent offline installation
+        run: |
+          build/native-inputs/runtime/python/bin/python3.12 scripts/build_offline_dmg.py 'build/native-app/KSI Local Studio.app' build/native-dmg > build/native-dmg-build.json
+          build/native-inputs/runtime/python/bin/python3.12 scripts/verify_native_offline_install.py 'build/native-app/KSI Local Studio.app' build/native-dmg build/native-installed
       - name: Archive only small validation evidence, not an unapproved app
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -80,5 +87,19 @@ jobs:
             build/native-unit-suite.log
             build/source-notice-normalization.json
             build/python-runtime-notice-restoration.json
+            build/native-packaged-checks/packaged-checks.json
+            build/native-packaged-checks/gui-routes.json
+            build/native-packaged-checks/gui-controls.json
+            build/native-packaged-checks/lifecycle.json
+            build/native-packaged-checks/summary.json
+            build/native-packaged-checks/media-image-ocr/diagnostic.local.json
+            build/native-packaged-checks/gui-stop/result.local.json
+            build/native-packaged-checks/background/result.local.json
+            build/native-packaged-checks/translation/result.local.json
+            build/native-packaged-checks/tts/result.local.json
+            build/native-installed/offline-install.json
+            build/native-installed/installed-gui.json
+            build/native-installed/installed-speech/result.local.json
+            build/native-dmg/transport.json
           if-no-files-found: error
           retention-days: 3

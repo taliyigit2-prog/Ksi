@@ -1,4 +1,5 @@
 import os
+import builtins
 import stat
 import tempfile
 import unittest
@@ -11,6 +12,28 @@ from ksi_local.worker_caches import prepare_model_worker_cache
 
 
 class ModelWorkerCacheTests(unittest.TestCase):
+    def test_native_telemetry_disabled_before_onnx_import_and_rembg_initialization(self):
+        imported = builtins.__import__
+        events = []
+        class ProbeComplete(Exception):
+            pass
+        def controlled_import(name, *args, **kwargs):
+            if name == "onnxruntime":
+                self.assertEqual(os.environ["ORT_DISABLE_TELEMETRY"], "1")
+                events.append("onnx-import-with-opt-out")
+                return SimpleNamespace(disable_telemetry_events=lambda: events.append("api-disabled"))
+            if name == "rembg":
+                self.assertEqual(events, ["onnx-import-with-opt-out", "api-disabled"])
+                raise ProbeComplete()
+            return imported(name, *args, **kwargs)
+        with patch.dict(os.environ, {"ORT_DISABLE_TELEMETRY": "0"}), \
+             patch("ksi_local.local_ai_worker._verified_model", return_value=Path("/unused")), \
+             patch("ksi_local.worker_caches.prepare_model_worker_cache"), \
+             patch("builtins.__import__", side_effect=controlled_import):
+            with self.assertRaises(ProbeComplete):
+                _background_session(dict(model="/unused", model_sha256="unused"))
+        self.assertEqual(events, ["onnx-import-with-opt-out", "api-disabled"])
+
     def test_private_internal_cache_overrides_foreign_location_and_is_reusable(self):
         with tempfile.TemporaryDirectory() as temporary, patch.dict(os.environ, {"NUMBA_CACHE_DIR": "/Volumes/foreign-cache"}):
             state = Path(temporary).resolve() / "state"

@@ -29,7 +29,9 @@ def _background_session(request: dict):
     model = _verified_model(request["model"], request["model_sha256"])
     from ksi_local.worker_caches import prepare_model_worker_cache
     prepare_model_worker_cache()
+    os.environ["ORT_DISABLE_TELEMETRY"] = "1"
     import onnxruntime as ort
+    ort.disable_telemetry_events()
     from rembg import remove
     from rembg.sessions.u2netp import U2netpSession
     # A local-only session override has no code path to download weights or

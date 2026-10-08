@@ -157,7 +157,7 @@ class PhaseNineteenPackagingTests(unittest.TestCase):
             app_plist = plistlib.load(handle)
         with (ROOT / "packaging/KSI-Local-Studio-Installer-Info.plist").open("rb") as handle:
             installer_plist = plistlib.load(handle)
-        self.assertEqual(__version__, "2.0.0.dev0")
+        self.assertEqual(__version__, "2.0.0")
         self.assertEqual(app_plist["CFBundleShortVersionString"], __version__)
         self.assertEqual(app_plist["CFBundleVersion"], "19")
         self.assertEqual(installer_plist["CFBundleShortVersionString"], __version__)

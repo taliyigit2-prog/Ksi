@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 from typing import Any, TextIO
 
+from ksi_local import __version__
 from ksi_local.core_service import CoreService
 from ksi_local.privacy import redact_sensitive_text
 from ksi_local.settings import resolve_workspace
@@ -85,7 +86,7 @@ def handle_message(service: CoreService, message: object) -> dict[str, Any] | No
             if not isinstance(params, dict):
                 return _invalid_request(identifier)
             requested = str(params.get("protocolVersion", "2024-11-05"))
-            result = {"protocolVersion": requested, "capabilities": {"tools": {"listChanged": False}}, "serverInfo": {"name": "ksi-local-studio", "version": "2.0.0.dev0"}}
+            result = {"protocolVersion": requested, "capabilities": {"tools": {"listChanged": False}}, "serverInfo": {"name": "ksi-local-studio", "version": __version__}}
         elif method == "ping":
             result = {}
         elif method == "tools/list":

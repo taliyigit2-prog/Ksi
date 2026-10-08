@@ -106,6 +106,9 @@ def local_worker_environment(
             "HF_HUB_OFFLINE": "1",
             "HF_DATASETS_OFFLINE": "1",
             "TRANSFORMERS_OFFLINE": "1",
+            # Native ONNX telemetry bypasses Python's socket guard. Opt out
+            # before import: API-only suppression can emit an initial event.
+            "ORT_DISABLE_TELEMETRY": "1",
         }
     )
     return environment

@@ -90,6 +90,8 @@ class Phase35Tests(unittest.TestCase):
             service = self.make_service(Path(directory))
             initialized = handle_message(service, {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}})
             self.assertEqual(initialized["result"]["protocolVersion"], "2025-06-18")
+            from ksi_local import __version__
+            self.assertEqual(initialized["result"]["serverInfo"]["version"], __version__)
             listed = handle_message(service, {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
             self.assertEqual(len(listed["result"]["tools"]), len(TOOLS))
             self.assertIn("ksi_tool_job_execute", {tool["name"] for tool in TOOLS})

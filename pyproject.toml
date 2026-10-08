@@ -1,6 +1,6 @@
 [project]
 name = "ksi-local-studio"
-version = "2.0.0.dev0"
+version = "2.0.0"
 description = "Local-first media, document, translation, and creative AI studio"
 requires-python = ">=3.12,<3.14"
 dependencies = [

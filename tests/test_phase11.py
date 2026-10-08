@@ -172,8 +172,8 @@ class PackagingAcceptanceTests(unittest.TestCase):
         with (root / "packaging/Info.plist").open("rb") as handle:
             plist = plistlib.load(handle)
         launcher = (root / "packaging/KSI-Local-Studio-portable-launcher").read_text(encoding="utf-8")
-        self.assertEqual(__version__, "2.0.0.dev0")
-        self.assertEqual(plist["CFBundleShortVersionString"], "2.0.0.dev0")
+        self.assertEqual(__version__, "2.0.0")
+        self.assertEqual(plist["CFBundleShortVersionString"], __version__)
         self.assertEqual(plist["CFBundleVersion"], "19")
         self.assertEqual(plist["LSArchitecturePriority"], ["arm64"])
         self.assertTrue(plist["LSRequiresNativeExecution"])

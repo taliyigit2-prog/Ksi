@@ -91,6 +91,22 @@ Those caches must never be written into signed application resources. Linked,
 external, non-directory or unwritable cache locations fail before engine import;
 model hashes are also checked before cache preparation or heavy imports.
 
+`scripts/run_native_packaged_checks.py` runs the same synthetic, unmocked GUI,
+media, image, OCR, lifecycle and actual model references on both native Mac
+architectures. Intel uses its bundled Piper voice and whisper.cpp model; Apple
+Silicon uses Chatterbox and MLX. Each subprocess imports only sealed packaged
+source, uses OS-only PATH and fresh internal state. Complete application bytes
+and the strict code seal are checked again after model execution. These receipts
+remain explicitly partial: they do not substitute for independent DMG installation,
+privacy, binary licensing or the final two-architecture release gate.
+
+Native ONNX telemetry is disabled before runtime initialization through
+`ORT_DISABLE_TELEMETRY=1` in the launcher and local worker environment, and
+before the background worker's heavy imports. The worker also calls the explicit
+telemetry-disable API. Python socket guards cannot constrain native telemetry
+threads; API suppression alone is not the initialization-time privacy boundary.
+See the upstream [ONNX privacy policy](https://github.com/microsoft/onnxruntime/blob/main/docs/Privacy.md).
+
 The old personal environment-copy installers are retired. The portable bundle
 launcher resolves its Python, tools and models relative to the application, checks
 the processor, sanitizes interpreter/plugin injection variables and does not use
