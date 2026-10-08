@@ -72,3 +72,16 @@ class ReviewedDraftToolingTests(unittest.TestCase):
         self.assertIn('if: inputs.stage_reviewed_media', source)
         self.assertNotIn('gh release edit', source)
         self.assertIn("'--draft'", (TOOLS / 'stage_reviewed_intel_media.py').read_text())
+
+    def test_existing_draft_is_read_by_id_not_public_tag_endpoint(self):
+        transport = dict(source_commit='a'*40)
+        draft = dict(id=12345, tag_name='ksi-final-intel-aaaaaaa-staging', draft=True,
+                     target_commitish='a'*40, assets=[])
+        with patch.object(STAGE, 'validated_files', return_value=(transport, [Path('/fixture.dmg')])), \
+             patch.object(STAGE, 'digest_file', return_value='b'*64), \
+             patch.object(STAGE.subprocess, 'run') as run, \
+             patch.object(STAGE.subprocess, 'check_output', side_effect=[json.dumps([[draft]]).encode(), json.dumps(dict(draft, draft=False)).encode()]) as read:
+            with self.assertRaises(ValueError):
+                STAGE.stage(Path('/unused'), Path('/unused'), 'taliyigit2-prog/Ksi', draft['tag_name'])
+        self.assertEqual(read.call_args.args[0][-1], 'repos/taliyigit2-prog/Ksi/releases/12345')
+        run.assert_not_called()

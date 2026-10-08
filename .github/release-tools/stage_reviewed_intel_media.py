@@ -75,11 +75,16 @@ def stage(media, privacy_file, repository, tag):
                         '--target', transport['source_commit'], '--title', 'KSI Intel reviewed media staging',
                         '--notes', 'Unpublished installation-media checkpoint after native tests and privacy review. Legal/two-architecture public release gates remain pending.'],
                        check=True, timeout=120)
-    elif len(matches) != 1 or matches[0]['draft'] is not True:
+        releases = [release for page in json.loads(subprocess.check_output(command, timeout=120)) for release in page]
+        matches = [release for release in releases if release['tag_name'] == tag]
+    if len(matches) != 1 or matches[0]['draft'] is not True or matches[0]['target_commitish'] != transport['source_commit']:
         raise ValueError('Existing release is not the authorized unpublished draft')
+    # The tag endpoint returns published releases only. Drafts have no public
+    # tag yet: use the authenticated listing's immutable release ID instead.
+    release_endpoint = 'repos/' + repository + '/releases/' + str(matches[0]['id'])
     for path in files:
         # Re-read before every write: never write to a draft somebody published.
-        release = json.loads(subprocess.check_output(['gh', 'api', 'repos/' + repository + '/releases/tags/' + tag], timeout=120))
+        release = json.loads(subprocess.check_output(['gh', 'api', release_endpoint], timeout=120))
         if release['draft'] is not True:
             raise ValueError('Draft was published; stopping uploads')
         previous = [asset for asset in release['assets'] if asset['name'] == path.name]
@@ -91,7 +96,7 @@ def stage(media, privacy_file, repository, tag):
         else:
             subprocess.run(['gh', 'release', 'upload', tag, str(path), '--repo', repository],
                            check=True, timeout=3600)
-            release = json.loads(subprocess.check_output(['gh', 'api', 'repos/' + repository + '/releases/tags/' + tag], timeout=120))
+            release = json.loads(subprocess.check_output(['gh', 'api', release_endpoint], timeout=120))
             current = [asset for asset in release['assets'] if asset['name'] == path.name]
             if (release['draft'] is not True or len(current) != 1 or current[0]['size'] != path.stat().st_size
                     or current[0].get('digest') != 'sha256:' + checksum):
