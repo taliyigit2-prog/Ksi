@@ -40,6 +40,12 @@ Apache-2.0 grant, and rejects source-only Unlicense metadata for the GPLv3+
 PyInstaller downloader. Its original aggregate notice and corresponding source
 must be retained; label consistency alone does not approve redistribution.
 
+Source-notice collection excludes empty files, which remain in the original
+source archive. Legacy build-input placeholders may be reclassified as support
+only when their empty bytes match an exact digest-bound original archive member,
+nonempty original sibling grants remain intact, and no component or model uses
+that placeholder as its required license. The sealer still rejects empty grants.
+
 `autonomous_release` is the approved ad-hoc boundary. Every required automatic
 case is bound to the source commit, processor and exact offline manifest; named
 objective checks and zero unresolved privacy/license findings are mandatory.

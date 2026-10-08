@@ -52,6 +52,10 @@ def collect(archive: Path, sha256: str, destination: Path, *, members: tuple[str
                 wanted = wanted and name in requested
             if not wanted or row.isdir():
                 continue
+            if row.isfile() and row.size == 0:
+                if name in requested:
+                    raise ValueError("An explicitly selected original notice is empty.")
+                continue  # Original remains in the full source; it is no grant.
             if not row.isfile() or row.size > 4 * 1024**2 or name.casefold() in seen or total + row.size > 128 * 1024**2:
                 raise ValueError("Source license member is linked, duplicated or oversized.")
             seen.add(name.casefold())

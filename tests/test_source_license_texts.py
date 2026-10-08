@@ -11,6 +11,24 @@ collect = runpy.run_path(str(Path(__file__).resolve().parents[1] / "scripts/coll
 
 
 class SourceLicenseTextTests(unittest.TestCase):
+    def test_empty_placeholder_is_not_a_grant_and_original_archive_remains(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            archive = root / 'source.tar'
+            with tarfile.open(archive, 'w') as stream:
+                for name, data in (('source/LICENSE', b'Synthetic text'), ('source/build/LICENSE', b'')):
+                    member = tarfile.TarInfo(name)
+                    member.size = len(data)
+                    stream.addfile(member, io.BytesIO(data))
+            before = archive.read_bytes()
+            pin = hashlib.sha256(before).hexdigest()
+            result = collect(archive, pin, root / 'notices')
+            self.assertEqual([row['path'] for row in result['files']], ['source/LICENSE'])
+            self.assertEqual(archive.read_bytes(), before)
+            with self.assertRaises(ValueError):
+                collect(archive, pin, root / 'explicit-empty', members=('source/build/LICENSE',))
+            self.assertFalse((root / 'explicit-empty').exists())
+
     def test_explicit_selection_excludes_fixture_licenses_and_requires_every_member(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

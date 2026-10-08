@@ -50,6 +50,8 @@ jobs:
         run: python3 scripts/import_acceptance_inputs.py x86_64 build/input-transport build/native-inputs "$KSI_INPUT_SHA256" --allow-deferred
       - name: Restore build-only model files from exact original official pins
         run: python3 scripts/restore_model_inputs.py build/native-inputs --allow-network
+      - name: Reclassify only verified empty original source placeholders
+        run: python3 scripts/normalize_source_notice_inputs.py build/native-inputs/components > build/source-notice-normalization.json
       - name: Assemble ad-hoc candidate on actual Intel processor
         run: |
           build/native-inputs/runtime/python/bin/python3.12 scripts/assemble_offline_app.py build/native-inputs/runtime build/native-inputs/components build/native-inputs/components/component-specification.json 'build/native-app/KSI Local Studio.app' > build/native-app-build.json
@@ -68,5 +70,6 @@ jobs:
             build/preflight.json
             build/native-app-build.json
             build/native-unit-suite.log
+            build/source-notice-normalization.json
           if-no-files-found: error
           retention-days: 3
