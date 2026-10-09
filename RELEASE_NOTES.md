@@ -22,7 +22,20 @@ license file, original declarations, standard terms, existing attribution and
 complete source are preserved. No copyright attribution is fabricated. This
 technical delivery review is not a legal warranty.
 
-Binary publication is pending completion and verification of the release upload.
+[Version 2.0.0 is published](https://github.com/taliyigit2-prog/Ksi/releases/tag/v2.0.0).
+The [installer ZIP](https://github.com/taliyigit2-prog/Ksi/releases/download/v2.0.0/KSI-Local-Studio-2.0.0-Install.zip)
+downloads 52 smaller native DMG parts with individual size/SHA-256 verification.
+All 60 installation, source and verification assets matched their complete
+server-side digests before publication. The unchanged accepted application also
+passed a fresh full privacy audit, strict embedded-media verification and real
+installer verification after native DMG resegmentation.
+Post-publication checks also passed: eight complete installer/source/metadata
+downloads, a matching 1 MiB range from every one of the 52 media parts, all 398
+files in the Git source archive matched to the accepted commit, and the actual
+published helper downloaded one missing 228 MB part, verified the full media
+and opened the DMG. The other 51 accepted parts were seeded locally; this is
+not a claim of a fresh 13.9 GB public download. No account token or overridden
+home directory was used, and no existing user files were overwritten.
 The accepted product source is
 `874c8e6585037ca2fbf6bddb11edd55187fa9dd7`; later release-tool and documentation
 commits do not change the sealed application.

@@ -10,6 +10,9 @@ shared CPU adapters and historical two-architecture APIs remain for compatibilit
 not as a claim of Intel distribution support. See the
 [ARM-only closure decision](decisions/2026-10-09-arm-only-closure.md).
 It retains PySide6 and the service boundary.
+The published 2.0.0 media uses 52 smaller native UDIF segments to bound retry
+loss on interrupted connections. The existing installer verifies every part;
+resegmentation did not change or rebuild the accepted application or models.
 `ui` contains native Halite-referenced design tokens, sidebar, cards, tool forms
 and a threaded signal bridge. `media_tools`, `image_engines`, `local_ai_worker`
 and `cpu_transcription` contain original local engine adapters. Heavy ONNX and

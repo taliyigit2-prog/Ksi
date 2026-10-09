@@ -5,7 +5,7 @@
       "annotationDate": "2026-10-01T00:00:00Z",
       "annotationType": "OTHER",
       "annotator": "Tool: ksi-release-prep-1",
-      "comment": "Source-tree SBOM; 272 hashed files. Binary release SBOM must be regenerated from the final package."
+      "comment": "Source-tree SBOM; 405 hashed files. Binary release SBOM must be regenerated from the final package."
     }
   ],
   "creationInfo": {
@@ -18,7 +18,7 @@
   "documentDescribes": [
     "SPDXRef-Package-KSI"
   ],
-  "documentNamespace": "https://ksi.local/spdx/9adcdd9a665a6f143b76bc06a9b8e59ee60252761fa87decaaad9f6b8a094248",
+  "documentNamespace": "https://ksi.local/spdx/866c80eb628ca019539f264bfc1d73eb105994ad18c77c51d676b35b2a9da624",
   "name": "KSI Local Studio source release",
   "packages": [
     {
@@ -29,7 +29,7 @@
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
       "name": "ksi-local-studio",
-      "versionInfo": "2.0.0.dev0"
+      "versionInfo": "2.0.0"
     },
     {
       "SPDXID": "SPDXRef-LockedWheel-1",
@@ -1481,6 +1481,23 @@
       "checksums": [
         {
           "algorithm": "SHA256",
+          "checksumValue": "7b4df175cdb08ba400f45cae3bdcae7ba8365db4d165fc65fd04b050ab63b46b"
+        }
+      ],
+      "comment": "Declared public build input from python-chatterbox-wheels-arm64.json; installed speech code may have an explicit pinned Git source override. Not binary acceptance or license approval.",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "https://files.pythonhosted.org/packages/e3/94/1843518e420fa3ed6919835845df698c7e27e183cb997394e4a670973a65/omegaconf-2.3.0-py3-none-any.whl",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "name": "omegaconf",
+      "versionInfo": "2.3.0"
+    },
+    {
+      "SPDXID": "SPDXRef-LockedWheel-87",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
           "checksumValue": "117bac03a25ede5df5440e855b32d556049ca169ead221505badf432fed4b101"
         }
       ],
@@ -1494,7 +1511,7 @@
       "versionInfo": "0.0.5"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-87",
+      "SPDXID": "SPDXRef-LockedWheel-88",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1511,7 +1528,7 @@
       "versionInfo": "4.15.1"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-88",
+      "SPDXID": "SPDXRef-LockedWheel-89",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1528,7 +1545,7 @@
       "versionInfo": "3.1.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-89",
+      "SPDXID": "SPDXRef-LockedWheel-90",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1545,7 +1562,7 @@
       "versionInfo": "3.5.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-90",
+      "SPDXID": "SPDXRef-LockedWheel-91",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1562,7 +1579,7 @@
       "versionInfo": "0.1.7"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-91",
+      "SPDXID": "SPDXRef-LockedWheel-92",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1579,7 +1596,7 @@
       "versionInfo": "0.3.2"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-92",
+      "SPDXID": "SPDXRef-LockedWheel-93",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1596,7 +1613,7 @@
       "versionInfo": "5.3.1"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-93",
+      "SPDXID": "SPDXRef-LockedWheel-94",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1613,7 +1630,7 @@
       "versionInfo": "0.29.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-94",
+      "SPDXID": "SPDXRef-LockedWheel-95",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1630,7 +1647,7 @@
       "versionInfo": "0.4.3"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-95",
+      "SPDXID": "SPDXRef-LockedWheel-96",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1647,7 +1664,7 @@
       "versionInfo": "0.8.2"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-96",
+      "SPDXID": "SPDXRef-LockedWheel-97",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1664,7 +1681,7 @@
       "versionInfo": "0.16.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-97",
+      "SPDXID": "SPDXRef-LockedWheel-98",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1681,7 +1698,7 @@
       "versionInfo": "1.7.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-98",
+      "SPDXID": "SPDXRef-LockedWheel-99",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1698,7 +1715,7 @@
       "versionInfo": "1.0.9"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-99",
+      "SPDXID": "SPDXRef-LockedWheel-100",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1715,7 +1732,7 @@
       "versionInfo": "0.28.1"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-100",
+      "SPDXID": "SPDXRef-LockedWheel-101",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1732,7 +1749,7 @@
       "versionInfo": "1.31.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-101",
+      "SPDXID": "SPDXRef-LockedWheel-102",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1749,7 +1766,7 @@
       "versionInfo": "2.6.20"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-102",
+      "SPDXID": "SPDXRef-LockedWheel-103",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1766,7 +1783,7 @@
       "versionInfo": "9.0.1"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-103",
+      "SPDXID": "SPDXRef-LockedWheel-104",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1783,7 +1800,7 @@
       "versionInfo": "0.11.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-104",
+      "SPDXID": "SPDXRef-LockedWheel-105",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1800,7 +1817,7 @@
       "versionInfo": "0.49.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-105",
+      "SPDXID": "SPDXRef-LockedWheel-106",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1817,7 +1834,7 @@
       "versionInfo": "4.2.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-106",
+      "SPDXID": "SPDXRef-LockedWheel-107",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1834,7 +1851,7 @@
       "versionInfo": "0.1.2"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-107",
+      "SPDXID": "SPDXRef-LockedWheel-108",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1851,7 +1868,7 @@
       "versionInfo": "0.5.4"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-108",
+      "SPDXID": "SPDXRef-LockedWheel-109",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1868,7 +1885,7 @@
       "versionInfo": "1.2.3"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-109",
+      "SPDXID": "SPDXRef-LockedWheel-110",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1885,7 +1902,7 @@
       "versionInfo": "2.26.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-110",
+      "SPDXID": "SPDXRef-LockedWheel-111",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1902,7 +1919,7 @@
       "versionInfo": "1.11.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-111",
+      "SPDXID": "SPDXRef-LockedWheel-112",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1919,7 +1936,7 @@
       "versionInfo": "0.67.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-112",
+      "SPDXID": "SPDXRef-LockedWheel-113",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1936,7 +1953,7 @@
       "versionInfo": "1.26.4"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-113",
+      "SPDXID": "SPDXRef-LockedWheel-114",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1953,7 +1970,7 @@
       "versionInfo": "1.23.2"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-114",
+      "SPDXID": "SPDXRef-LockedWheel-115",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1970,7 +1987,7 @@
       "versionInfo": "4.6.2"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-115",
+      "SPDXID": "SPDXRef-LockedWheel-116",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -1987,7 +2004,7 @@
       "versionInfo": "2.21.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-116",
+      "SPDXID": "SPDXRef-LockedWheel-117",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -2004,7 +2021,7 @@
       "versionInfo": "1.6.1"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-117",
+      "SPDXID": "SPDXRef-LockedWheel-118",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -2021,7 +2038,7 @@
       "versionInfo": "1.0.1"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-118",
+      "SPDXID": "SPDXRef-LockedWheel-119",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -2038,7 +2055,7 @@
       "versionInfo": "15.0.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-119",
+      "SPDXID": "SPDXRef-LockedWheel-120",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -2055,7 +2072,7 @@
       "versionInfo": "0.3.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-120",
+      "SPDXID": "SPDXRef-LockedWheel-121",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -2072,7 +2089,7 @@
       "versionInfo": "0.5.3"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-121",
+      "SPDXID": "SPDXRef-LockedWheel-122",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -2089,7 +2106,7 @@
       "versionInfo": "1.9.1"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-122",
+      "SPDXID": "SPDXRef-LockedWheel-123",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -2106,7 +2123,24 @@
       "versionInfo": "1.17.1"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-123",
+      "SPDXID": "SPDXRef-LockedWheel-124",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922"
+        }
+      ],
+      "comment": "Declared public build input from python-chatterbox-wheels-arm64.json; installed speech code may have an explicit pinned Git source override. Not binary acceptance or license approval.",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "https://files.pythonhosted.org/packages/a3/dc/17031897dae0efacfea57dfd3a82fdd2a2aeb58e0ff71b77b87e44edc772/setuptools-80.9.0-py3-none-any.whl",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "name": "setuptools",
+      "versionInfo": "80.9.0"
+    },
+    {
+      "SPDXID": "SPDXRef-LockedWheel-125",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -2123,7 +2157,7 @@
       "versionInfo": "1.5.4"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-124",
+      "SPDXID": "SPDXRef-LockedWheel-126",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -2140,7 +2174,7 @@
       "versionInfo": "1.1.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-125",
+      "SPDXID": "SPDXRef-LockedWheel-127",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -2157,7 +2191,7 @@
       "versionInfo": "1.13.1"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-126",
+      "SPDXID": "SPDXRef-LockedWheel-128",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -2174,7 +2208,7 @@
       "versionInfo": "3.7.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-127",
+      "SPDXID": "SPDXRef-LockedWheel-129",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -2191,7 +2225,7 @@
       "versionInfo": "0.22.2"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-128",
+      "SPDXID": "SPDXRef-LockedWheel-130",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -2208,7 +2242,7 @@
       "versionInfo": "2.6.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-129",
+      "SPDXID": "SPDXRef-LockedWheel-131",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -2225,7 +2259,7 @@
       "versionInfo": "2.6.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-130",
+      "SPDXID": "SPDXRef-LockedWheel-132",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -2242,7 +2276,7 @@
       "versionInfo": "5.2.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-131",
+      "SPDXID": "SPDXRef-LockedWheel-133",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -2259,7 +2293,7 @@
       "versionInfo": "0.27.3"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-132",
+      "SPDXID": "SPDXRef-LockedWheel-134",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -2276,7 +2310,7 @@
       "versionInfo": "0.24.0"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-133",
+      "SPDXID": "SPDXRef-LockedWheel-135",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -2293,7 +2327,7 @@
       "versionInfo": "21.14.5"
     },
     {
-      "SPDXID": "SPDXRef-LockedWheel-134",
+      "SPDXID": "SPDXRef-LockedWheel-136",
       "checksums": [
         {
           "algorithm": "SHA256",
@@ -2978,6 +3012,16 @@
     },
     {
       "relatedSpdxElement": "SPDXRef-LockedWheel-134",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-KSI"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-LockedWheel-135",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-KSI"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-LockedWheel-136",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Package-KSI"
     }

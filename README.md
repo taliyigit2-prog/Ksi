@@ -1,15 +1,34 @@
 # KSI Local Studio
 
-> Release scope (2026-10-09): the model-inclusive offline release is now
-> Apple Silicon (ARM64) only. Intel release work has been retired. There is
-> no published new binary release yet; the accepted package has passed its
-> native engine, independent installation and 14 strict automatic release checks.
+> [KSI Local Studio 2.0.0](https://github.com/taliyigit2-prog/Ksi/releases/tag/v2.0.0)
+> is published for Apple Silicon (ARM64) only, with offline models included.
+> Intel release work is retired. The package passed native engine, independent
+> installation and all 14 strict automatic distribution checks.
 > See the [ARM-only closure scope](docs/decisions/2026-10-09-arm-only-closure.md).
 > Source commits alone are not binary acceptance evidence.
 
 KSI Local Studio is a free, subscription-free, local-first macOS application for
 video, subtitle, dubbing, document, article, image and creative workflows. Codex,
 ChatGPT and cloud AI APIs are optional integrations, not runtime requirements.
+
+## Easy macOS installation
+
+Download the [installer ZIP](https://github.com/taliyigit2-prog/Ksi/releases/download/v2.0.0/KSI-Local-Studio-2.0.0-Install.zip),
+unpack it and double-click `KSI-Local-Studio-2.0.0-Install.command`.
+The helper downloads all 52 native DMG parts, verifies each size and SHA-256,
+and opens the DMG. Drag **KSI Local Studio.app** to Applications.
+Verified parts are preserved if the connection is interrupted.
+
+Requirements: macOS 14+, Apple Silicon, 16 GB memory and approximately 49 GB
+of free internal disk space during installation. The download is about 13.9 GB.
+Python, Homebrew, account credentials and a separate first-install model download
+are not required. Intel Macs are not supported.
+
+The app is ad-hoc signed, **not Apple-notarized**. macOS may require explicit
+approval in System Settings > Privacy & Security on first launch. The helper
+does not disable security checks. For manual installation, download every `.dmg`
+and `.dmgpart` from the [release page](https://github.com/taliyigit2-prog/Ksi/releases/tag/v2.0.0)
+into one folder and open the primary `.dmg`; no custom join tool is needed.
 
 ![KSI Local Studio interface](docs/assets/interface-light.png)
 
@@ -62,16 +81,10 @@ python -m venv .venv
 .venv/bin/ksi-gui
 ```
 
-AI models are not included in the repository or installed by this command. The setup
-wizard shows required disk space before any optional model installation. A fully offline
-installer's embedded Python runtimes passed portability checks and the ARM
-package passed automatic acceptance and independent offline installation.
-Publication awaits complete checksum-verified release upload. The old
-personal-runtime copying installers have been retired; they are not a supported
-installation path. New media contains `KSI Local Studio.app`, installed by dragging
-it to Applications. Models are included, with no first-install network or Homebrew
-requirement. Large images use native DMG segments: download all parts into the same
-folder and open the primary `.dmg`.
+AI models and the accepted native binaries are not installed by this source command.
+Use the published installer above for the model-inclusive offline application.
+The source setup wizard shows required disk space before optional model installation.
+Personal-runtime copying installers are retired and are not a supported installation path.
 
 ## CLI and MCP
 
@@ -117,12 +130,12 @@ signatures and inspection of the actual application inside every DMG. Developmen
 candidates and manifest claims alone cannot satisfy this gate. No human scores are
 invented or required from the user. Historical two-architecture and human/notarized
 APIs remain separate and are not weakened.
-See `RELEASE_NOTES.md` for the candidate's current status.
+See [release notes](RELEASE_NOTES.md) for the published version and historical baseline.
 
 ## Road map
 
-Native Apple Silicon offline packaging, automatic acceptance and the final
-privacy/source-notice delivery audit are complete; release upload is pending.
+Apple Silicon 2.0.0 offline packaging, automatic acceptance, privacy/source-notice
+delivery review and binary publication are complete.
 Windows packaging is a separate
 portability project and does not delay macOS acceptance.
 
