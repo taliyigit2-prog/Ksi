@@ -1,4 +1,36 @@
-# KSI Local Studio 2.0.0.dev0 release candidate notes
+# KSI Local Studio 2.0.0 — Apple Silicon
+
+The accepted offline package targets macOS 14+ on Apple Silicon with 16 GB
+memory. Intel release work is retired. Models are included on the segmented
+DMG; runtime models, jobs and caches use the internal system disk only.
+
+All 14 strict automatic distribution cases, actual packaged engine/model
+checks and independent offline DMG installation passed. The final code-cleanup
+suite passed 693 tests with zero skips. Git source/history, retained build
+artifacts and actual application/media privacy checks have no unresolved
+findings within their recorded scopes. No user tests or human scores are claimed.
+
+The application is ad-hoc signed, not Apple-notarized. First launch may require
+explicit approval in macOS Privacy & Security. Historical human/notarized and
+two-architecture APIs remain unchanged and do not define this ARM-only release.
+
+The distribution includes original notices and corresponding sources. The
+distribution SPDX inventory conservatively includes source dependencies; not
+every listed source package is claimed to be compiled into the binary. Where
+upstream provides an SPDX license declaration rather than a separate root
+license file, original declarations, standard terms, existing attribution and
+complete source are preserved. No copyright attribution is fabricated. This
+technical delivery review is not a legal warranty.
+
+Binary publication is pending completion and verification of the release upload.
+The accepted product source is
+`874c8e6585037ca2fbf6bddb11edd55187fa9dd7`; later release-tool and documentation
+commits do not change the sealed application.
+
+## Historical 2.0.0.dev0 candidate notes
+
+The following describes the earlier baseline, not current installation support
+or the approved ARM-only release criteria.
 
 This development candidate provides a local-first macOS application for permitted, DRM-free video,
 document, article, image and creative workflows. It includes an eight-language interface, resumable

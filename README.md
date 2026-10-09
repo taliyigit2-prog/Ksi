@@ -2,10 +2,10 @@
 
 > Release scope (2026-10-09): the model-inclusive offline release is now
 > Apple Silicon (ARM64) only. Intel release work has been retired. There is
-> no completed new binary release yet. See the
-> [accepted desktop scope](docs/decisions/2026-10-offline-desktop.md). Source
-> commits are checkpoints, not evidence that final engine/installation tests
-> have passed. The earlier release gates below describe the previous baseline.
+> no published new binary release yet; the accepted package has passed its
+> native engine, independent installation and 14 strict automatic release checks.
+> See the [ARM-only closure scope](docs/decisions/2026-10-09-arm-only-closure.md).
+> Source commits alone are not binary acceptance evidence.
 
 KSI Local Studio is a free, subscription-free, local-first macOS application for
 video, subtitle, dubbing, document, article, image and creative workflows. Codex,
@@ -64,8 +64,9 @@ python -m venv .venv
 
 AI models are not included in the repository or installed by this command. The setup
 wizard shows required disk space before any optional model installation. A fully offline
-installer will be published only after its embedded Python runtimes pass the clean-Mac
-portability gate and both native architectures pass automatic acceptance. The old
+installer's embedded Python runtimes passed portability checks and the ARM
+package passed automatic acceptance and independent offline installation.
+Publication awaits complete checksum-verified release upload. The old
 personal-runtime copying installers have been retired; they are not a supported
 installation path. New media contains `KSI Local Studio.app`, installed by dragging
 it to Applications. Models are included, with no first-install network or Homebrew
@@ -120,8 +121,9 @@ See `RELEASE_NOTES.md` for the candidate's current status.
 
 ## Road map
 
-The project is completing native Apple Silicon offline packaging, automatic
-acceptance, and a final privacy/license audit. Windows packaging is a separate
+Native Apple Silicon offline packaging, automatic acceptance and the final
+privacy/source-notice delivery audit are complete; release upload is pending.
+Windows packaging is a separate
 portability project and does not delay macOS acceptance.
 
 ## Thanks

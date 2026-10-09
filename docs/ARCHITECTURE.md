@@ -2,10 +2,14 @@
 
 KSI Local Studio is a local-first modular monolith.
 
-## Accepted desktop revision (in implementation)
+## Accepted desktop revision
 
-The 2026-10 revision targets Apple Silicon and Intel macOS with required models
-on offline installation media. It retains PySide6 and the service boundary.
+The final 2026-10-09 distribution scope is Apple Silicon macOS only, with
+required models on offline installation media. Intel release work is retired;
+shared CPU adapters and historical two-architecture APIs remain for compatibility,
+not as a claim of Intel distribution support. See the
+[ARM-only closure decision](decisions/2026-10-09-arm-only-closure.md).
+It retains PySide6 and the service boundary.
 `ui` contains native Halite-referenced design tokens, sidebar, cards, tool forms
 and a threaded signal bridge. `media_tools`, `image_engines`, `local_ai_worker`
 and `cpu_transcription` contain original local engine adapters. Heavy ONNX and
@@ -31,9 +35,11 @@ internal-disk locations before directory creation or SQLite initialization.
 
 The strict earlier human/notarized release gates below remain historical APIs.
 The user-approved new distribution permits clearly labeled ad-hoc signing and
-requires autonomous acceptance instead of invented human scores. New binary
-release evidence is not yet available; do not interpret source checkpoints as
-successful cross-architecture, model-quality or installation verification.
+requires autonomous acceptance instead of invented human scores. The accepted
+2.0.0 ARM package passed all 14 strict automatic distribution cases, real
+packaged engine/model checks and independent offline DMG installation. The
+post-cleanup source suite passed 693 tests without skips. These measurements
+do not establish Intel support, human quality ratings or Apple notarization.
 
 The offline producer rejects stale OCR MIT metadata when binding the project's
 Apache-2.0 grant, and rejects source-only Unlicense metadata for the GPLv3+
@@ -57,8 +63,10 @@ case is bound to the source commit, processor and exact offline manifest; named
 objective checks and zero unresolved privacy/license findings are mandatory.
 `distribution_integrity` mounts media read-only and compares a complete bundle
 inventory including the launcher and outer code seal with the accepted app.
-Matching checksums on self-described DMG files are not sufficient. Both native
-architectures must use the same final version; development versions remain gated.
+Matching checksums on self-described DMG files are not sufficient. The current
+ARM-only installer uses the existing strict per-distribution verifier; the
+historical combined verifier still requires both native architectures at the
+same final version. Development versions remain gated.
 
 The outer app code seal and strict deep verification each have a bounded
 15-minute budget because the seal covers gigabytes of offline model weights.
